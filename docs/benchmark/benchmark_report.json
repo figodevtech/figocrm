@@ -1,0 +1,37 @@
+{
+  "executed_at": "2026-09-23T09:41:12.632Z",
+  "total_scenarios": 190,
+  "metrics": {
+    "intent_accuracy": 98.95,
+    "ambiguity_catch_rate": 100,
+    "financial_consistency_rate": 100,
+    "full_scenario_pass_rate": 98.95
+  },
+  "targets_met": {
+    "intent_accuracy": true,
+    "ambiguity_catch_rate": true,
+    "financial_consistency_rate": true,
+    "full_scenario_pass_rate": true
+  },
+  "failures_count": 2,
+  "failures": [
+    {
+      "id": "SCEN_AS_007",
+      "category": "abatimento_servico_ou_desconto",
+      "spoken_text": "Faltavam 500 do Celso. Ele pagou 400 em dinheiro e perdoei os outros 100 pra morrer a dÃ­vida.",
+      "expected_intent": "register_payment_with_discount",
+      "predicted_intent": "register_adjustment",
+      "expected_confirmation": false,
+      "predicted_confirmation": false
+    },
+    {
+      "id": "SCEN_AS_011",
+      "category": "abatimento_servico_ou_desconto",
+      "spoken_text": "Valmir devia 1.150, pagou mil no dinheiro e perdoei os 150 pra encerrar o carnÃª.",
+      "expected_intent": "register_payment_with_discount",
+      "predicted_intent": "register_adjustment",
+      "expected_confirmation": false,
+      "predicted_confirmation": false
+    }
+  ]
+}
