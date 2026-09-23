@@ -3,7 +3,7 @@
 // Classifica intenções em high, medium, low.
 // Regra de segurança inegociável: Ações financeiras com confiança 'low' NUNCA são gravadas no banco.
 
-import { AmbiguityItem, AmbiguityType } from '@/types/deal-command';
+import { AmbiguityItem } from '@/types/deal-command';
 
 export type ConfidenceLevel = 'high' | 'medium' | 'low';
 
@@ -20,7 +20,7 @@ export interface DisambiguationCheckResult {
  */
 export function evaluateIntentConfidenceAndAmbiguity(
   spokenText: string,
-  extractedEntities: Record<string, any> = {}
+  extractedEntities: Record<string, unknown> = {}
 ): DisambiguationCheckResult {
   const t = spokenText.toLowerCase();
   const ambiguities: AmbiguityItem[] = [];
