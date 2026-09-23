@@ -2,7 +2,7 @@
 // Cálculos e regras contábeis para Trocas e Permutas — Fase 26 e Fase 33
 // Suporta: troca seca, volta recebida, volta paga e voltas parceladas.
 
-import { addCents, subtractCents, toCents, toReais } from './money';
+import { subtractCents } from './money';
 import { generateInstallmentScheduleCents, GeneratedInstallmentItem } from './installments';
 
 export type TradeDirection = 'even' | 'inflow' | 'outflow';

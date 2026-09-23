@@ -3,7 +3,7 @@
 // Suporta: desconto, compensação de dívida, serviço prestado e entrada de item como abatimento.
 
 import { AdjustmentType } from '@/types/deal-command';
-import { subtractCents, toCents, toReais } from './money';
+import { subtractCents } from './money';
 
 export interface AdjustmentApplicationResult {
   previousBalanceCents: number;

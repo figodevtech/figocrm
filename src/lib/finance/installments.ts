@@ -2,7 +2,7 @@
 // Geração e gestão determinística de cronogramas de parcelamento — Fase 26.4
 // Assegura estritamente que a soma de todas as parcelas é idêntica ao montante total (zero dízima residual).
 
-import { addCents, subtractCents, toCents, toReais } from './money';
+import { addCents, subtractCents, toReais } from './money';
 
 export interface InstallmentScheduleOptions {
   totalAmountCents: number;

@@ -1,7 +1,7 @@
 // src/lib/domain/command-executor.ts
-// Executor Seguro de Comandos de Domínio — Fase 32 do FigoCRM
+// Executor Seguro de Comandos de Domínio — Fase 32 & Hardening Final do FigoCRM
 // Camada única e atômica entre a IA / APIs e o Banco de Dados (Supabase).
-// Garante: autenticação, assinatura, validação contábil, integridade de estoque, rollback e auditoria.
+// Garante: autenticação, assinatura, validação contábil, integridade de estoque, transacionalidade atômica via Postgres RPC e auditoria.
 
 import { createClient } from '@/lib/supabase/server';
 import { assertWritePermission } from '@/lib/subscription';
@@ -20,10 +20,11 @@ export interface CommandExecutionResult {
   confirmationPrompt?: string;
   missingInformation?: string[];
   error?: string;
+  alreadyExecuted?: boolean;
 }
 
 /**
- * Executa um DealCommand de forma atômica, reversível e auditada.
+ * Executa um DealCommand de forma atômica no banco de dados via RPC PostgreSQL `execute_deal_transaction`.
  */
 export async function executeDealCommand(
   command: DealCommand,
@@ -88,19 +89,20 @@ export async function executeDealCommand(
     };
   }
 
-  // 5. Suporte a Idempotência
+  // 5. Verificação preliminar de Idempotência
   if (command.idempotencyKey) {
     const { data: existingDeal } = await supabase
       .from('deals')
       .select('id')
       .eq('user_id', user.id)
-      .eq('notes', `idempotency:${command.idempotencyKey}`)
+      .eq('idempotency_key', command.idempotencyKey)
       .maybeSingle();
 
     if (existingDeal) {
       return {
         success: true,
         dealId: existingDeal.id,
+        alreadyExecuted: true,
         humanSummary: 'Esta operação já havia sido registrada com sucesso.',
       };
     }
@@ -112,7 +114,7 @@ export async function executeDealCommand(
     customerId = command.counterparty.id;
   } else if (command.counterparty?.name) {
     const name = command.counterparty.name.trim();
-    // Busca cliente existente pelo nome
+    // Busca cliente existente pelo nome (case-insensitive)
     const { data: foundCust } = await supabase
       .from('customers')
       .select('id')
@@ -142,7 +144,7 @@ export async function executeDealCommand(
     }
   }
 
-  // Se a operação for venda parcelada e não houver cliente, exige identificação
+  // Se a operação for venda parcelada ou promissória e não houver cliente, exige identificação
   if (!customerId && (command.receivables.length > 0 || command.payables.length > 0)) {
     return {
       success: false,
@@ -152,8 +154,8 @@ export async function executeDealCommand(
     };
   }
 
-  // 7. Resolução dos Itens de Saída (Estoque Atual)
-  const itemsOutIds: string[] = [];
+  // 7. Resolução dos Itens de Saída (Estoque Atual) e Cálculo de CMV
+  const itemsOutPayload: Array<{ item_id: string; evaluated_value: number }> = [];
   const itemsOutCMVCentsList: number[] = [];
 
   for (const itOut of command.itemsOut) {
@@ -165,7 +167,7 @@ export async function executeDealCommand(
         .select('id, acquisition_cost, status, item_costs(amount)')
         .eq('id', itOut.itemId)
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
       if (it && it.status !== 'vendido') {
         resolvedItem = it;
       }
@@ -192,7 +194,11 @@ export async function executeDealCommand(
       };
     }
 
-    itemsOutIds.push(resolvedItem.id);
+    itemsOutPayload.push({
+      item_id: resolvedItem.id,
+      evaluated_value: itOut.negotiatedValue || 0,
+    });
+
     const costsCents = (resolvedItem.item_costs || []).map((c) => ({
       amountCents: toCents(Number(c.amount)),
     }));
@@ -205,285 +211,163 @@ export async function executeDealCommand(
   const dealTotalCMVCents = calculateDealTotalCMVCents(itemsOutCMVCentsList);
   const recognizedProfitCents = calculateProjectedProfitCents(dealTotalCents, dealTotalCMVCents);
 
-  // 9. Execução Transacional Protegida
-  const rollbackStack: Array<() => Promise<void>> = [];
+  const dealType = command.itemsIn.length > 0 && command.itemsOut.length > 0
+    ? 'troca'
+    : (command.itemsOut.length > 0 ? 'venda' : (command.itemsIn.length > 0 ? 'compra' : 'avulso'));
 
-  try {
-    // 9.1 Criação do Deal principal
-    const dealType = command.itemsIn.length > 0 && command.itemsOut.length > 0
-      ? 'troca'
-      : (command.itemsOut.length > 0 ? 'venda' : (command.itemsIn.length > 0 ? 'compra' : 'avulso'));
+  // 9. Montagem do Payload para o RPC Transacional Atômico do PostgreSQL
+  const itemsInPayload = command.itemsIn.map((itIn) => ({
+    name: itIn.description || itIn.reference || 'Item Recebido na Troca',
+    evaluated_value: itIn.negotiatedValue ?? itIn.acquisitionValue ?? 0,
+    category: (itIn as unknown as { category?: string }).category || 'mercadoria',
+  }));
 
-    const { data: deal, error: dealError } = await supabase
-      .from('deals')
-      .insert({
-        user_id: user.id,
-        customer_id: customerId,
-        deal_type: dealType,
-        total_value: toReais(dealTotalCents),
-        recognized_profit: toReais(recognizedProfitCents),
-        status: 'concluida',
-        notes: command.idempotencyKey ? `idempotency:${command.idempotencyKey}` : (command.notes || null),
-        source: source === 'VOICE_ASSISTANT' ? 'ia_voz' : 'manual',
-        deal_date: new Date().toISOString().split('T')[0],
-      })
-      .select('id')
-      .single();
+  const cashMovementsPayload = [
+    ...command.cashIn.map((cin) => ({
+      direction: 'IN',
+      amount: cin.amount,
+      payment_method: cin.method || 'pix',
+      description: cin.notes || 'Entrada da negociação',
+    })),
+    ...command.cashOut.map((cout) => ({
+      direction: 'OUT',
+      amount: cout.amount,
+      payment_method: cout.method || 'pix',
+      description: cout.notes || 'Saída da negociação',
+    })),
+  ];
 
-    if (dealError || !deal) {
-      throw new Error(dealError?.message || 'Falha ao registrar a negociação.');
-    }
-
-    rollbackStack.push(async () => {
-      await supabase.from('deals').delete().eq('id', deal.id);
+  const receivablesPayload = command.receivables.map((rec) => {
+    const count = rec.installments?.count || 1;
+    const schedule = generateInstallmentScheduleCents({
+      totalAmountCents: toCents(rec.totalAmount),
+      count,
+      dueDayOfMonth: rec.installments?.dueDayOfMonth,
+      intervalDays: rec.installments?.intervalDays || 30,
+      isPromissory: rec.installments?.isPromissory || false,
+      startDate: rec.installments?.firstDueDate,
     });
-
-    // 9.2 Baixa de Estoque e Registro de Itens de Saída (OUT)
-    for (let i = 0; i < command.itemsOut.length; i++) {
-      const itOut = command.itemsOut[i];
-      const itemId = itemsOutIds[i];
-
-      await supabase.from('items').update({ status: 'vendido' }).eq('id', itemId);
-      rollbackStack.push(async () => {
-        await supabase.from('items').update({ status: 'disponivel' }).eq('id', itemId);
-      });
-
-      await supabase.from('deal_items').insert({
-        deal_id: deal.id,
-        item_id: itemId,
-        direction: 'OUT',
-        evaluated_value: itOut.negotiatedValue || 0,
-      });
-    }
-
-    // 9.3 Entrada de Mercadorias no Estoque (IN)
-    for (const itIn of command.itemsIn) {
-      const inVal = itIn.negotiatedValue ?? itIn.acquisitionValue ?? 0;
-      const { data: createdItem, error: inError } = await supabase
-        .from('items')
-        .insert({
-          user_id: user.id,
-          name: itIn.description || itIn.reference || 'Item Recebido na Troca',
-          acquisition_cost: inVal,
-          status: 'disponivel',
-        })
-        .select('id')
-        .single();
-
-      if (inError || !createdItem) {
-        throw new Error(inError?.message || 'Falha ao cadastrar item de entrada no estoque.');
-      }
-
-      rollbackStack.push(async () => {
-        await supabase.from('items').delete().eq('id', createdItem.id);
-      });
-
-      await supabase.from('deal_items').insert({
-        deal_id: deal.id,
-        item_id: createdItem.id,
-        direction: 'IN',
-        evaluated_value: inVal,
-      });
-    }
-
-    // 9.4 Movimentações de Caixa (Cash In e Cash Out)
-    for (const cin of command.cashIn) {
-      if (cin.amount > 0) {
-        await supabase.from('cash_movements').insert({
-          user_id: user.id,
-          deal_id: deal.id,
-          direction: 'IN',
-          amount: cin.amount,
-          payment_method: cin.method || 'pix',
-          description: cin.notes || `Entrada da negociação`,
-        });
-      }
-    }
-
-    for (const cout of command.cashOut) {
-      if (cout.amount > 0) {
-        await supabase.from('cash_movements').insert({
-          user_id: user.id,
-          deal_id: deal.id,
-          direction: 'OUT',
-          amount: cout.amount,
-          payment_method: cout.method || 'pix',
-          description: cout.notes || `Saída da negociação`,
-        });
-      }
-    }
-
-    // 9.5 Contas a Receber e Parcelamentos
-    for (const rec of command.receivables) {
-      if (rec.totalAmount > 0) {
-        const { data: createdRec, error: recError } = await supabase
-          .from('receivables')
-          .insert({
-            user_id: user.id,
-            deal_id: deal.id,
-            customer_id: customerId,
-            total_amount: rec.totalAmount,
-            paid_amount: 0.00,
-            balance: rec.totalAmount,
-            status: 'pending',
-          })
-          .select('id')
-          .single();
-
-        if (recError || !createdRec) {
-          throw new Error(recError?.message || 'Falha ao registrar conta a receber.');
-        }
-
-        const count = rec.installments?.count || 1;
-        const schedule = generateInstallmentScheduleCents({
-          totalAmountCents: toCents(rec.totalAmount),
-          count,
-          dueDayOfMonth: rec.installments?.dueDayOfMonth,
-          intervalDays: rec.installments?.intervalDays || 30,
-          isPromissory: rec.installments?.isPromissory || false,
-          startDate: rec.installments?.firstDueDate,
-        });
-
-        const installmentsToInsert = schedule.map((inst) => ({
-          user_id: user.id,
-          receivable_id: createdRec.id,
-          installment_number: inst.installmentNumber,
-          total_installments: inst.totalInstallments,
-          original_value: inst.originalValueReais,
-          paid_value: 0.00,
-          balance: inst.balanceReais,
-          due_date: inst.dueDate,
-          status: inst.status,
-          is_promissory: inst.isPromissory,
-        }));
-
-        await supabase.from('installments').insert(installmentsToInsert);
-      }
-    }
-
-    // 9.6 Contas a Pagar (se o usuário parcelou a volta dada)
-    for (const pay of command.payables) {
-      if (pay.totalAmount > 0) {
-        const { data: createdPay, error: payError } = await supabase
-          .from('payables')
-          .insert({
-            user_id: user.id,
-            deal_id: deal.id,
-            supplier_id: customerId,
-            description: pay.description || 'Volta a pagar de negociação',
-            total_amount: pay.totalAmount,
-            paid_amount: 0.00,
-            balance: pay.totalAmount,
-            status: 'pending',
-          })
-          .select('id')
-          .single();
-
-        if (payError || !createdPay) {
-          throw new Error(payError?.message || 'Falha ao registrar conta a pagar.');
-        }
-
-        const count = pay.installments?.count || 1;
-        const schedule = generateInstallmentScheduleCents({
-          totalAmountCents: toCents(pay.totalAmount),
-          count,
-          dueDayOfMonth: pay.installments?.dueDayOfMonth,
-          intervalDays: pay.installments?.intervalDays || 30,
-          startDate: pay.installments?.firstDueDate,
-        });
-
-        const payInstallmentsToInsert = schedule.map((inst) => ({
-          user_id: user.id,
-          payable_id: createdPay.id,
-          installment_number: inst.installmentNumber,
-          total_installments: inst.totalInstallments,
-          original_value: inst.originalValueReais,
-          paid_value: 0.00,
-          balance: inst.balanceReais,
-          due_date: inst.dueDate,
-          status: inst.status,
-          is_promissory: inst.isPromissory,
-        }));
-
-        await supabase.from('installments').insert(payInstallmentsToInsert);
-      }
-    }
-
-    // 9.7 Abatimentos e Compensações
-    for (const adj of command.adjustments) {
-      if (adj.amount > 0) {
-        await supabase.from('adjustments').insert({
-          user_id: user.id,
-          deal_id: deal.id,
-          type: adj.type,
-          amount: adj.amount,
-          reason: adj.reason || 'Abatimento lançado na negociação',
-        });
-      }
-    }
-
-    // 9.8 Registro de Auditoria Imutável
-    await supabase.from('audit_log').insert({
-      user_id: user.id,
-      entity_name: 'deals',
-      entity_id: deal.id,
-      action_type: 'EXECUTE_DEAL_COMMAND',
-      source: source,
-      payload_after: { command, dealId: deal.id },
-    });
-
-    // 9.9 Registro na tabela ai_interactions se originado por voz
-    if (source === 'VOICE_ASSISTANT' && rawTranscript) {
-      await supabase.from('ai_interactions').insert({
-        user_id: user.id,
-        target_deal_id: deal.id,
-        spoken_text: rawTranscript,
-        detected_intent: command.intent,
-        extracted_entities: command,
-        required_confirmation: false,
-        execution_status: 'executed',
-      });
-    }
-
-    // Monta resposta humana precisa
-    let humanSummary = 'Pronto. Negociação registrada com sucesso.';
-    if (dealType === 'venda') {
-      const itName = command.itemsOut[0]?.reference || command.itemsOut[0]?.description || 'Mercadoria';
-      const valStr = formatCurrencyFromCents(dealTotalCents);
-      humanSummary = `Pronto. ${itName} vendida por ${valStr}.`;
-      if (command.receivables.length > 0 && command.receivables[0].installments) {
-        const inst = command.receivables[0].installments;
-        humanSummary += ` Ficaram ${inst.count} parcelas de ${formatCurrencyFromCents(toCents(inst.installmentAmount))}.`;
-      }
-    } else if (dealType === 'troca') {
-      const itOutName = command.itemsOut[0]?.reference || 'item';
-      const itInName = command.itemsIn[0]?.description || 'item';
-      humanSummary = `Pronto. Troca de ${itOutName} em ${itInName} registrada.`;
-      if (command.cashIn.length > 0) {
-        humanSummary += ` Você recebeu ${formatCurrencyFromCents(toCents(command.cashIn[0].amount))} de volta.`;
-      }
-    }
 
     return {
-      success: true,
-      dealId: deal.id,
-      humanSummary,
+      total_amount: rec.totalAmount,
+      installments: schedule.map((inst) => ({
+        installment_number: inst.installmentNumber,
+        total_installments: inst.totalInstallments,
+        original_value: inst.originalValueReais,
+        due_date: inst.dueDate,
+        is_promissory: inst.isPromissory,
+      })),
     };
-  } catch (executionErr: unknown) {
-    // Executa Rollback em ordem reversa
-    for (const rollbackFn of rollbackStack.reverse()) {
-      try {
-        await rollbackFn();
-      } catch (rErr) {
-        console.error('Erro durante o rollback:', rErr);
-      }
-    }
+  });
 
-    const errorMsg = executionErr instanceof Error ? executionErr.message : 'Falha ao executar comando de negociação.';
+  const payablesPayload = command.payables.map((pay) => {
+    const count = pay.installments?.count || 1;
+    const schedule = generateInstallmentScheduleCents({
+      totalAmountCents: toCents(pay.totalAmount),
+      count,
+      dueDayOfMonth: pay.installments?.dueDayOfMonth,
+      intervalDays: pay.installments?.intervalDays || 30,
+      startDate: pay.installments?.firstDueDate,
+    });
+
+    return {
+      total_amount: pay.totalAmount,
+      description: pay.description || 'Volta a pagar de negociação',
+      installments: schedule.map((inst) => ({
+        installment_number: inst.installmentNumber,
+        total_installments: inst.totalInstallments,
+        original_value: inst.originalValueReais,
+        due_date: inst.dueDate,
+        is_promissory: inst.isPromissory,
+      })),
+    };
+  });
+
+  const adjustmentsPayload = command.adjustments.map((adj) => ({
+    type: adj.type,
+    amount: adj.amount,
+    reason: adj.reason || 'Abatimento da negociação',
+  }));
+
+  const transactionPayload = {
+    idempotency_key: command.idempotencyKey || null,
+    customer_id: customerId,
+    deal_type: dealType,
+    total_value: toReais(dealTotalCents),
+    recognized_profit: toReais(recognizedProfitCents),
+    source: source === 'VOICE_ASSISTANT' ? 'ia_voz' : (source === 'MANUAL_WEB' ? 'manual' : 'api'),
+    deal_date: new Date().toISOString().split('T')[0],
+    notes: command.notes || null,
+    items_out: itemsOutPayload,
+    items_in: itemsInPayload,
+    cash_movements: cashMovementsPayload,
+    receivables: receivablesPayload,
+    payables: payablesPayload,
+    adjustments: adjustmentsPayload,
+  };
+
+  // 10. Execução Atômica via PostgreSQL RPC
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: rpcResponse, error: rpcError } = await (supabase.rpc as any)(
+    'execute_deal_transaction',
+    { p_payload: transactionPayload }
+  );
+
+  if (rpcError) {
     return {
       success: false,
-      humanSummary: 'Não foi possível salvar a negociação devido a um erro de validação.',
-      error: errorMsg,
+      humanSummary: 'Não foi possível salvar a negociação devido a um erro de validação no banco de dados.',
+      error: rpcError.message,
     };
   }
+
+  const dealId = (rpcResponse as { deal_id?: string; already_executed?: boolean })?.deal_id;
+  const alreadyExecuted = (rpcResponse as { deal_id?: string; already_executed?: boolean })?.already_executed;
+
+  if (alreadyExecuted) {
+    return {
+      success: true,
+      dealId,
+      alreadyExecuted: true,
+      humanSummary: 'Esta operação já havia sido registrada com sucesso.',
+    };
+  }
+
+  // 11. Registro na tabela ai_interactions se originado por voz
+  if (source === 'VOICE_ASSISTANT' && rawTranscript) {
+    await supabase.from('ai_interactions').insert({
+      user_id: user.id,
+      target_deal_id: dealId || null,
+      spoken_text: rawTranscript,
+      detected_intent: command.intent,
+      extracted_entities: command as unknown as Record<string, unknown>,
+      required_confirmation: false,
+      execution_status: 'executed',
+    });
+  }
+
+  // 12. Montagem de Resposta Humana Precisa
+  let humanSummary = 'Pronto. Negociação registrada com sucesso.';
+  if (dealType === 'venda') {
+    const itName = command.itemsOut[0]?.reference || command.itemsOut[0]?.description || 'Mercadoria';
+    const valStr = formatCurrencyFromCents(dealTotalCents);
+    humanSummary = `Pronto. ${itName} vendida por ${valStr}.`;
+    if (command.receivables.length > 0 && command.receivables[0].installments) {
+      const inst = command.receivables[0].installments;
+      humanSummary += ` Ficaram ${inst.count} parcelas de ${formatCurrencyFromCents(toCents(inst.installmentAmount))}.`;
+    }
+  } else if (dealType === 'troca') {
+    const itOutName = command.itemsOut[0]?.reference || 'item';
+    const itInName = command.itemsIn[0]?.description || 'item';
+    humanSummary = `Pronto. Troca de ${itOutName} em ${itInName} registrada.`;
+    if (command.cashIn.length > 0) {
+      humanSummary += ` Você recebeu ${formatCurrencyFromCents(toCents(command.cashIn[0].amount))} de volta.`;
+    }
+  }
+
+  return {
+    success: true,
+    dealId,
+    humanSummary,
+  };
 }

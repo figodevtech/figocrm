@@ -3,7 +3,7 @@
 // Assegura que nenhum negócio seja gravado com valores descasados ou sem forma de pagamento definida.
 
 import { DealCommand } from '@/types/deal-command';
-import { addCents, subtractCents, toCents, toReais, formatCurrencyFromCents } from './money';
+import { addCents, subtractCents, toCents, formatCurrencyFromCents } from './money';
 
 export interface DealBalanceValidationResult {
   isBalanced: boolean;

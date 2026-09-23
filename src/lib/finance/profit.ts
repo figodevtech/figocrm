@@ -2,7 +2,7 @@
 // Apuração determinística de Lucro — Fase 26.3
 // Separa Lucro Projetado (negociação contratada) de Lucro Realizado (valores liquidados)
 
-import { subtractCents, toCents, toReais, divideCents, multiplyCents } from './money';
+import { subtractCents, toCents, toReais, multiplyCents } from './money';
 
 export interface ProfitBreakdownCents {
   projectedProfitCents: number;

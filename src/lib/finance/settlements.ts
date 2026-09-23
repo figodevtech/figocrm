@@ -1,7 +1,7 @@
 // src/lib/finance/settlements.ts
 // Quitações, pagamentos parciais e alocação sequencial com tratamento estrito de excesso — Fases 26.5 e 26.6
 
-import { subtractCents, toCents, toReais } from './money';
+import { subtractCents } from './money';
 
 export interface SettlementInputItem {
   id: string;
