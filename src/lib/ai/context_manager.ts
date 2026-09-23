@@ -1,6 +1,9 @@
 // src/lib/ai/context_manager.ts
-// Gerenciador de Contexto Conversacional e Resolução de Entidades — Fase 30 do FigoCRM
-// Suporta persistência com TTL de 30 minutos, resolução anafórica ("ele", "aquela moto") e desambiguação de homônimos.
+// Gerenciador de Contexto Conversacional Persistente — Fase E do Hardening FigoCRM
+// Armazena contexto no PostgreSQL (tabela conversation_context) com TTL de 30 minutos,
+// persistindo referências anafóricas entre cold-starts e diferentes instâncias Vercel.
+
+import { createClient } from '@/lib/supabase/server';
 
 export interface EntityReference {
   id?: string;
@@ -13,15 +16,15 @@ export interface PendingQuestion {
   question: string;
   expectedField: string;
   draftCommand?: Record<string, unknown>;
-  createdAt: number;
+  createdAt?: number;
 }
 
 export interface ConversationContext {
   userId: string;
   lastCustomer?: EntityReference;
   lastItem?: EntityReference;
-  lastDeal?: EntityReference;
-  lastReceivable?: EntityReference;
+  lastDealId?: string;
+  lastReceivableId?: string;
   pendingQuestion?: PendingQuestion;
   pendingConfirmation?: {
     originalTranscript: string;
@@ -32,65 +35,175 @@ export interface ConversationContext {
   expiresAt: number; // Timestamp em milissegundos
 }
 
-// Armazenamento em memória com controle de TTL (30 minutos)
 const CONTEXT_TTL_MS = 30 * 60 * 1000; // 30 minutos
-const contextStore = new Map<string, ConversationContext>();
+
+// Cache em memória para acesso rápido durante a mesma requisição ou testes locais
+const memoryCache = new Map<string, ConversationContext>();
 
 /**
- * Obtém o contexto de conversação do usuário, descartando sessões expiradas.
+ * Obtém o contexto conversacional ativo do usuário, buscando no Supabase e renovando o TTL.
  */
-export function getUserVoiceContext(userId: string): ConversationContext {
+export async function getUserVoiceContext(userId: string): Promise<ConversationContext> {
   const now = Date.now();
-  const existing = contextStore.get(userId);
 
-  if (existing) {
-    if (existing.expiresAt > now) {
-      // Renova o TTL a cada nova interação ativa
-      existing.expiresAt = now + CONTEXT_TTL_MS;
-      return existing;
-    } else {
-      // Expirou
-      contextStore.delete(userId);
-    }
+  // Verifica cache em memória primeiro
+  const cached = memoryCache.get(userId);
+  if (cached && cached.expiresAt > now) {
+    cached.expiresAt = now + CONTEXT_TTL_MS;
+    return cached;
   }
 
-  const newContext: ConversationContext = {
+  // Se for usuário anônimo ou de teste, retorna contexto temporário em memória
+  if (!userId || userId === 'anonymous' || userId.startsWith('test_')) {
+    const memContext: ConversationContext = {
+      userId: userId || 'anonymous',
+      expiresAt: now + CONTEXT_TTL_MS,
+    };
+    memoryCache.set(userId || 'anonymous', memContext);
+    return memContext;
+  }
+
+  try {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from('conversation_context')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    if (!error && data) {
+      const expiresAt = new Date(data.expires_at).getTime();
+      if (expiresAt > now) {
+        const loadedContext: ConversationContext = {
+          userId,
+          lastCustomer: data.last_customer_name
+            ? { id: data.last_customer_id || undefined, name: data.last_customer_name, type: 'customer' }
+            : undefined,
+          lastItem: data.last_item_name
+            ? { id: data.last_item_id || undefined, name: data.last_item_name, type: 'item' }
+            : undefined,
+          lastDealId: data.last_deal_id || undefined,
+          lastReceivableId: data.last_receivable_id || undefined,
+          pendingQuestion: data.pending_question
+            ? { question: data.pending_question, expectedField: 'response', draftCommand: data.pending_command || undefined }
+            : undefined,
+          pendingConfirmation: data.pending_confirmation || undefined,
+          expiresAt: now + CONTEXT_TTL_MS,
+        };
+
+        // Renova o TTL no banco
+        await supabase
+          .from('conversation_context')
+          .update({
+            expires_at: new Date(now + CONTEXT_TTL_MS).toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+          .eq('user_id', userId);
+
+        memoryCache.set(userId, loadedContext);
+        return loadedContext;
+      }
+    }
+  } catch (err) {
+    console.warn('Não foi possível carregar contexto do Supabase, usando memória:', err);
+  }
+
+  // Se não existir ou expirou, cria novo contexto
+  const freshContext: ConversationContext = {
     userId,
     expiresAt: now + CONTEXT_TTL_MS,
   };
-  contextStore.set(userId, newContext);
-  return newContext;
+  memoryCache.set(userId, freshContext);
+  return freshContext;
 }
 
 /**
- * Atualiza o contexto conversacional com renovação de TTL.
+ * Atualiza o contexto do usuário tanto no banco Supabase quanto no cache de memória.
  */
-export function updateUserVoiceContext(
+export async function updateUserVoiceContext(
   userId: string,
   updates: Partial<ConversationContext>
-): ConversationContext {
-  const current = getUserVoiceContext(userId);
+): Promise<ConversationContext> {
+  const current = await getUserVoiceContext(userId);
+  const now = Date.now();
+  const expiresAt = now + CONTEXT_TTL_MS;
+
   const updated: ConversationContext = {
     ...current,
     ...updates,
-    expiresAt: Date.now() + CONTEXT_TTL_MS,
+    expiresAt,
   };
-  contextStore.set(userId, updated);
+  memoryCache.set(userId, updated);
+
+  if (userId && userId !== 'anonymous' && !userId.startsWith('test_')) {
+    try {
+      const supabase = await createClient();
+      await supabase.from('conversation_context').upsert({
+        user_id: userId,
+        last_customer_id: updated.lastCustomer?.id || null,
+        last_customer_name: updated.lastCustomer?.name || null,
+        last_item_id: updated.lastItem?.id || null,
+        last_item_name: updated.lastItem?.name || null,
+        last_deal_id: updated.lastDealId || null,
+        last_receivable_id: updated.lastReceivableId || null,
+        pending_question: updated.pendingQuestion?.question || null,
+        pending_command: updated.pendingQuestion?.draftCommand || null,
+        pending_confirmation: updated.pendingConfirmation || null,
+        expires_at: new Date(expiresAt).toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+    } catch (err) {
+      console.warn('Erro ao persistir contexto conversacional no Supabase:', err);
+    }
+  }
+
   return updated;
 }
 
 /**
  * Limpa perguntas e confirmações pendentes
  */
-export function clearPendingConfirmation(userId: string): void {
-  const current = getUserVoiceContext(userId);
-  delete current.pendingQuestion;
-  delete current.pendingConfirmation;
-  contextStore.set(userId, current);
+export async function clearPendingConfirmation(userId: string): Promise<void> {
+  await updateUserVoiceContext(userId, {
+    pendingQuestion: undefined,
+    pendingConfirmation: undefined,
+  });
 }
 
 /**
- * Resolve referências anafóricas e pronomes ("ele", "ela", "dele", "dela", "aquele carro")
+ * Versão síncrona leve para ambientes sem I/O assíncrono (ex: benchmark determinístico)
+ */
+export function getSyncVoiceContext(userId: string): ConversationContext {
+  const now = Date.now();
+  const cached = memoryCache.get(userId);
+  if (cached && cached.expiresAt > now) {
+    cached.expiresAt = now + CONTEXT_TTL_MS;
+    return cached;
+  }
+  const fresh: ConversationContext = {
+    userId,
+    expiresAt: now + CONTEXT_TTL_MS,
+  };
+  memoryCache.set(userId, fresh);
+  return fresh;
+}
+
+export function updateSyncVoiceContext(
+  userId: string,
+  updates: Partial<ConversationContext>
+): ConversationContext {
+  const current = getSyncVoiceContext(userId);
+  const updated: ConversationContext = {
+    ...current,
+    ...updates,
+    expiresAt: Date.now() + CONTEXT_TTL_MS,
+  };
+  memoryCache.set(userId, updated);
+  return updated;
+}
+
+/**
+ * Resolve referências anafóricas e pronomes ("ele", "ela", "dele", "dela", "aquela moto")
  */
 export function resolvePronounsAndAnaphora(
   text: string,
@@ -101,8 +214,8 @@ export function resolvePronounsAndAnaphora(
   resolvedItem?: EntityReference;
 } {
   let resolvedText = text;
-  let resolvedCustomer = context.lastCustomer;
-  let resolvedItem = context.lastItem;
+  const resolvedCustomer = context.lastCustomer;
+  const resolvedItem = context.lastItem;
 
   const t = text.toLowerCase();
 
