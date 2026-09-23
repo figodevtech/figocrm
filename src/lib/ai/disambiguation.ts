@@ -90,6 +90,22 @@ export function evaluateIntentConfidenceAndAmbiguity(
     });
   }
 
+  // 2b. Forma curta regional "por 3 e 1": pode ser R$ 3.100, R$ 3.000 + 1.000, 3 mil e 1 parcela...
+  const DIGIT = String.raw`(um|dois|tr[eê]s|quatro|cinco|seis|sete|oito|nove|\d)`;
+  const shortForm = t.match(new RegExp(String.raw`\bpor ${DIGIT} e ${DIGIT}(?![\p{L}\d])(?!\s*(mil|reais|real|conto|contos|pau|vezes|parcelas|de\b))`, 'iu'));
+  if (shortForm) {
+    const toDigit = (w: string) => (/^\d$/.test(w) ? Number(w) : ['um', 'dois', 'tres', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove'].indexOf(w.normalize('NFD').replace(/\p{M}/gu, '')) + 1);
+    const guess = toDigit(shortForm[1]) * 1000 + toDigit(shortForm[2]) * 100;
+    confidence = 'low';
+    ambiguities.push({
+      field: 'amount',
+      type: 'value',
+      description: 'Valor em forma curta ("3 e 1").',
+      possibleInterpretations: [`R$ ${guess.toLocaleString('pt-BR')}`, 'Outro valor'],
+      suggestedPrompt: `Você quis dizer R$ ${guess.toLocaleString('pt-BR')}?`,
+    });
+  }
+
   // 3. Ambiguidade de Direção da Troca (ex: "Ficaram cinco de volta", "ficou de volta aí")
   if (
     (t.includes('ficou') || t.includes('ficaram') || t.includes('teve') || t.includes('troquei e')) &&

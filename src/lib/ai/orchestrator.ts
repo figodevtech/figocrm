@@ -41,6 +41,7 @@ import {
 import { getSubscriptionAccess, writeDeniedMessage } from '@/lib/subscription';
 import { extractSpokenNumbers } from '@/lib/voice/numbers';
 import { toCents } from '@/lib/finance/money';
+import { confirmationAnswer } from '@/lib/ai/readback';
 import { AssistantErrorCode, AssistantResponse, errorResponse, OperationType } from '@/lib/api/assistant-response';
 
 export interface VoicePipelineMetrics {
@@ -237,6 +238,12 @@ async function execute(
         contextPatch: { pendingConfirmation: null },
       };
     }
+  }
+
+  if (cmd.needsReadback) {
+    const prompt = cmd.confirmationPrompt || 'Confirma?';
+    const confirmed: InterpretedVoiceCommand = { ...cmd, needsReadback: false, requiresConfirmation: false, confirmationPrompt: undefined };
+    return askUser(prompt, { ...pending('confirm_execution', spokenText, prompt, confirmed), field: 'confirmation' });
   }
 
   if (cmd.requiresConfirmation) {
@@ -709,6 +716,24 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
   if (!p?.draft) return null;
   const draft = p.draft as unknown as InterpretedVoiceCommand;
   const refs = { ...(draft.resolvedRefs ?? {}) };
+
+  if (p.kind === 'confirm_execution') {
+    const answer = confirmationAnswer(spokenText);
+    if (answer === 'yes') return { ...draft, interpretation: { source: 'resume' } };
+    if (answer === 'no') {
+      return {
+        intent: 'unrecognized_command',
+        requiresConfirmation: true,
+        confirmationPrompt: 'Beleza, não lancei nada. Pode falar de novo?',
+        missingInformation: [],
+        ambiguities: [],
+        interpretation: { source: 'resume' },
+        rawText: spokenText,
+        normalizedText: spokenText,
+      };
+    }
+    return null;
+  }
 
   if (p.kind === 'entity_choice' && p.candidates?.length && p.field) {
     const choice = matchCandidateAnswer(spokenText, p.candidates);

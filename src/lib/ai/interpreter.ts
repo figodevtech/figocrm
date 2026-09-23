@@ -92,6 +92,8 @@ export interface InterpretedVoiceCommand {
     settlementId?: string;
   };
   interpretation?: InterpretationMeta;
+  /** Veio do fallback por regras: só executa depois de o usuário confirmar a leitura de volta. */
+  needsReadback?: boolean;
   rawText: string;
   normalizedText: string;
 }
@@ -445,6 +447,12 @@ export function interpretVoiceCommand(
     const amount = extractPaymentAmount(normalizedTextWithNumbers);
     const installmentRef = extractInstallmentRef(normalizedTextWithNumbers);
     const settlesDebt = /\b(quitou|quitar|acertou tudo|pagou tudo|o resto|tudo que devia)\b/.test(normalizedTextWithNumbers);
+    // "daquela parcela de mil" / "da parcela de 500": valor da parcela citada
+    const citedMatch = normalizedTextWithNumbers.match(/parcela de (mil|\d+)(\s*mil)?\b/);
+    const citedInstallment = citedMatch
+      ? citedMatch[1] === 'mil' ? 1000 : parseInt(citedMatch[1], 10) * (citedMatch[2] ? 1000 : 1)
+      : undefined;
+    const overpaysCited = !!(amount && citedInstallment && amount > citedInstallment);
     const paymentScope: InterpretedVoiceCommand['paymentScope'] = amount
       ? 'amount'
       : settlesDebt && !installmentRef
@@ -457,14 +465,23 @@ export function interpretVoiceCommand(
       intent: isPartial ? 'register_partial_payment' : 'register_payment',
       counterparty: cust ? { name: cust } : undefined,
       amount: amount || undefined,
+      installmentAmount: citedInstallment,
       paymentScope,
       installmentRef,
       paymentMethod: extractPaymentMethod(normalizedTextWithNumbers),
-      requiresConfirmation: !paymentScope,
+      requiresConfirmation: !paymentScope || overpaysCited,
       missingInformation: !paymentScope
         ? [{ type: 'payment_breakdown', description: 'Valor recebido não informado', promptQuestion: 'Qual foi o valor recebido?' }]
         : [],
-      ambiguities: [],
+      ambiguities: overpaysCited
+        ? [{
+            field: 'amount',
+            type: 'value',
+            description: 'Valor pago maior que a parcela citada.',
+            possibleInterpretations: ['Pagou a parcela e adiantou o resto', 'Valor ou parcela entendidos errado'],
+            suggestedPrompt: 'O valor passa da parcela que você citou. Quanto ele pagou e de qual parcela?',
+          }]
+        : [],
       rawText: spokenText,
       normalizedText: text,
     };

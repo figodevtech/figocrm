@@ -6,7 +6,7 @@
 import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import type { ConversationContext } from '@/lib/ai/context_manager';
 import type { AmbiguityItem, MissingInformationItem } from '@/types/deal-command';
-import { extractSpokenNumbers, groundedMonetaryValues } from '@/lib/voice/numbers';
+import { extractSpokenNumbers, extractSpokenNumbersDetailed, groundedMonetaryValues } from '@/lib/voice/numbers';
 import { nameTokens, referenceMatchesName } from '@/lib/domain/entity-resolver';
 
 export interface GroundingIssue {
@@ -95,6 +95,45 @@ export function checkGrounding(
   return issues;
 }
 
+// Autocorreção no meio da fala: "16.500, quer dizer, 15.500" / "700... não, 600" / "1.300, aliás 1.200"
+const CORRECTION_MARKER = /(\.\.\.\s*n[aã]o\b|,\s*n[aã]o\b|\bquer dizer\b|\bali[aá]s\b|\bdigo\b|\bmelhor dizendo\b)/gi;
+
+/** Valores que o usuário retirou ao se corrigir (e que por isso não podem ser usados). */
+export function retractedValues(spokenText: string): { retracted: Set<number>; corrected: Set<number> } {
+  const retracted = new Set<number>();
+  const corrected = new Set<number>();
+  for (const m of spokenText.matchAll(CORRECTION_MARKER)) {
+    const start = m.index ?? 0;
+    const before = extractSpokenNumbersDetailed(spokenText.slice(Math.max(0, start - 40), start));
+    const after = extractSpokenNumbersDetailed(spokenText.slice(start + m[0].length, start + m[0].length + 60));
+    const wrong = before[before.length - 1];
+    const right = after[0];
+    if (!wrong || !right || wrong.value === right.value) continue;
+    for (const [n, target] of [[wrong, retracted], [right, corrected]] as const) {
+      target.add(n.value);
+      if (n.value < 1000 && !n.literal) target.add(n.value * 1000);
+    }
+  }
+  for (const v of corrected) retracted.delete(v);
+  return { retracted, corrected };
+}
+
+export function correctionAmbiguities(cmd: InterpretedVoiceCommand, spokenText: string): AmbiguityItem[] {
+  const { retracted } = retractedValues(spokenText);
+  if (retracted.size === 0) return [];
+  const used = MONETARY_FIELDS.filter((f) => typeof cmd[f] === 'number' && retracted.has(cmd[f] as number));
+  if (used.length === 0) return [];
+  return [
+    {
+      field: used[0],
+      type: 'value',
+      description: `Valor corrigido na fala foi usado (${used.join(', ')}).`,
+      possibleInterpretations: [],
+      suggestedPrompt: 'Você corrigiu o valor no meio da frase. Qual é o valor certo?',
+    },
+  ];
+}
+
 /** Transforma problemas de grounding em ambiguidades: o comando nunca executa com valor inventado. */
 export function groundingAmbiguities(issues: GroundingIssue[]): AmbiguityItem[] {
   return issues.map((issue) => {
@@ -118,8 +157,46 @@ export function groundingAmbiguities(issues: GroundingIssue[]): AmbiguityItem[] 
  * Contradições internas que a LLM pode produzir mesmo com valores ancorados na fala
  * (ex.: "completei 9600" como dinheiro RECEBIDO com direção outflow). Viram ambiguidade.
  */
-export function consistencyAmbiguities(cmd: InterpretedVoiceCommand): AmbiguityItem[] {
+/** "daquela parcela de mil" → 1000; "da parcela de 500" → 500. */
+export function citedInstallmentValue(spokenText?: string): number | undefined {
+  const m = spokenText?.toLowerCase().match(/parcela de ([^,.;!?]{1,30})/);
+  if (!m) return undefined;
+  const [value] = extractSpokenNumbers(m[1]);
+  return value && value > 0 ? value : undefined;
+}
+
+export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?: string): AmbiguityItem[] {
+  // "pagou 1300 daquela parcela de mil": pagamento maior que a parcela citada é contraditório
+  // O valor da parcela citada vem da própria fala quando a interpretação não o preencheu.
+  const citedInstallment = cmd.installmentAmount ?? citedInstallmentValue(spokenText);
+  if ((cmd.intent === 'register_payment' || cmd.intent === 'register_partial_payment') && cmd.amount && citedInstallment && cmd.amount > citedInstallment) {
+    return [
+      {
+        field: 'amount',
+        type: 'value',
+        description: 'Valor pago maior que a parcela citada.',
+        possibleInterpretations: ['Pagou a parcela e adiantou o resto', 'Valor ou parcela entendidos errado'],
+        suggestedPrompt: 'O valor passa da parcela que você citou. Quanto ele pagou e de qual parcela?',
+      },
+    ];
+  }
   if (cmd.intent !== 'create_trade') return [];
+  if (spokenText) {
+    const t = spokenText.toLowerCase();
+    const otherPaid = /\b(ele|ela) (completou|voltou|me voltou|inteirou)\b|\bpeguei [^.]{0,30}na volta\b/.test(t);
+    const userPaid = /\b(completei|voltei|inteirei|tive que completar|eu completei|eu voltei)\b/.test(t);
+    if ((otherPaid && !userPaid && cmd.direction === 'outflow') || (userPaid && !otherPaid && cmd.direction === 'inflow')) {
+      return [
+        {
+          field: 'direction',
+          type: 'direction',
+          description: 'Direção da volta contradiz quem completou na fala.',
+          possibleInterpretations: ['Você recebeu a volta', 'Você pagou a volta'],
+          suggestedPrompt: 'Essa volta foi você que recebeu ou você que pagou?',
+        },
+      ];
+    }
+  }
   if (cmd.itemOut && cmd.itemIn && nameTokens(cmd.itemOut).join(' ') === nameTokens(cmd.itemIn).join(' ')) {
     return [
       {

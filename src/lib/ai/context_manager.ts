@@ -15,7 +15,7 @@ export interface EntityReference {
   type?: 'customer' | 'item' | 'deal' | 'receivable' | 'installment';
 }
 
-export type PendingKind = 'entity_choice' | 'missing_info';
+export type PendingKind = 'entity_choice' | 'missing_info' | 'confirm_execution';
 
 export interface PendingConfirmation {
   kind: PendingKind;

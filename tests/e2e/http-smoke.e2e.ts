@@ -63,7 +63,8 @@ test('login gera cookie de sessão válido para as rotas', async () => {
 test('consulta autenticada responde e informa a fonte da interpretação', async () => {
   const res = await postText('Quanto dinheiro eu tenho na rua?');
   assert.strictEqual(res.status, 200, JSON.stringify(res.body));
-  assert.strictEqual(res.body.executionStatus, 'answered');
+  assert.strictEqual(res.body.assistant?.status, 'answered');
+  assert.ok(!('error' in res.body), 'erro técnico nunca vai ao front');
   console.log(`      interpretação: ${res.body.metrics?.interpretationSource} ${res.body.metrics?.provider ?? ''} ${res.body.metrics?.model ?? ''}`);
 });
 
@@ -76,9 +77,9 @@ test('diálogo canônico via HTTP grava a troca e liquida a dívida', async () =
   ];
   for (const t of turns) {
     const res = await postText(t);
-    console.log(`      > ${t}\n      < ${res.status} ${res.body.humanResponse}`);
+    console.log(`      > ${t}\n      < ${res.status} ${res.body.assistant?.message}`);
     assert.strictEqual(res.status, 200);
-    assert.strictEqual(res.body.executionStatus, 'executed', res.body.humanResponse);
+    assert.strictEqual(res.body.assistant?.status, 'executed', res.body.assistant?.message);
   }
   const { data: rec } = await user.client.from('receivables').select('total_amount, balance, status').single();
   assert.strictEqual(Number(rec!.total_amount), 8000);
@@ -93,8 +94,44 @@ test('transcribe autenticado: áudio inválido cai no fallbackText sem erro 500'
   const res = await fetch(`${BASE}/api/voice/transcribe`, { method: 'POST', body: form, headers: headers() });
   const body = await res.json();
   assert.strictEqual(res.status, 200, JSON.stringify(body));
-  assert.strictEqual(body.processResult?.executionStatus, 'answered');
+  assert.strictEqual(body.processResult?.assistant?.status, 'answered');
   console.log(`      stt: ${body.metrics?.provider}`);
+});
+
+test('áudio de fala real (TTS) → Whisper → LLM → resposta e telemetria de áudio', async () => {
+  if (!process.env.OPENAI_API_KEY) {
+    console.log('      (sem OPENAI_API_KEY: teste de áudio real pulado)');
+    return;
+  }
+  const tts = await fetch('https://api.openai.com/v1/audio/speech', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ model: 'tts-1', voice: 'onyx', input: 'Quanto dinheiro eu tenho na rua?', response_format: 'mp3' }),
+  });
+  assert.ok(tts.ok, `TTS falhou: HTTP ${tts.status}`);
+  const audio = new Uint8Array(await tts.arrayBuffer());
+
+  const form = new FormData();
+  form.append('audio', new Blob([audio], { type: 'audio/mpeg' }), 'fala.mp3');
+  const res = await fetch(`${BASE}/api/voice/transcribe`, { method: 'POST', body: form, headers: headers() });
+  const body = await res.json();
+  assert.strictEqual(res.status, 200, JSON.stringify(body));
+  console.log(`      stt: ${body.metrics?.provider} · "${body.transcribedText}" → ${body.processResult?.assistant?.message}`);
+  assert.strictEqual(body.metrics?.provider, 'openai_whisper');
+  assert.match(body.transcribedText, /rua/i);
+  assert.strictEqual(body.processResult?.assistant?.status, 'answered');
+
+  const [row] = await (async () => {
+    const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+    await db.connect();
+    try {
+      return (await db.query(`SELECT stt_provider, audio_duration_seconds::float8 AS secs, stt_latency_ms, llm_model, success
+                              FROM ai_telemetry WHERE user_id = $1 AND input_type = 'audio' AND stt_provider = 'openai_whisper'`, [user.id])).rows;
+    } finally {
+      await db.end();
+    }
+  })();
+  assert.ok(row && row.secs > 0 && row.stt_latency_ms > 0 && row.success, `telemetria de áudio: ${JSON.stringify(row)}`);
 });
 
 test('rate limit distribuído devolve 429 com Retry-After ao passar do limite por minuto', async () => {
@@ -105,6 +142,7 @@ test('rate limit distribuído devolve 429 com Retry-After ao passar do limite po
     else assert.strictEqual(res.status, 200);
   }
   assert.ok(limited, 'esperava 429 dentro de 25 requisições');
+  assert.strictEqual(limited!.body.assistant?.code, 'rate_limited');
   assert.ok(Number(limited!.headers.get('retry-after')) > 0);
 });
 

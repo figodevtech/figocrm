@@ -9,6 +9,7 @@ import { runVoicePipeline, VoiceProcessResult } from '../../src/lib/ai/orchestra
 import { interpretVoiceCommandWithLLM, InterpretMode } from '../../src/lib/ai/interpret';
 import { isLLMConfigured } from '../../src/lib/ai/provider';
 import { reverseSettlement } from '../../src/lib/domain/financial-operations';
+import { LLMProviderError } from '../../src/lib/ai/provider';
 import { executeDealCommand } from '../../src/lib/domain/command-executor';
 import { buildManualTradeCommand } from '../../src/lib/domain/manual-deal-commands';
 
@@ -157,6 +158,28 @@ test('pagamento depois da renegociação cai nas parcelas novas', async () => {
   const fresh = (await installments()).filter((i) => i.renegotiation_id);
   assert.strictEqual(fresh[0].paid_value, 500, 'primeira parcela nova (vencimento mais próximo)');
   assert.strictEqual((await receivable()).balance, 7000);
+});
+
+test('LLM indisponível: fallback lê de volta e só grava com "sim"; "não" descarta', async () => {
+  const down = async () => { throw new LLMProviderError('timeout', 'teste'); };
+  const sayDown = (text: string) =>
+    runVoicePipeline(text, { supabase: user.client, userId: user.id, interpret: (t, ctx) => interpretVoiceCommandWithLLM(t, ctx, { llm: down }) });
+  const before = (await receivable()).balance;
+
+  const ask = await sayDown('O Carlos pagou 200 no pix.');
+  assert.strictEqual(ask.assistant.status, 'needs_input');
+  assert.match(ask.humanResponse, /^Entendi: recebimento de R\$ 200 do Carlos no Pix\. Confirma\?$/);
+  assert.strictEqual((await receivable()).balance, before, 'nada gravado antes de confirmar');
+
+  const yes = await sayDown('sim');
+  assert.strictEqual(yes.assistant.status, 'executed', yes.humanResponse);
+  assert.strictEqual((await receivable()).balance, before - 200);
+
+  await sayDown('O Carlos pagou 100 no pix.');
+  const no = await sayDown('não, tá errado');
+  assert.strictEqual(no.assistant.status, 'needs_input');
+  assert.match(no.humanResponse, /não lancei nada/);
+  assert.strictEqual((await receivable()).balance, before - 200);
 });
 
 test('manual = voz: a mesma troca pelo formulário produz a mesma estrutura financeira', async () => {

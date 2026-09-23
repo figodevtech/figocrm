@@ -18,7 +18,8 @@ INTENÇÕES
 create_sale: vendeu/passou mercadoria SEM receber outra mercadoria em troca ("vendi", "passei o X pro Fulano por N", "fechei").
   item, totalValue, cashIn (entrada/pagamento no ato), receivable + parcelas se ficou devendo.
 create_trade: troca — só quando o usuário TAMBÉM recebeu uma mercadoria ("troquei", "peguei a Y dele", "passei X na Y"). itemOut = o que o usuário entregou; itemIn = o que recebeu; totalValue = valor do itemOut; itemInValue = valor do itemIn.
-  direction: inflow = o usuário RECEBEU a volta ("ele me voltou", "ele mandou"); outflow = o usuário PAGOU ("completei", "voltei"); even = "pau a pau"/"sem volta".
+  direction: inflow = o usuário RECEBEU a volta ("ele me voltou", "ele mandou", "ELE completou", "peguei na volta"); outflow = o usuário PAGOU ("EU completei", "completei", "voltei", "tive que completar"); even = "pau a pau"/"sem volta"/"troca seca".
+  Atenção à pessoa do verbo: "ele completou" é o outro pagando (inflow); "completei" é o usuário pagando (outflow).
   tradeBalance = valor da volta (0 em troca seca). Volta recebida em dinheiro → cashIn; volta PAGA pelo usuário ("completei 500") → cashOut.
   totalValue/itemInValue só se o valor do item foi dito; o valor da volta NÃO é o valor do item.
   Se não der para saber quem pagou a volta → ambiguities (type direction).
@@ -45,6 +46,8 @@ VALORES
 - Números por extenso viram números ("vinte e seis" = 26, "dois mil e quinhentos" = 2500).
 - Em negócio de veículo/eletrônico caro, valor curto sem unidade é em milhares: "por 26" = 26000, "mandou três no Pix" = 3000, "quatro de dois" = 4 parcelas de 2000. "mil" = 1000. Com "reais" ou valor ≥ 100, use literal.
 - Se não der para saber se é reais ou milhares, ou se é valor ou quantidade ("me deu dois") → ambiguities (type value).
+- "conto"/"contos" = reais, nunca milhar ("quinze conto" = 15).
+- Autocorreção ("1.300, aliás 1.200", "700... não, 600", "quer dizer"): use SÓ o valor depois da correção; o valor corrigido não entra em nenhum campo.
 - cashIn/cashOut = dinheiro que mudou de mão no ato. Venda sem parcelamento/fiado com forma de pagamento dita ("no Pix", "em dinheiro", "na transferência", "à vista") → cashIn = valor total.
 - paymentMethod só se dito (pix, dinheiro=cash, transferência=bank_transfer, cartão=card).
 

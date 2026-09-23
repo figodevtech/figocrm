@@ -23,7 +23,8 @@ import {
   LLMInterpretation,
   LLMInterpretationSchema,
 } from '@/lib/ai/schemas/llm-interpretation.schema';
-import { checkGrounding, completenessGaps, consistencyAmbiguities, groundingAmbiguities } from '@/lib/ai/grounding';
+import { checkGrounding, completenessGaps, consistencyAmbiguities, correctionAmbiguities, groundingAmbiguities, WRITE_INTENTS } from '@/lib/ai/grounding';
+import { describeForReadback } from '@/lib/ai/readback';
 
 export type InterpretMode = 'auto' | 'llm_required' | 'rules_only';
 
@@ -246,7 +247,12 @@ function finalize(
     cmd = { ...cmd, tradeBalance: 0 };
   }
   const groundingIssues = meta.source === 'guardrail' ? [] : checkGrounding(cmd, spokenText, context);
-  const ambiguities = [...cmd.ambiguities, ...groundingAmbiguities(groundingIssues), ...consistencyAmbiguities(cmd)];
+  const ambiguities = [
+    ...cmd.ambiguities,
+    ...groundingAmbiguities(groundingIssues),
+    ...consistencyAmbiguities(cmd, spokenText),
+    ...(meta.source === 'guardrail' ? [] : correctionAmbiguities(cmd, spokenText)),
+  ];
   const missingInformation = [...cmd.missingInformation, ...completenessGaps(cmd, !!context?.lastCustomer)];
 
   if (groundingIssues.length > 0) {
@@ -255,6 +261,19 @@ function finalize(
 
   const blocking = cmd.intent === 'clarify_ambiguity' || cmd.intent === 'unrecognized_command';
   const requiresConfirmation = blocking || ambiguities.length > 0 || missingInformation.length > 0;
+
+  // Sem a LLM, o parser por regras erra fala livre: escrita só depois de confirmar a leitura de volta
+  if (meta.source === 'rules_fallback' && WRITE_INTENTS.has(cmd.intent) && !requiresConfirmation) {
+    return {
+      ...cmd,
+      ambiguities,
+      missingInformation,
+      requiresConfirmation: true,
+      needsReadback: true,
+      confirmationPrompt: describeForReadback(cmd),
+      interpretation: meta,
+    };
+  }
 
   return {
     ...cmd,

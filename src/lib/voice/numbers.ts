@@ -18,7 +18,8 @@ function stripAccents(text: string): string {
 
 /** Converte "1.500", "1.500,50", "2,5" em número. */
 function parseNumericToken(token: string): number | null {
-  let t = token;
+  // "5x" (cinco vezes) conta como 5
+  let t = token.replace(/^(\d+)x$/, '$1');
   if (/^\d{1,3}(\.\d{3})+(,\d+)?$/.test(t)) t = t.replace(/\./g, '').replace(',', '.');
   else if (/^\d+,\d+$/.test(t)) t = t.replace(',', '.');
   const n = Number(t);
@@ -29,19 +30,35 @@ function parseNumericToken(token: string): number | null {
  * Retorna todos os números mencionados no texto, na ordem, já combinando multiplicadores
  * ("3 mil" → 3000, "dois mil e quinhentos" → 2500, "um pau" → 1000).
  */
+export interface SpokenNumber {
+  value: number;
+  /** Seguido de "reais"/"real"/"conto(s)": valor literal, nunca lido em milhares. */
+  literal: boolean;
+}
+
 export function extractSpokenNumbers(text: string): number[] {
+  return extractSpokenNumbersDetailed(text).map((n) => n.value);
+}
+
+const LITERAL_UNITS = new Set(['reais', 'real', 'conto', 'contos', 'centavos']);
+const ARTICLE_NUMBER_CONTEXT = new Set(['mil', 'pau', 'real', 'conto', 'vez', 'parcela', 'e']);
+
+export function extractSpokenNumbersDetailed(text: string): SpokenNumber[] {
+  // Pontuação seguida de espaço separa números ("mil e quatrocentos, sessenta" são dois valores)
   const tokens = stripAccents(text)
     .replace(/r\$\s*/g, ' ')
-    .split(/[^a-z0-9.,]+/)
-    .map((t) => t.replace(/[.,]+$/, ''))
+    .replace(/[.,;:!?]+(\s|$)/g, ' | ')
+    .split(/[^a-z0-9.,|]+/)
     .filter(Boolean);
 
-  const results: number[] = [];
+  const results: SpokenNumber[] = [];
   let current: number | null = null; // grupo abaixo de mil em construção
   let total: number | null = null; // acumulado com "mil"
 
-  const flush = () => {
-    if (current !== null || total !== null) results.push((total ?? 0) + (current ?? 0));
+  const flush = (nextToken?: string) => {
+    if (current !== null || total !== null) {
+      results.push({ value: (total ?? 0) + (current ?? 0), literal: !!nextToken && LITERAL_UNITS.has(nextToken) });
+    }
     current = null;
     total = null;
   };
@@ -49,10 +66,21 @@ export function extractSpokenNumbers(text: string): number[] {
   for (let i = 0; i < tokens.length; i++) {
     const tok = tokens[i];
 
+    if (tok === '|') {
+      flush();
+      continue;
+    }
+
+    // "um/uma" como artigo ("um fone") não é número; só conta antes de unidade ("um mil", "uma parcela")
+    if ((tok === 'um' || tok === 'uma') && current === null && total === null && !ARTICLE_NUMBER_CONTEXT.has(tokens[i + 1] ?? '')) {
+      flush();
+      continue;
+    }
+
     if (tok === 'e' && (current !== null || total !== null)) {
       const next = tokens[i + 1];
       if (next && (UNITS[next] !== undefined || /^\d/.test(next))) continue;
-      flush();
+      flush(next);
       continue;
     }
 
@@ -88,7 +116,7 @@ export function extractSpokenNumbers(text: string): number[] {
       continue;
     }
 
-    flush();
+    flush(tok);
   }
   flush();
   return results;
@@ -100,12 +128,13 @@ export function extractSpokenNumbers(text: string): number[] {
  * (entrada + parcelas, total − entrada, quantidade × valor da parcela).
  */
 export function groundedMonetaryValues(text: string, extra: number[] = []): Set<number> {
-  const raw = [...extractSpokenNumbers(text), ...extra];
+  const raw = [...extractSpokenNumbersDetailed(text), ...extra.map((value) => ({ value, literal: false }))];
   const base = new Set<number>();
-  for (const n of raw) {
+  for (const { value: n, literal } of raw) {
     if (n <= 0) continue;
     base.add(round2(n));
-    if (n < 1000) base.add(round2(n * 1000));
+    // "quinze conto" / "68 reais" são literais: nunca viram milhar
+    if (n < 1000 && !literal) base.add(round2(n * 1000));
   }
 
   const values = [...base];

@@ -12,6 +12,7 @@ import { buildManualSaleCommand, buildManualTradeCommand } from '../../src/lib/d
 import { buildDealCommand } from '../../src/lib/ai/command-builder';
 import { validateDealBalance } from '../../src/lib/finance/deal-balance';
 import type { NormalizedBillingEvent } from '../../src/lib/billing/types';
+import { confirmationAnswer, describeForReadback } from '../../src/lib/ai/readback';
 
 const tests: Array<[string, () => void | Promise<void>]> = [];
 const test = (name: string, fn: () => void | Promise<void>) => tests.push([name, fn]);
@@ -153,6 +154,17 @@ test('formulário manual rejeita parcelas que não fecham e volta paga maior que
   assert.strictEqual(buildManualSaleCommand({ customerId: 'c', itemId: 'i', totalValue: 1000, cashInflow: 400, receivable: { totalAmount: 600, installmentsCount: 3, installmentValue: 150 } }).ok, false);
   assert.strictEqual(buildManualTradeCommand({ customerId: 'c', itemOutId: 'i', itemIn: { name: 'X', evaluatedValue: 100 }, tradeBalance: 500, direction: 'paid' }).ok, false);
   assert.ok(buildManualSaleCommand({ customerId: 'c', itemId: 'i', totalValue: 1000, cashInflow: 400, receivable: { totalAmount: 600, installmentsCount: 3, installmentValue: 200 } }).ok);
+});
+
+test('leitura de volta: sim/não curtos; frase nova não é resposta', () => {
+  assert.strictEqual(confirmationAnswer('Sim'), 'yes');
+  assert.strictEqual(confirmationAnswer('isso mesmo, pode lançar'), 'yes');
+  assert.strictEqual(confirmationAnswer('Não, tá errado'), 'no');
+  assert.strictEqual(confirmationAnswer('Não'), 'no');
+  assert.strictEqual(confirmationAnswer('O Carlos pagou 300 no pix agora mesmo'), null);
+  const text = describeForReadback({ intent: 'create_sale', item: 'iPhone 11', counterparty: { name: 'Adriana' }, totalValue: 4200, cashIn: 4200, paymentMethod: 'pix',
+    requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '' });
+  assert.strictEqual(text, 'Entendi: venda de iPhone 11 para Adriana por R$ 4.200, entrou R$ 4.200 no Pix. Confirma?');
 });
 
 (async () => {
