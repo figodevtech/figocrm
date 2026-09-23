@@ -2,8 +2,10 @@
 // Consultas por Voz Read-Only — Fase J do FigoCRM
 // Responde perguntas rápidas do vendedor sobre valores a receber, estoque, atrasos e recebimentos do dia.
 
-import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { formatCurrencyFromCents, toCents } from '@/lib/finance/money';
+import type { ConversationContext } from '@/lib/ai/context_manager';
+import { EntityCandidate, resolveCustomerReference } from '@/lib/domain/entity-resolver';
 
 export interface VoiceQueryResult {
   success: boolean;
@@ -11,51 +13,57 @@ export interface VoiceQueryResult {
   responseSummary: string;
   data?: Record<string, unknown>;
   error?: string;
+  requiresConfirmation?: boolean;
+  pendingChoice?: { field: 'customer'; candidates: EntityCandidate[] };
+  resolvedCustomer?: { id: string; name: string };
 }
 
 /**
  * Executa uma consulta de voz baseada no tipo detectado e cliente/período.
  */
 export async function executeVoiceQuery(
+  supabase: SupabaseClient,
+  userId: string,
   queryType: string,
-  customerName?: string
+  customerRef?: { id?: string; name?: string },
+  context?: ConversationContext
 ): Promise<VoiceQueryResult> {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-
-  if (!user) {
-    return {
-      success: false,
-      queryType,
-      responseSummary: 'Você precisa estar logado para consultar essas informações.',
-      error: 'Não autenticado',
-    };
-  }
+  const user = { id: userId };
 
   try {
     switch (queryType) {
       case 'quanto_fulano_deve': {
-        if (!customerName) {
+        if (!customerRef?.id && !customerRef?.name && !context?.lastCustomer) {
           return {
             success: false,
             queryType,
             responseSummary: 'De quem você quer saber a dívida? Me diga o nome do cliente.',
+            requiresConfirmation: true,
           };
         }
 
-        const { data: cust } = await supabase
-          .from('customers')
-          .select('id, name')
-          .eq('user_id', user.id)
-          .ilike('name', `%${customerName}%`)
-          .limit(1)
-          .maybeSingle();
+        const custRes = await resolveCustomerReference(supabase, user.id, {
+          id: customerRef?.id,
+          name: customerRef?.name,
+          context: context?.lastCustomer,
+        });
 
+        if (custRes.status === 'ambiguous') {
+          return {
+            success: false,
+            queryType,
+            responseSummary: custRes.promptQuestion!,
+            requiresConfirmation: true,
+            pendingChoice: { field: 'customer', candidates: custRes.candidates! },
+          };
+        }
+
+        const cust = custRes.entity;
         if (!cust) {
           return {
             success: true,
             queryType,
-            responseSummary: `Não encontrei nenhum cliente chamado ${customerName} no seu cadastro.`,
+            responseSummary: custRes.promptQuestion || 'Não encontrei esse cliente no seu cadastro.',
           };
         }
 
@@ -64,6 +72,7 @@ export async function executeVoiceQuery(
           .select('balance')
           .eq('user_id', user.id)
           .eq('customer_id', cust.id)
+          .in('status', ['pending', 'partially_paid'])
           .gt('balance', 0);
 
         const totalDebt = (recs || []).reduce((acc, r) => acc + Number(r.balance), 0);
@@ -76,6 +85,7 @@ export async function executeVoiceQuery(
             ? `${cust.name} deve ${debtStr} em aberto.`
             : `${cust.name} está em dia. Não tem dívidas em aberto.`,
           data: { totalDebt, customer: cust.name },
+          resolvedCustomer: { id: cust.id, name: cust.name },
         };
       }
 

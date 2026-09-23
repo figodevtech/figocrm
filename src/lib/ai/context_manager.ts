@@ -1,9 +1,12 @@
 // src/lib/ai/context_manager.ts
-// Gerenciador de Contexto Conversacional Persistente — Fase E do Hardening FigoCRM
-// Armazena contexto no PostgreSQL (tabela conversation_context) com TTL de 30 minutos,
-// persistindo referências anafóricas entre cold-starts e diferentes instâncias Vercel.
+// Contexto conversacional persistente — Fase E do hardening.
+// Fonte de verdade: tabela conversation_context (TTL de 30 minutos). Sem cache em memória:
+// na Vercel cada requisição pode cair numa instância diferente e um cache local serviria contexto velho.
+// Referências são guardadas com o ID real da entidade resolvida; o nome serve apenas para exibição
+// e para resolver pronomes no texto.
 
-import { createClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { EntityCandidate } from '@/lib/domain/entity-resolver';
 
 export interface EntityReference {
   id?: string;
@@ -12,11 +15,18 @@ export interface EntityReference {
   type?: 'customer' | 'item' | 'deal' | 'receivable' | 'installment';
 }
 
-export interface PendingQuestion {
-  question: string;
-  expectedField: string;
-  draftCommand?: Record<string, unknown>;
-  createdAt?: number;
+export type PendingKind = 'entity_choice' | 'missing_info';
+
+export interface PendingConfirmation {
+  kind: PendingKind;
+  originalTranscript: string;
+  promptAsked: string;
+  /** Comando interpretado que aguarda a resposta (InterpretedVoiceCommand serializado). */
+  draft?: Record<string, unknown>;
+  /** Campo que a resposta preenche: 'customer' | 'item' | 'debt' | 'installment' | campo numérico do draft. */
+  field?: string;
+  candidates?: EntityCandidate[];
+  timestamp: number;
 }
 
 export interface ConversationContext {
@@ -25,185 +35,91 @@ export interface ConversationContext {
   lastItem?: EntityReference;
   lastDealId?: string;
   lastReceivableId?: string;
-  pendingQuestion?: PendingQuestion;
-  pendingConfirmation?: {
-    originalTranscript: string;
-    draftIntent: Record<string, unknown>;
-    promptAsked: string;
-    timestamp: number;
-  };
-  expiresAt: number; // Timestamp em milissegundos
+  pendingConfirmation?: PendingConfirmation;
+  expiresAt: number;
 }
 
-const CONTEXT_TTL_MS = 30 * 60 * 1000; // 30 minutos
+/** null limpa o campo; undefined mantém o valor atual. */
+export type ContextPatch = {
+  [K in 'lastCustomer' | 'lastItem' | 'lastDealId' | 'lastReceivableId' | 'pendingConfirmation']?: ConversationContext[K] | null;
+};
 
-// Cache em memória para acesso rápido durante a mesma requisição ou testes locais
-const memoryCache = new Map<string, ConversationContext>();
+export const CONTEXT_TTL_MS = 30 * 60 * 1000;
 
-/**
- * Obtém o contexto conversacional ativo do usuário, buscando no Supabase e renovando o TTL.
- */
-export async function getUserVoiceContext(userId: string): Promise<ConversationContext> {
-  const now = Date.now();
+export function emptyContext(userId: string): ConversationContext {
+  return { userId, expiresAt: Date.now() + CONTEXT_TTL_MS };
+}
 
-  // Verifica cache em memória primeiro
-  const cached = memoryCache.get(userId);
-  if (cached && cached.expiresAt > now) {
-    cached.expiresAt = now + CONTEXT_TTL_MS;
-    return cached;
+export async function loadVoiceContext(supabase: SupabaseClient, userId: string): Promise<ConversationContext> {
+  const { data, error } = await supabase
+    .from('conversation_context')
+    .select('*')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) {
+    console.warn('[context] falha ao carregar contexto:', error.message);
+    return emptyContext(userId);
+  }
+  if (!data || new Date(data.expires_at).getTime() <= Date.now()) {
+    return emptyContext(userId);
   }
 
-  // Se for usuário anônimo ou de teste, retorna contexto temporário em memória
-  if (!userId || userId === 'anonymous' || userId.startsWith('test_')) {
-    const memContext: ConversationContext = {
-      userId: userId || 'anonymous',
-      expiresAt: now + CONTEXT_TTL_MS,
-    };
-    memoryCache.set(userId || 'anonymous', memContext);
-    return memContext;
-  }
-
-  try {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-      .from('conversation_context')
-      .select('*')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    if (!error && data) {
-      const expiresAt = new Date(data.expires_at).getTime();
-      if (expiresAt > now) {
-        const loadedContext: ConversationContext = {
-          userId,
-          lastCustomer: data.last_customer_name
-            ? { id: data.last_customer_id || undefined, name: data.last_customer_name, type: 'customer' }
-            : undefined,
-          lastItem: data.last_item_name
-            ? { id: data.last_item_id || undefined, name: data.last_item_name, type: 'item' }
-            : undefined,
-          lastDealId: data.last_deal_id || undefined,
-          lastReceivableId: data.last_receivable_id || undefined,
-          pendingQuestion: data.pending_question
-            ? { question: data.pending_question, expectedField: 'response', draftCommand: data.pending_command || undefined }
-            : undefined,
-          pendingConfirmation: data.pending_confirmation || undefined,
-          expiresAt: now + CONTEXT_TTL_MS,
-        };
-
-        // Renova o TTL no banco
-        await supabase
-          .from('conversation_context')
-          .update({
-            expires_at: new Date(now + CONTEXT_TTL_MS).toISOString(),
-            updated_at: new Date().toISOString(),
-          })
-          .eq('user_id', userId);
-
-        memoryCache.set(userId, loadedContext);
-        return loadedContext;
-      }
-    }
-  } catch (err) {
-    console.warn('Não foi possível carregar contexto do Supabase, usando memória:', err);
-  }
-
-  // Se não existir ou expirou, cria novo contexto
-  const freshContext: ConversationContext = {
+  return {
     userId,
-    expiresAt: now + CONTEXT_TTL_MS,
+    lastCustomer: data.last_customer_name
+      ? { id: data.last_customer_id || undefined, name: data.last_customer_name, type: 'customer' }
+      : undefined,
+    lastItem: data.last_item_name
+      ? { id: data.last_item_id || undefined, name: data.last_item_name, type: 'item' }
+      : undefined,
+    lastDealId: data.last_deal_id || undefined,
+    lastReceivableId: data.last_receivable_id || undefined,
+    pendingConfirmation: (data.pending_confirmation as PendingConfirmation | null) || undefined,
+    expiresAt: new Date(data.expires_at).getTime(),
   };
-  memoryCache.set(userId, freshContext);
-  return freshContext;
 }
 
-/**
- * Atualiza o contexto do usuário tanto no banco Supabase quanto no cache de memória.
- */
-export async function updateUserVoiceContext(
-  userId: string,
-  updates: Partial<ConversationContext>
+export function applyContextPatch(current: ConversationContext, patch: ContextPatch): ConversationContext {
+  const next: ConversationContext = { ...current, expiresAt: Date.now() + CONTEXT_TTL_MS };
+  for (const [key, value] of Object.entries(patch) as Array<[keyof ContextPatch, unknown]>) {
+    if (value === undefined) continue;
+    (next as unknown as Record<string, unknown>)[key] = value === null ? undefined : value;
+  }
+  return next;
+}
+
+export async function saveVoiceContext(
+  supabase: SupabaseClient,
+  current: ConversationContext,
+  patch: ContextPatch
 ): Promise<ConversationContext> {
-  const current = await getUserVoiceContext(userId);
-  const now = Date.now();
-  const expiresAt = now + CONTEXT_TTL_MS;
+  const updated = applyContextPatch(current, patch);
 
-  const updated: ConversationContext = {
-    ...current,
-    ...updates,
-    expiresAt,
-  };
-  memoryCache.set(userId, updated);
-
-  if (userId && userId !== 'anonymous' && !userId.startsWith('test_')) {
-    try {
-      const supabase = await createClient();
-      await supabase.from('conversation_context').upsert({
-        user_id: userId,
-        last_customer_id: updated.lastCustomer?.id || null,
-        last_customer_name: updated.lastCustomer?.name || null,
-        last_item_id: updated.lastItem?.id || null,
-        last_item_name: updated.lastItem?.name || null,
-        last_deal_id: updated.lastDealId || null,
-        last_receivable_id: updated.lastReceivableId || null,
-        pending_question: updated.pendingQuestion?.question || null,
-        pending_command: updated.pendingQuestion?.draftCommand || null,
-        pending_confirmation: updated.pendingConfirmation || null,
-        expires_at: new Date(expiresAt).toISOString(),
-        updated_at: new Date().toISOString(),
-      });
-    } catch (err) {
-      console.warn('Erro ao persistir contexto conversacional no Supabase:', err);
-    }
-  }
-
-  return updated;
-}
-
-/**
- * Limpa perguntas e confirmações pendentes
- */
-export async function clearPendingConfirmation(userId: string): Promise<void> {
-  await updateUserVoiceContext(userId, {
-    pendingQuestion: undefined,
-    pendingConfirmation: undefined,
+  const { error } = await supabase.from('conversation_context').upsert({
+    user_id: updated.userId,
+    last_customer_id: updated.lastCustomer?.id || null,
+    last_customer_name: updated.lastCustomer?.name || null,
+    last_item_id: updated.lastItem?.id || null,
+    last_item_name: updated.lastItem?.name || null,
+    last_deal_id: updated.lastDealId || null,
+    last_receivable_id: updated.lastReceivableId || null,
+    pending_question: updated.pendingConfirmation?.promptAsked || null,
+    pending_command: updated.pendingConfirmation?.draft || null,
+    pending_confirmation: updated.pendingConfirmation || null,
+    expires_at: new Date(updated.expiresAt).toISOString(),
+    updated_at: new Date().toISOString(),
   });
-}
 
-/**
- * Versão síncrona leve para ambientes sem I/O assíncrono (ex: benchmark determinístico)
- */
-export function getSyncVoiceContext(userId: string): ConversationContext {
-  const now = Date.now();
-  const cached = memoryCache.get(userId);
-  if (cached && cached.expiresAt > now) {
-    cached.expiresAt = now + CONTEXT_TTL_MS;
-    return cached;
+  if (error) {
+    console.warn('[context] falha ao persistir contexto:', error.message);
   }
-  const fresh: ConversationContext = {
-    userId,
-    expiresAt: now + CONTEXT_TTL_MS,
-  };
-  memoryCache.set(userId, fresh);
-  return fresh;
-}
-
-export function updateSyncVoiceContext(
-  userId: string,
-  updates: Partial<ConversationContext>
-): ConversationContext {
-  const current = getSyncVoiceContext(userId);
-  const updated: ConversationContext = {
-    ...current,
-    ...updates,
-    expiresAt: Date.now() + CONTEXT_TTL_MS,
-  };
-  memoryCache.set(userId, updated);
   return updated;
 }
 
 /**
- * Resolve referências anafóricas e pronomes ("ele", "ela", "dele", "dela", "aquela moto")
+ * Resolve referências anafóricas ("ele", "dele", "aquela moto") usando o contexto.
+ * Usado pelo parser determinístico; a LLM recebe o contexto explicitamente no prompt.
  */
 export function resolvePronounsAndAnaphora(
   text: string,
@@ -214,49 +130,19 @@ export function resolvePronounsAndAnaphora(
   resolvedItem?: EntityReference;
 } {
   let resolvedText = text;
-  const resolvedCustomer = context.lastCustomer;
-  const resolvedItem = context.lastItem;
-
   const t = text.toLowerCase();
 
-  // 1. Resolução de Cliente ("ele", "ela", "dele", "com ele")
   if (/\b(ele|dele|pra ele|com ele)\b/i.test(t) && context.lastCustomer) {
     resolvedText = resolvedText.replace(/\b(ele|dele|pra ele|com ele)\b/gi, context.lastCustomer.name);
   }
 
-  // 2. Resolução de Mercadoria ("aquela moto", "aquele carro", "o veículo", "o aparelho")
   if (/\b(aquela moto|aquele carro|aquele veiculo|o veiculo|o aparelho|aquela)\b/i.test(t) && context.lastItem) {
     resolvedText = resolvedText.replace(/\b(aquela moto|aquele carro|aquele veiculo|o veiculo|o aparelho|aquela)\b/gi, context.lastItem.name);
   }
 
   return {
     resolvedText,
-    resolvedCustomer,
-    resolvedItem,
+    resolvedCustomer: context.lastCustomer,
+    resolvedItem: context.lastItem,
   };
-}
-
-/**
- * Enriquece o prompt do modelo com o contexto anafórico do revendedor.
- */
-export function buildContextualPrompt(spokenText: string, context: ConversationContext): string {
-  let contextSnippet = '';
-
-  if (context.lastCustomer) {
-    contextSnippet += `\nÚltimo cliente referenciado: ${context.lastCustomer.name}`;
-  }
-  if (context.lastItem) {
-    contextSnippet += `\nÚltima mercadoria referenciada: ${context.lastItem.name}`;
-  }
-  if (context.pendingQuestion) {
-    contextSnippet += `\nHá uma pergunta em aberto feita ao usuário: "${context.pendingQuestion.question}".`;
-  }
-
-  const { resolvedText } = resolvePronounsAndAnaphora(spokenText, context);
-
-  if (contextSnippet) {
-    return `[CONTEXTO RECENTE ATIVO - TTL 30 MIN]:${contextSnippet}\n\n[FALA DO USUÁRIO]: "${resolvedText}"`;
-  }
-
-  return `[FALA DO USUÁRIO]: "${resolvedText}"`;
 }

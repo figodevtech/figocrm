@@ -8,6 +8,8 @@ export interface InstallmentScheduleOptions {
   totalAmountCents: number;
   count: number;
   startDate?: Date | string;
+  /** Primeira data de vencimento explícita (YYYY-MM-DD); as demais seguem mensalmente no mesmo dia. */
+  firstDueDate?: string;
   firstInstallmentAmountCents?: number;
   dueDayOfMonth?: number;
   intervalDays?: number;
@@ -33,8 +35,17 @@ export interface GeneratedInstallmentItem {
   status: 'pending' | 'partially_paid' | 'paid' | 'overdue';
 }
 
+function isoDateUTC(year: number, monthIndex: number, day: number): string {
+  // monthIndex pode passar de 11: Date.UTC normaliza o ano; o dia é limitado ao último dia do mês
+  const lastDay = new Date(Date.UTC(year, monthIndex + 1, 0)).getUTCDate();
+  return new Date(Date.UTC(year, monthIndex, Math.min(day, lastDay))).toISOString().split('T')[0];
+}
+
 /**
- * Calcula a data de vencimento da parcela i (1-indexada).
+ * Calcula a data de vencimento da parcela i (1-indexada), sempre DEPOIS da data do negócio.
+ * - Com dia fixo ("todo dia 15"): primeira ocorrência do dia após a data base; depois mensal.
+ *   Meses curtos usam o último dia (31 → 28/29/30) sem estourar para o mês seguinte.
+ * - Sem dia fixo: regra padrão do negócio — primeira em `intervalDays` (30) dias, depois a cada intervalo.
  */
 export function calculateDueDate(
   baseDate: Date,
@@ -42,21 +53,22 @@ export function calculateDueDate(
   dueDayOfMonth?: number,
   intervalDays: number = 30
 ): string {
-  const date = new Date(baseDate);
+  const y = baseDate.getUTCFullYear();
+  const m = baseDate.getUTCMonth();
+  const d = baseDate.getUTCDate();
 
   if (dueDayOfMonth && dueDayOfMonth >= 1 && dueDayOfMonth <= 31) {
-    // Incrementa os meses conforme a parcela
-    date.setMonth(date.getMonth() + (installmentIndex - 1));
-    // Ajusta para o último dia do mês se o mês tiver menos dias (ex: 31 em fevereiro)
-    const maxDaysInMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate();
-    const effectiveDay = Math.min(dueDayOfMonth, maxDaysInMonth);
-    date.setDate(effectiveDay);
-  } else {
-    // Intervalo fixo em dias
-    date.setDate(date.getDate() + (installmentIndex - 1) * intervalDays);
+    const firstMonthOffset = d < dueDayOfMonth ? 0 : 1;
+    return isoDateUTC(y, m + firstMonthOffset + (installmentIndex - 1), dueDayOfMonth);
   }
 
-  return date.toISOString().split('T')[0];
+  return new Date(Date.UTC(y, m, d + installmentIndex * intervalDays)).toISOString().split('T')[0];
+}
+
+/** Vencimentos a partir de uma primeira data explícita: mesmo dia nos meses seguintes. */
+function dueDateFromFirst(firstDueDate: string, installmentIndex: number): string {
+  const [y, m, d] = firstDueDate.split('-').map(Number);
+  return isoDateUTC(y, m - 1 + (installmentIndex - 1), d);
 }
 
 /**
@@ -74,6 +86,7 @@ export function generateInstallmentScheduleCents(
     intervalDays = 30,
     isPromissory = false,
     manualInstallments,
+    firstDueDate,
   } = options;
 
   if (count <= 0) {
@@ -84,6 +97,8 @@ export function generateInstallmentScheduleCents(
   }
 
   const baseDate = typeof startDate === 'string' ? new Date(startDate) : startDate;
+  const dueDateFor = (i: number) =>
+    firstDueDate ? dueDateFromFirst(firstDueDate, i) : calculateDueDate(baseDate, i, dueDayOfMonth, intervalDays);
 
   // Cenário 1: Parcelas Manuais Fornecidas
   if (manualInstallments && manualInstallments.length > 0) {
@@ -126,7 +141,7 @@ export function generateInstallmentScheduleCents(
     const schedule: GeneratedInstallmentItem[] = [];
 
     // Primeira parcela
-    const firstDueDate = calculateDueDate(baseDate, 1, dueDayOfMonth, intervalDays);
+    const firstInstallmentDueDate = dueDateFor(1);
     schedule.push({
       installmentNumber: 1,
       totalInstallments: count,
@@ -136,7 +151,7 @@ export function generateInstallmentScheduleCents(
       originalValueReais: toReais(firstInstallmentAmountCents),
       paidValueReais: 0,
       balanceReais: toReais(firstInstallmentAmountCents),
-      dueDate: firstDueDate,
+      dueDate: firstInstallmentDueDate,
       isPromissory,
       status: 'pending',
     });
@@ -149,7 +164,7 @@ export function generateInstallmentScheduleCents(
         remainder--;
       }
 
-      const dueDate = calculateDueDate(baseDate, i, dueDayOfMonth, intervalDays);
+      const dueDate = dueDateFor(i);
       schedule.push({
         installmentNumber: i,
         totalInstallments: count,
@@ -181,7 +196,7 @@ export function generateInstallmentScheduleCents(
       remainder--;
     }
 
-    const dueDate = calculateDueDate(baseDate, i, dueDayOfMonth, intervalDays);
+    const dueDate = dueDateFor(i);
     schedule.push({
       installmentNumber: i,
       totalInstallments: count,

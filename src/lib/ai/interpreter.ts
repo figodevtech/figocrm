@@ -1,13 +1,15 @@
 // src/lib/ai/interpreter.ts
-// Interpretador Puro e Canônico de Comandos de Voz — Fases D e H do FigoCRM
-// Função pura reutilizável pelo backend de produção, API routes e pelo benchmark oficial.
-// Garante: zero fallbacks financeiros inventados, detecção estrita de ambiguidades e validação via Zod.
+// Parser determinístico de comandos de voz (regras/regex).
+// NÃO é o interpretador principal de produção: o pipeline usa interpretVoiceCommandWithLLM (interpret.ts).
+// Este parser continua como guardrail e fallback quando o provedor de LLM está indisponível,
+// e é medido separadamente pelo benchmark `test:benchmark:rules`.
+// Função pura (sem banco/rede). Nunca inventa valores: o que não foi dito fica undefined.
 
 import { normalizeSpokenText } from '@/lib/voice/normalizer';
 import { evaluateIntentConfidenceAndAmbiguity } from '@/lib/ai/disambiguation';
 import { ConversationContext, resolvePronounsAndAnaphora } from '@/lib/ai/context_manager';
-import { DealCommand, AmbiguityItem, MissingInformationItem } from '@/types/deal-command';
-import { DealCommandSchema } from '@/lib/ai/schemas/deal-command.schema';
+import { AmbiguityItem, MissingInformationItem, PaymentMethodType } from '@/types/deal-command';
+import type { InstallmentReference } from '@/lib/domain/financial-target-resolver';
 
 export type InterpretedIntent =
   | 'create_sale'
@@ -23,6 +25,20 @@ export type InterpretedIntent =
   | 'clarify_ambiguity'
   | 'unrecognized_command';
 
+export type InterpretationSource = 'llm' | 'rules' | 'rules_fallback' | 'guardrail' | 'resume';
+
+export interface InterpretationMeta {
+  source: InterpretationSource;
+  provider?: 'openai' | 'gemini';
+  model?: string;
+  latencyMs?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  repairAttempted?: boolean;
+  validationErrors?: string[];
+  fallbackReason?: string;
+}
+
 export interface InterpretedVoiceCommand {
   intent: InterpretedIntent;
   counterparty?: {
@@ -32,25 +48,43 @@ export interface InterpretedVoiceCommand {
   item?: string;
   itemOut?: string;
   itemIn?: string;
+  /** Valor negociado do item que sai (venda/troca). */
   totalValue?: number;
+  /** Valor atribuído ao item recebido na troca. */
+  itemInValue?: number;
   cashIn?: number;
   cashOut?: number;
+  paymentMethod?: PaymentMethodType;
   tradeBalance?: number;
   direction?: 'inflow' | 'outflow' | 'even';
   receivable?: number;
+  payable?: number;
   installmentsCount?: number;
   installmentAmount?: number;
   dueDay?: number;
+  /** 0 = próxima ocorrência do dia, 1 = mês que vem... (mudança de vencimento) */
+  dueMonthOffset?: number;
   firstDueDate?: string;
   amount?: number;
   adjustmentAmount?: number;
   adjustmentType?: 'discount' | 'item_offset' | 'debt_offset' | 'service_offset';
+  /** Pagamento: valor explícito, parcela inteira ou saldo total da dívida ("quitou o resto"). */
+  paymentScope?: 'amount' | 'installment_full' | 'debt_full';
+  installmentRef?: InstallmentReference;
+  /** Referência da dívida pela mercadoria ("a dívida da moto"). */
+  debtHint?: string;
   queryType?: string;
   requiresConfirmation: boolean;
   confirmationPrompt?: string;
   missingInformation: MissingInformationItem[];
   ambiguities: AmbiguityItem[];
-  dealCommand?: DealCommand;
+  /** IDs escolhidos pelo usuário em desambiguações anteriores (preenchido pelo orquestrador). */
+  resolvedRefs?: {
+    customerId?: string;
+    itemOutIds?: Record<number, string>;
+    receivableId?: string;
+  };
+  interpretation?: InterpretationMeta;
   rawText: string;
   normalizedText: string;
 }
@@ -123,7 +157,7 @@ export function interpretVoiceCommand(
       normalizedTextWithNumbers.includes('lucro') ||
       normalizedTextWithNumbers.includes('ganhei'))
   ) {
-    const cust = extractEntityName(t) || contextualCustomer;
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
     let queryType = 'quanto_fulano_deve';
     if (normalizedTextWithNumbers.includes('na rua')) queryType = 'quanto_tenho_na_rua';
     else if (normalizedTextWithNumbers.includes('mercadoria') || normalizedTextWithNumbers.includes('estoque')) queryType = 'quanto_tenho_em_mercadoria';
@@ -152,16 +186,21 @@ export function interpretVoiceCommand(
     normalizedTextWithNumbers.includes('prorroga') ||
     normalizedTextWithNumbers.includes('renegocia')
   ) {
-    const cust = extractEntityName(t) || contextualCustomer;
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
     const dayMatch = normalizedTextWithNumbers.match(/dia\s+(\d{1,2})/i);
     const dueDay = dayMatch ? parseInt(dayMatch[1], 10) : undefined;
+    const dueMonthOffset = /(m[eê]s que vem|pr[oó]ximo m[eê]s)/.test(normalizedTextWithNumbers) ? 1 : undefined;
 
     return {
       intent: 'update_due_date',
       counterparty: cust ? { name: cust } : undefined,
       dueDay,
-      requiresConfirmation: false,
-      missingInformation: [],
+      dueMonthOffset,
+      installmentRef: extractInstallmentRef(normalizedTextWithNumbers),
+      requiresConfirmation: !dueDay,
+      missingInformation: dueDay
+        ? []
+        : [{ type: 'installment_due_date', description: 'Nova data não informada', promptQuestion: 'Para qual dia fica o vencimento?' }],
       ambiguities: [],
       rawText: spokenText,
       normalizedText: text,
@@ -178,7 +217,7 @@ export function interpretVoiceCommand(
     normalizedTextWithNumbers.includes('tirar ') ||
     (normalizedTextWithNumbers.includes('deu um') && normalizedTextWithNumbers.includes('pra abater'))
   ) {
-    const cust = extractEntityName(t) || contextualCustomer;
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
     const amount = extractFirstNumber(normalizedTextWithNumbers);
 
     return {
@@ -204,29 +243,35 @@ export function interpretVoiceCommand(
     (normalizedTextWithNumbers.includes('passei') && (normalizedTextWithNumbers.includes('peguei') || normalizedTextWithNumbers.includes('na '))) ||
     (normalizedTextWithNumbers.includes('peguei') && normalizedTextWithNumbers.includes('dei'))
   ) {
-    const cust = extractEntityName(t) || contextualCustomer;
-    const items = extractAllItems(t);
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+    const structured = extractTradeItemsByStructure(t);
+    const items = structured ? [structured.itemOut, structured.itemIn] : extractAllItems(t, cust);
     const itemOut = items[0] || contextualItem;
     const itemIn = items[1];
 
     let direction: 'inflow' | 'outflow' | 'even' = 'even';
-    let tradeBalance = 0;
 
     const isEven = normalizedTextWithNumbers.includes('pau a pau') || normalizedTextWithNumbers.includes('sem volta') || normalizedTextWithNumbers.includes('troca seca');
     const isVoltou = normalizedTextWithNumbers.includes('ele me voltou') || normalizedTextWithNumbers.includes('me voltou') || normalizedTextWithNumbers.includes('recebi') || normalizedTextWithNumbers.includes('mandou');
     const isVoltei = normalizedTextWithNumbers.includes('completei') || normalizedTextWithNumbers.includes('paguei') || normalizedTextWithNumbers.includes('voltei');
 
+    // "por N" em ordem: 1º = valor do item que sai, 2º = valor do item que entra
+    const porValues = [...normalizedTextWithNumbers.matchAll(/por\s+(\d+)\s*(mil)?/gi)].map((m) => scaleShorthand(parseInt(m[1], 10), m[2]));
+    const totalValue = porValues[0];
+    const itemInValue = porValues[1];
     const values = extractSaleNumbers(normalizedTextWithNumbers);
+    const schedule = values.installmentsCount && values.installmentAmount
+      ? { installmentsCount: values.installmentsCount, installmentAmount: values.installmentAmount }
+      : undefined;
 
+    let tradeBalance = 0;
     if (isEven) {
       direction = 'even';
-      tradeBalance = 0;
-    } else if (isVoltou) {
-      direction = 'inflow';
-      tradeBalance = values.cashIn || extractTradeBalanceValue(normalizedTextWithNumbers);
-    } else if (isVoltei) {
-      direction = 'outflow';
-      tradeBalance = values.cashIn || extractTradeBalanceValue(normalizedTextWithNumbers);
+    } else if (isVoltou || isVoltei) {
+      direction = isVoltou ? 'inflow' : 'outflow';
+      tradeBalance = totalValue !== undefined && itemInValue !== undefined
+        ? Math.abs(totalValue - itemInValue)
+        : values.cashIn || extractTradeBalanceValue(normalizedTextWithNumbers);
     } else {
       const anyVal = extractFirstNumber(normalizedTextWithNumbers);
       if (anyVal) {
@@ -235,6 +280,11 @@ export function interpretVoiceCommand(
       }
     }
 
+    // Dinheiro no ato: explícito na fala; sem parcelas, a volta inteira foi paga no ato
+    const explicitCash = values.cashIn;
+    const cashNow = explicitCash ?? (schedule ? undefined : tradeBalance || undefined);
+    const receivable = direction === 'inflow' && schedule ? schedule.installmentsCount * schedule.installmentAmount : undefined;
+
     return {
       intent: 'create_trade',
       counterparty: cust ? { name: cust } : undefined,
@@ -242,12 +292,14 @@ export function interpretVoiceCommand(
       itemIn: itemIn,
       direction,
       tradeBalance,
-      totalValue: values.totalValue,
-      cashIn: direction === 'inflow' ? tradeBalance : undefined,
-      cashOut: direction === 'outflow' ? tradeBalance : undefined,
-      receivable: values.receivable,
-      installmentsCount: values.installmentsCount,
-      installmentAmount: values.installmentAmount,
+      totalValue,
+      itemInValue,
+      cashIn: direction === 'inflow' ? cashNow : undefined,
+      cashOut: direction === 'outflow' ? cashNow : undefined,
+      paymentMethod: extractPaymentMethod(normalizedTextWithNumbers),
+      receivable,
+      installmentsCount: schedule?.installmentsCount,
+      installmentAmount: schedule?.installmentAmount,
       dueDay: values.dueDay,
       requiresConfirmation: false,
       missingInformation: [],
@@ -264,8 +316,8 @@ export function interpretVoiceCommand(
     normalizedTextWithNumbers.includes('fechei') ||
     (normalizedTextWithNumbers.includes('passei') && !normalizedTextWithNumbers.includes('peguei'))
   ) {
-    const cust = extractEntityName(t) || contextualCustomer;
-    const item = extractItemReference(t) || contextualItem;
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+    const item = extractItemReference(t, cust) || contextualItem;
     const values = extractSaleNumbers(normalizedTextWithNumbers);
 
     const isParcelada =
@@ -299,50 +351,21 @@ export function interpretVoiceCommand(
     }
 
     const requiresConfirmation = missingInformation.length > 0;
-
-    let dealCmd: DealCommand | undefined = undefined;
-    if (item && totalValue) {
-      dealCmd = {
-        intent: 'create_deal',
-        counterparty: cust ? { name: cust } : undefined,
-        itemsOut: [{ reference: item, negotiatedValue: totalValue, direction: 'OUT' }],
-        itemsIn: [],
-        cashIn: cashIn ? [{ amount: cashIn, method: normalizedTextWithNumbers.includes('pix') ? 'pix' : 'cash', direction: 'IN' }] : [],
-        cashOut: [],
-        receivables: receivable
-          ? [
-              {
-                totalAmount: receivable,
-                installments: installmentsCount
-                  ? {
-                      count: installmentsCount,
-                      installmentAmount: installmentAmount || Math.round(receivable / installmentsCount),
-                      dueDayOfMonth: dueDay,
-                    }
-                  : undefined,
-              },
-            ]
-          : [],
-        payables: [],
-        adjustments: [],
-        missingInformation,
-        ambiguities: [],
-      };
-
-      DealCommandSchema.safeParse(dealCmd);
-    }
+    const paymentMethod = extractPaymentMethod(normalizedTextWithNumbers);
+    // Venda sem parcelamento só tem entrada no ato se a forma de pagamento foi dita
+    const cashNow = cashIn !== undefined ? cashIn : !isParcelada && paymentMethod ? totalValue : undefined;
 
     return {
       intent: 'create_sale',
       counterparty: cust ? { name: cust } : undefined,
       item,
       totalValue,
-      cashIn: cashIn !== undefined ? cashIn : (isParcelada ? undefined : totalValue),
+      cashIn: cashNow,
+      paymentMethod,
       receivable,
       installmentsCount,
       installmentAmount,
       dueDay,
-      dealCommand: dealCmd,
       requiresConfirmation,
       confirmationPrompt: missingInformation[0]?.promptQuestion,
       missingInformation,
@@ -369,15 +392,27 @@ export function interpretVoiceCommand(
       normalizedTextWithNumbers.includes('da parcela de') ||
       normalizedTextWithNumbers.includes('parcial');
 
-    const cust = extractEntityName(t) || contextualCustomer;
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
     const amount = extractPaymentAmount(normalizedTextWithNumbers);
+    const installmentRef = extractInstallmentRef(normalizedTextWithNumbers);
+    const settlesDebt = /\b(quitou|quitar|acertou tudo|pagou tudo|o resto|tudo que devia)\b/.test(normalizedTextWithNumbers);
+    const paymentScope: InterpretedVoiceCommand['paymentScope'] = amount
+      ? 'amount'
+      : settlesDebt && !installmentRef
+        ? 'debt_full'
+        : /\bparcela\b/.test(normalizedTextWithNumbers) || installmentRef
+          ? 'installment_full'
+          : undefined;
 
     return {
       intent: isPartial ? 'register_partial_payment' : 'register_payment',
       counterparty: cust ? { name: cust } : undefined,
       amount: amount || undefined,
-      requiresConfirmation: false,
-      missingInformation: !amount
+      paymentScope,
+      installmentRef,
+      paymentMethod: extractPaymentMethod(normalizedTextWithNumbers),
+      requiresConfirmation: !paymentScope,
+      missingInformation: !paymentScope
         ? [{ type: 'payment_breakdown', description: 'Valor recebido não informado', promptQuestion: 'Qual foi o valor recebido?' }]
         : [],
       ambiguities: [],
@@ -401,6 +436,28 @@ export function interpretVoiceCommand(
 // -------------------------------------------------------------
 // Funções Auxiliares Determinísticas de Extração de Entidades
 // -------------------------------------------------------------
+
+function scaleShorthand(value: number, milSuffix?: string): number {
+  // Convenção do setor: "por 26" (sem unidade) em negócio de veículo = 26 mil
+  return milSuffix?.toLowerCase() === 'mil' || value < 100 ? value * 1000 : value;
+}
+
+function extractPaymentMethod(text: string): PaymentMethodType | undefined {
+  if (/\bpix\b/.test(text)) return 'pix';
+  if (/transfer[eê]ncia|\bted\b|\bdoc\b/.test(text)) return 'bank_transfer';
+  if (/cart[aã]o/.test(text)) return 'card';
+  if (/dinheiro|esp[eé]cie|[aà] vista/.test(text)) return 'cash';
+  return undefined;
+}
+
+function extractInstallmentRef(text: string): InstallmentReference | undefined {
+  if (/\b(primeira|1a)\b/.test(text)) return 'first';
+  if (/[uú]ltima\b/.test(text)) return 'last';
+  if (/\b(atrasada|vencida)\b/.test(text)) return 'overdue';
+  if (/\bpr[oó]xima\b/.test(text)) return 'next';
+  const n = text.match(/parcela\s+(\d{1,2})\b/);
+  return n ? parseInt(n[1], 10) : undefined;
+}
 
 function normalizeWordNumbers(text: string): string {
   let res = text;
@@ -428,30 +485,75 @@ function normalizeWordNumbers(text: string): string {
   return res;
 }
 
+// Palavras que aparecem depois de "de/do/pra/pro" e nunca são nome de cliente
+const NOT_A_NAME = new Set([
+  'mil', 'um', 'uma', 'dois', 'duas', 'tres', 'três', 'quatro', 'cinco', 'seis', 'sete', 'oito', 'nove', 'dez',
+  'meu', 'minha', 'dele', 'dela', 'ele', 'ela', 'que', 'dia', 'pix', 'conta', 'dívida', 'divida', 'parcela',
+  'parcelas', 'volta', 'entrada', 'resto', 'total', 'dinheiro', 'cartão', 'cartao', 'vez', 'vezes', 'mês', 'mes',
+  'hoje', 'amanhã', 'amanha', 'estoque', 'abater', 'pagar', 'quitar', 'receber', 'acertar', 'depois', 'novo', 'nova',
+  'moto', 'carro', 'celular', 'aparelho', 'lucro', 'rua', 'mercadoria', 'manutenção', 'manutencao', 'desconto',
+]);
+
+const COMMON_NAMES = ['carlos', 'joão', 'joao', 'marcos', 'lucas', 'felipe', 'pedro', 'gabriel', 'rafael', 'bruno', 'rodrigo', 'diego', 'matheus'];
+
 function extractEntityName(text: string): string | undefined {
+  const t = text.toLowerCase();
+  const cap = (w: string) => w.charAt(0).toUpperCase() + w.slice(1);
+
+  for (const name of COMMON_NAMES) {
+    if (new RegExp(String.raw`(^|[^\p{L}])${name}([^\p{L}]|$)`, 'u').test(t)) return cap(name);
+  }
+
   const prefixes = ['pro ', 'para o ', 'pra ', 'com o ', 'do ', 'ao ', 'de '];
   for (const p of prefixes) {
-    const idx = text.indexOf(p);
-    if (idx !== -1) {
-      const remainder = text.slice(idx + p.length).trim();
-      const firstWord = remainder.split(/[ ,.!?]/)[0];
-      if (firstWord && firstWord.length > 2 && !['meu', 'minha', 'dia', 'pix', 'conta'].includes(firstWord.toLowerCase())) {
-        return firstWord.charAt(0).toUpperCase() + firstWord.slice(1);
-      }
+    let idx = t.indexOf(p);
+    while (idx !== -1) {
+      const word = t.slice(idx + p.length).trim().split(/[ ,.!?]/)[0];
+      const startsWord = idx === 0 || /[^\p{L}]/u.test(t[idx - 1]);
+      if (startsWord && word.length > 2 && /^\p{L}+$/u.test(word) && !NOT_A_NAME.has(word)) return cap(word);
+      idx = t.indexOf(p, idx + 1);
     }
   }
-
-  const commonNames = ['carlos', 'joão', 'joao', 'marcos', 'lucas', 'felipe', 'pedro', 'gabriel', 'rafael', 'bruno', 'rodrigo', 'diego', 'matheus'];
-  for (const name of commonNames) {
-    if (text.toLowerCase().includes(name)) {
-      return name.charAt(0).toUpperCase() + name.slice(1);
-    }
-  }
-
   return undefined;
 }
 
-function extractItemReference(text: string): string | undefined {
+const formatItem = (raw: string) =>
+  raw
+    .trim()
+    .split(/\s+/)
+    .map((w) => (w === 'xre' ? 'XRE' : w.length > 2 ? w.charAt(0).toUpperCase() + w.slice(1) : w.toUpperCase()))
+    .join(' ');
+
+/**
+ * Itens de uma troca pela estrutura da frase:
+ *   "troquei/passei meu A no/na B do X"      → saída A, entrada B
+ *   "peguei o/a B do X, dei meu/minha A"     → saída A, entrada B
+ */
+function extractTradeItemsByStructure(text: string): { itemOut: string; itemIn: string } | undefined {
+  const piece = '([^,.;]{2,40}?)';
+  const direct = text.match(new RegExp(String.raw`(?:troquei|passei)\s+(?:o\s+|a\s+)?(?:meu|minha)?\s*${piece}\s+(?:no|na|pelo|pela)\s+(?:o\s+|a\s+)?${piece}\s+(?:do|da|de)\s+\p{L}+`, 'u'));
+  if (direct) return { itemOut: formatItem(direct[1]), itemIn: formatItem(direct[2]) };
+  const reverse = text.match(new RegExp(String.raw`peguei\s+(?:o|a)\s+${piece}\s+(?:do|da|de)\s+\p{L}+[^.]*?\bdei\s+(?:o\s+|a\s+)?(?:meu|minha)?\s*${piece}(?:\s+e\s|[,.;]|$)`, 'u'));
+  if (reverse) return { itemOut: formatItem(reverse[2]), itemIn: formatItem(reverse[1]) };
+  return undefined;
+}
+
+/** Completa o primeiro nome com sobrenome falado com inicial maiúscula ("João Pereira"). */
+function withSurname(firstName: string | undefined, originalText: string): string | undefined {
+  if (!firstName) return undefined;
+  const idx = originalText.toLowerCase().indexOf(firstName.toLowerCase());
+  if (idx < 0) return firstName;
+  const match = originalText.slice(idx + firstName.length).match(/^\s+(\p{Lu}\p{Ll}{2,})/u);
+  return match ? `${firstName} ${match[1]}` : firstName;
+}
+
+/** "iPhone 13 pro Carlos": o "pro" é preposição, não o modelo Pro. */
+function isPrepositionPro(item: string, text: string, customer?: string): boolean {
+  if (!item.endsWith(' pro') || !customer) return false;
+  return text.includes(`pro ${customer.split(' ')[0].toLowerCase()}`);
+}
+
+function extractItemReference(text: string, customer?: string): string | undefined {
   const items = [
     'iphone 14 pro max', 'iphone 14', 'iphone 13 pro', 'iphone 13', 'iphone 12', 'iphone 11',
     's23 ultra', 's23', 's22',
@@ -462,7 +564,7 @@ function extractItemReference(text: string): string | undefined {
 
   const t = text.toLowerCase();
   for (const it of items) {
-    if (t.includes(it)) {
+    if (t.includes(it) && !isPrepositionPro(it, t, customer)) {
       let formatted = it.split(' ').map((w) => (w.length > 2 ? w.charAt(0).toUpperCase() + w.slice(1) : w.toUpperCase())).join(' ');
       if (it === 'xre' || it === 'xre 300') {
         formatted = formatted.replace(/xre/i, 'XRE');
@@ -473,7 +575,7 @@ function extractItemReference(text: string): string | undefined {
   return undefined;
 }
 
-function extractAllItems(text: string): string[] {
+function extractAllItems(text: string, customer?: string): string[] {
   const found: Array<{ item: string; index: number }> = [];
   const items = [
     'iphone 14 pro max', 'iphone 14', 'iphone 13 pro', 'iphone 13', 'iphone 12', 'iphone 11',
@@ -485,7 +587,7 @@ function extractAllItems(text: string): string[] {
   const t = text.toLowerCase();
   for (const it of items) {
     const idx = t.indexOf(it);
-    if (idx !== -1) {
+    if (idx !== -1 && !isPrepositionPro(it, t, customer)) {
       if (!found.some((existing) => existing.item.toLowerCase().includes(it))) {
         let formatted = it.split(' ').map((w) => (w.length > 2 ? w.charAt(0).toUpperCase() + w.slice(1) : w.toUpperCase())).join(' ');
         if (it === 'xre' || it === 'xre 300') {

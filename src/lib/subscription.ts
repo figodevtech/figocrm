@@ -1,6 +1,7 @@
 // src/lib/subscription.ts
 // Lógica de Trial de 7 Dias e Assinatura de R$ 24,90/mês (Fase 6)
 
+import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { SubscriptionStatus } from '@/types/domain';
 
@@ -19,8 +20,8 @@ export const TRIAL_DURATION_DAYS = 7;
 /**
  * Verifica o status da assinatura do usuário no Supabase e se ele possui permissão de escrita.
  */
-export async function getSubscriptionInfo(userId?: string): Promise<SubscriptionInfo> {
-  const supabase = await createClient();
+export async function getSubscriptionInfo(userId?: string, client?: SupabaseClient): Promise<SubscriptionInfo> {
+  const supabase = client ?? (await createClient());
 
   let targetUserId = userId;
   if (!targetUserId) {
@@ -84,8 +85,8 @@ export async function getSubscriptionInfo(userId?: string): Promise<Subscription
  * Garante que uma ação de escrita só seja executada se a assinatura/trial for válida.
  * Lança erro ou bloqueia caso o trial tenha expirado.
  */
-export async function assertWritePermission(userId?: string): Promise<void> {
-  const info = await getSubscriptionInfo(userId);
+export async function assertWritePermission(userId?: string, client?: SupabaseClient): Promise<void> {
+  const info = await getSubscriptionInfo(userId, client);
   if (!info.canPerformWriteOperations) {
     throw new Error('Seu período de teste de 7 dias encerrou. Assine o plano de R$ 24,90/mês para continuar registrando novos negócios.');
   }
