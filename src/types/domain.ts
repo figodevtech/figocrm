@@ -5,7 +5,7 @@ export type UUID = string;
 
 // --- 1. Usuário e Assinatura ---
 export type SubscriptionStatus =
-  | 'trial'
+  | 'trialing'
   | 'active'
   | 'past_due'
   | 'canceled'

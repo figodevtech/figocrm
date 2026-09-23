@@ -1,93 +1,145 @@
 // src/lib/subscription.ts
-// Lógica de Trial de 7 Dias e Assinatura de R$ 24,90/mês (Fase 6)
+// Acesso por assinatura — 1 plano (R$ 24,90/mês), 7 dias grátis.
+// A regra vive em uma única função SQL (public.subscription_access) e é aplicada também no banco por
+// trigger em todas as tabelas de negócio. Aqui só a consultamos para mensagens e bloqueio antecipado.
+//
+// FAIL-CLOSED: assinatura ausente, perfil ausente, erro do Supabase ou resposta inesperada ⇒ escrita negada.
+// Leitura nunca depende de cobrança (dados do usuário são sempre acessíveis, nunca apagados).
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
-import { SubscriptionStatus } from '@/types/domain';
 
-export interface SubscriptionInfo {
-  status: SubscriptionStatus;
-  isTrial: boolean;
-  daysRemaining: number;
-  canPerformWriteOperations: boolean;
-  trialEndsAt: string;
+export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired' | 'blocked';
+
+export type AccessReason =
+  | 'trial'
+  | 'active'
+  | 'renewal_pending'
+  | 'past_due_grace'
+  | 'canceled_until_period_end'
+  | 'trial_expired'
+  | 'renewal_overdue'
+  | 'past_due'
+  | 'canceled'
+  | 'expired'
+  | 'blocked'
+  | 'subscription_missing'
+  | 'unauthenticated'
+  | 'billing_unavailable';
+
+export interface SubscriptionAccess {
+  status: SubscriptionStatus | 'missing' | 'unknown';
+  effectiveStatus: SubscriptionStatus | 'missing' | 'unknown';
+  canRead: boolean;
+  canWrite: boolean;
+  reason: AccessReason;
+  trialEndsAt?: string;
+  currentPeriodEnd?: string;
+  graceUntil?: string;
+  cancelAtPeriodEnd: boolean;
+  /** Dias restantes do trial (0 fora do trial). */
+  trialDaysRemaining: number;
   monthlyFee: string;
 }
 
 export const MONTHLY_SUBSCRIPTION_FEE = 'R$ 24,90/mês';
 export const TRIAL_DURATION_DAYS = 7;
 
-/**
- * Verifica o status da assinatura do usuário no Supabase e se ele possui permissão de escrita.
- */
-export async function getSubscriptionInfo(userId?: string, client?: SupabaseClient): Promise<SubscriptionInfo> {
-  const supabase = client ?? (await createClient());
+const WRITE_DENIED_MESSAGES: Partial<Record<AccessReason, string>> = {
+  trial_expired: 'Seu teste grátis de 7 dias acabou. Assine por R$ 24,90/mês para continuar registrando. Seus dados continuam aqui.',
+  renewal_overdue: 'Sua assinatura não foi renovada. Regularize para continuar registrando. Seus dados continuam aqui.',
+  past_due: 'O pagamento da assinatura está pendente. Regularize para continuar registrando. Seus dados continuam aqui.',
+  canceled: 'Sua assinatura foi cancelada. Reative para continuar registrando. Seus dados continuam aqui.',
+  expired: 'Sua assinatura expirou. Assine para continuar registrando. Seus dados continuam aqui.',
+  blocked: 'Sua conta está bloqueada para novos registros. Fale com o suporte.',
+  subscription_missing: 'Não encontramos sua assinatura. Fale com o suporte para liberar novos registros.',
+  unauthenticated: 'Você precisa estar logado.',
+  billing_unavailable: 'Não consegui confirmar sua assinatura agora. Tente de novo em instantes.',
+};
 
-  let targetUserId = userId;
-  if (!targetUserId) {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      return {
-        status: 'expired',
-        isTrial: false,
-        daysRemaining: 0,
-        canPerformWriteOperations: false,
-        trialEndsAt: new Date().toISOString(),
-        monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
-      };
-    }
-    targetUserId = user.id;
+export class SubscriptionWriteDeniedError extends Error {
+  constructor(public readonly reason: AccessReason) {
+    super(WRITE_DENIED_MESSAGES[reason] ?? 'Novos registros estão bloqueados para esta conta.');
+    this.name = 'SubscriptionWriteDeniedError';
   }
+}
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_status, trial_ends_at')
-    .eq('id', targetUserId)
-    .single();
-
-  if (!profile) {
-    return {
-      status: 'trial',
-      isTrial: true,
-      daysRemaining: TRIAL_DURATION_DAYS,
-      canPerformWriteOperations: true,
-      trialEndsAt: new Date(Date.now() + TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000).toISOString(),
-      monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
-    };
-  }
-
-  const now = new Date();
-  const trialEnds = new Date(profile.trial_ends_at);
-  const diffTime = trialEnds.getTime() - now.getTime();
-  const daysRemaining = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
-
-  let effectiveStatus: SubscriptionStatus = profile.subscription_status as SubscriptionStatus;
-
-  // Se o trial expirou e não houve assinatura, muda status operacional para expired
-  if (effectiveStatus === 'trial' && diffTime <= 0) {
-    effectiveStatus = 'expired';
-  }
-
-  // Usuário só pode criar ou alterar dados se for assinante ativo ou estiver no período de trial válido
-  const canPerformWriteOperations = effectiveStatus === 'active' || (effectiveStatus === 'trial' && diffTime > 0);
-
+function denied(reason: AccessReason): SubscriptionAccess {
   return {
-    status: effectiveStatus,
-    isTrial: effectiveStatus === 'trial',
-    daysRemaining,
-    canPerformWriteOperations,
-    trialEndsAt: profile.trial_ends_at,
+    status: 'unknown',
+    effectiveStatus: 'unknown',
+    canRead: reason !== 'unauthenticated',
+    canWrite: false,
+    reason,
+    cancelAtPeriodEnd: false,
+    trialDaysRemaining: 0,
     monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
   };
 }
 
-/**
- * Garante que uma ação de escrita só seja executada se a assinatura/trial for válida.
- * Lança erro ou bloqueia caso o trial tenha expirado.
- */
-export async function assertWritePermission(userId?: string, client?: SupabaseClient): Promise<void> {
-  const info = await getSubscriptionInfo(userId, client);
-  if (!info.canPerformWriteOperations) {
-    throw new Error('Seu período de teste de 7 dias encerrou. Assine o plano de R$ 24,90/mês para continuar registrando novos negócios.');
+type AccessRow = {
+  status: string;
+  effective_status: string;
+  can_write: boolean;
+  reason: string;
+  trial_ends_at: string | null;
+  current_period_end: string | null;
+  grace_until: string | null;
+  cancel_at_period_end: boolean | null;
+};
+
+/** Interpreta a linha da função SQL; qualquer formato inesperado nega a escrita. */
+export function parseAccessRow(data: unknown): SubscriptionAccess {
+  const row = (Array.isArray(data) ? data[0] : data) as AccessRow | undefined;
+  if (!row || typeof row.can_write !== 'boolean' || typeof row.reason !== 'string') {
+    return denied('billing_unavailable');
   }
+
+  const trialEnds = row.trial_ends_at ? new Date(row.trial_ends_at).getTime() : 0;
+  const trialDaysRemaining =
+    row.effective_status === 'trialing' ? Math.max(0, Math.ceil((trialEnds - Date.now()) / 86_400_000)) : 0;
+
+  return {
+    status: row.status as SubscriptionAccess['status'],
+    effectiveStatus: row.effective_status as SubscriptionAccess['effectiveStatus'],
+    canRead: row.reason !== 'unauthenticated',
+    canWrite: row.can_write === true,
+    reason: row.reason as AccessReason,
+    trialEndsAt: row.trial_ends_at ?? undefined,
+    currentPeriodEnd: row.current_period_end ?? undefined,
+    graceUntil: row.grace_until ?? undefined,
+    cancelAtPeriodEnd: row.cancel_at_period_end === true,
+    trialDaysRemaining,
+    monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
+  };
+}
+
+/** Consulta o acesso do usuário da sessão do client (auth.uid()). */
+export async function getSubscriptionAccess(client?: SupabaseClient): Promise<SubscriptionAccess> {
+  try {
+    const supabase = client ?? ((await createClient()) as unknown as SupabaseClient);
+    const { data, error } = await supabase.rpc('subscription_access');
+    if (error) {
+      console.error('[subscription] falha ao consultar acesso:', error.message);
+      return denied('billing_unavailable');
+    }
+    return parseAccessRow(data);
+  } catch (err) {
+    console.error('[subscription] erro inesperado:', err);
+    return denied('billing_unavailable');
+  }
+}
+
+/**
+ * Garante permissão de escrita. Lança SubscriptionWriteDeniedError em qualquer caso não liberado.
+ * O userId é mantido por compatibilidade; o acesso é sempre o do usuário autenticado no client.
+ */
+export async function assertWritePermission(_userId?: string, client?: SupabaseClient): Promise<SubscriptionAccess> {
+  const access = await getSubscriptionAccess(client);
+  if (!access.canWrite) throw new SubscriptionWriteDeniedError(access.reason);
+  return access;
+}
+
+export function writeDeniedMessage(reason: AccessReason): string {
+  return new SubscriptionWriteDeniedError(reason).message;
 }
