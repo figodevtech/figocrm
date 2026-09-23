@@ -154,6 +154,56 @@ test('pagamento acima do saldo é rejeitado sem efeito colateral', async () => {
   assert.strictEqual(count, 0, 'nenhum pagamento parcial pode ficar gravado');
 });
 
+test('A não estorna operação do B, não renegocia dívida do B e não apaga pagamentos (histórico só-inclusão)', async () => {
+  const itemB3 = await seedItem(userB, 'Som do B', 300);
+  const { data } = await userB.client.rpc('execute_deal_transaction', {
+    p_payload: {
+      ...dealPayload(customerB, [itemB3], 2000),
+      cash_movements: [],
+      receivables: [{
+        total_amount: 2000,
+        installments: [
+          { installment_number: 1, total_installments: 2, original_value: 1000, due_date: '2026-11-15' },
+          { installment_number: 2, total_installments: 2, original_value: 1000, due_date: '2026-12-15' },
+        ],
+      }],
+    },
+  });
+  const receivableId = (data as { receivable_ids: string[] }).receivable_ids[0];
+  const pay = await userB.client.rpc('apply_obligation_settlement', {
+    p_payload: { receivable_id: receivableId, kind: 'payment', amount: 300, payment_method: 'pix' },
+  });
+  assert.ifError(pay.error);
+  const settlementId = (pay.data as { settlement_id: string }).settlement_id;
+
+  const reverse = await userA.client.rpc('reverse_settlement', { p_payload: { settlement_id: settlementId } });
+  assert.ok(reverse.error, 'estorno cross-user deveria falhar');
+
+  const reneg = await userA.client.rpc('renegotiate_installments', { p_payload: { receivable_id: receivableId, new_count: 4 } });
+  assert.ok(reneg.error, 'renegociação cross-user deveria falhar');
+
+  const del = await userB.client.from('payments').delete().eq('user_id', userB.id).select();
+  assert.ok(del.error || (del.data ?? []).length === 0, 'nem o dono apaga pagamento');
+  const upd = await userB.client.from('cash_movements').update({ amount: 1 }).eq('user_id', userB.id).select();
+  assert.ok(upd.error || (upd.data ?? []).length === 0, 'nem o dono altera movimento de caixa');
+
+  const { data: rec } = await userB.client.from('receivables').select('balance').eq('id', receivableId).single();
+  assert.strictEqual(Number(rec!.balance), 1700, 'saldo do B intacto');
+});
+
+test('anon não executa as RPCs de estorno, renegociação e assinatura', async () => {
+  const anon = anonClient();
+  for (const [fn, args] of [
+    ['reverse_settlement', { p_payload: {} }],
+    ['renegotiate_installments', { p_payload: {} }],
+    ['subscription_access', {}],
+  ] as const) {
+    const { error } = await anon.rpc(fn, args);
+    assert.ok(error, `${fn}: anon deveria receber erro`);
+    assert.strictEqual(error.code, '42501', `${fn}: esperado 42501, recebido ${error.code}`);
+  }
+});
+
 test('RLS: A não enxerga clientes do B por consulta direta', async () => {
   const { data } = await userA.client.from('customers').select('id').eq('id', customerB);
   assert.deepStrictEqual(data, []);

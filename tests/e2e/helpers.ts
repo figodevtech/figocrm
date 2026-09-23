@@ -69,7 +69,9 @@ const CLEANUP_ORDER = [
   'payments',
   'adjustments',
   'cash_movements',
+  'settlements',
   'installments',
+  'renegotiations',
   'receivables',
   'payables',
   'conversation_context',
@@ -134,6 +136,17 @@ export async function run(title: string): Promise<void> {
   }
   console.log(`\n${tests.length - failed}/${tests.length} testes passaram.`);
   if (failed > 0) process.exit(1);
+}
+
+/** SQL direto como postgres (sem RLS, sem trigger de assinatura) — só para preparar cenários. */
+export async function sql<T = Record<string, unknown>>(query: string, params: unknown[] = []): Promise<T[]> {
+  const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+  await db.connect();
+  try {
+    return (await db.query(query, params)).rows as T[];
+  } finally {
+    await db.end();
+  }
 }
 
 export async function seedCustomer(user: TestUser, name: string): Promise<string> {
