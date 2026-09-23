@@ -47,8 +47,13 @@ export async function undoLastAction(): Promise<{ success: boolean; message: str
       }
 
       case 'REGISTER_PAYMENT': {
-        // Estorna o pagamento: remove o pagamento e devolve o saldo da parcela
-        if (lastLog.payload_after?.payment?.installment_id) {
+        // Liquidações da RPC apply_obligation_settlement (payload com allocations) ainda não têm
+        // estorno automático: nunca responder "desfeito" sem ter desfeito nada.
+        if (!lastLog.payload_after?.payment?.installment_id) {
+          return { success: false, message: 'Estorno de recebimento ainda precisa ser feito manualmente.' };
+        }
+        // Estorna o pagamento legado: remove o pagamento e devolve o saldo da parcela
+        {
           const instId = lastLog.payload_after.payment.installment_id;
           const instBefore = lastLog.payload_after.installmentBefore;
 
