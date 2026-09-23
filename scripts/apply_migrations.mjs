@@ -77,8 +77,7 @@ async function runMigrations() {
       const filePath = path.join(migrationsDir, file);
       const sql = fs.readFileSync(filePath, 'utf-8');
 
-      // Se for uma migration de hardening (0004 ou 0005) ou se ainda não foi registrada
-      if (!isAlreadyApplied || version === '20260923000004' || version === '20260923000005') {
+      if (!isAlreadyApplied) {
         console.log(`  -> Aplicando ${file}...`);
         const startTime = Date.now();
 
