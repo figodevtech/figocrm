@@ -18,7 +18,9 @@
     "test:security": "npx tsx tests/e2e/rpc-security.e2e.ts",
     "db:migrate": "node scripts/apply_migrations.mjs",
     "db:audit": "node scripts/security_audit.mjs --strict",
-    "test:smoke": "npx tsx tests/e2e/http-smoke.e2e.ts"
+    "test:smoke": "npx tsx tests/e2e/http-smoke.e2e.ts",
+    "report:ai-usage": "node scripts/ai_usage_report.mjs",
+    "benchmark:generate-realworld": "node scripts/generate_realworld_cases.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
