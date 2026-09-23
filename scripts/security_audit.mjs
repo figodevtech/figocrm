@@ -1,7 +1,8 @@
 // scripts/security_audit.mjs
-// Auditoria de segurança do schema public — equivalente local das lints do Supabase Security Advisor
-// (splinter): 0011 function_search_path_mutable, 0013 rls_disabled_in_public,
-// 0008 rls_enabled_no_policy, 0028/0029 security definer executável por anon/authenticated.
+// Auditoria do schema public — equivalente local das lints dos advisors do Supabase (splinter).
+// Segurança: 0011 function_search_path_mutable, 0013 rls_disabled_in_public, 0008 rls_enabled_no_policy,
+// 0028/0029 security definer executável por anon/authenticated.
+// Performance: 0003 auth_rls_initplan, 0001 unindexed_foreign_keys.
 // Também lista os grants reais de EXECUTE por role.
 //
 // Uso: node scripts/security_audit.mjs [--json=caminho] [--strict]
@@ -60,6 +61,21 @@ const tables = (
   `)
 ).rows;
 
+const policies = (
+  await client.query(`SELECT tablename, policyname, COALESCE(qual, '') || ' ' || COALESCE(with_check, '') AS expr
+                      FROM pg_policies WHERE schemaname = 'public'`)
+).rows;
+
+const unindexedFks = (
+  await client.query(`
+    SELECT c.conrelid::regclass::text AS tbl, a.attname AS col
+    FROM pg_constraint c
+    JOIN pg_attribute a ON a.attrelid = c.conrelid AND a.attnum = c.conkey[1]
+    WHERE c.contype = 'f' AND c.connamespace = 'public'::regnamespace
+      AND NOT EXISTS (SELECT 1 FROM pg_index i WHERE i.indrelid = c.conrelid AND i.indkey[0] = c.conkey[1])
+  `)
+).rows;
+
 await client.end();
 
 const findings = [];
@@ -78,6 +94,12 @@ for (const f of functions) {
     findings.push({ level: 'INFO', lint: 'anon_function_executable', object: sig });
   }
 }
+for (const p of policies) {
+  // auth.<fn>() fora de um SELECT é reavaliado por linha
+  const bare = p.expr.replace(/\(\s*SELECT\s+auth\.\w+\(\)(\s+AS\s+\w+)?\s*\)/gi, '');
+  if (/auth\.\w+\(\)/.test(bare)) findings.push({ level: 'WARN', lint: 'auth_rls_initplan', object: `${p.tablename}.${p.policyname}` });
+}
+for (const f of unindexedFks) findings.push({ level: 'INFO', lint: 'unindexed_foreign_keys', object: `${f.tbl}.${f.col}` });
 for (const t of tables) {
   if (!t.rls) findings.push({ level: 'ERROR', lint: 'rls_disabled_in_public', object: t.name });
   else if (t.policies === 0) findings.push({ level: 'INFO', lint: 'rls_enabled_no_policy', object: t.name });

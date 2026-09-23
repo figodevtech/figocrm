@@ -1,0 +1,243 @@
+{
+  "functions": [
+    {
+      "name": "apply_obligation_settlement",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "consume_voice_rate_limit",
+      "args": "p_bucket text, p_limit_per_minute integer, p_limit_per_hour integer",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "execute_deal_transaction",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "get_dashboard_indicators",
+      "args": "p_user_id uuid",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_adjustment_applied",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_payment_received",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_totals_changed",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_new_user",
+      "args": "",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_updated_at",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "record_ai_telemetry",
+      "args": "p_payload jsonb",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "reschedule_installment",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "telemetry_clamp",
+      "args": "p_value numeric, p_max numeric",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "update_overdue_installments",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    }
+  ],
+  "tables": [
+    {
+      "name": "adjustments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "ai_interactions",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "ai_telemetry",
+      "rls": true,
+      "policies": 0
+    },
+    {
+      "name": "audit_log",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "cash_movements",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "conversation_context",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "customers",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deal_items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deals",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "installments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "item_costs",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payables",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "profiles",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "receivables",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "voice_rate_limits",
+      "rls": true,
+      "policies": 0
+    }
+  ],
+  "findings": [
+    {
+      "level": "WARN",
+      "lint": "authenticated_security_definer_function_executable",
+      "object": "consume_voice_rate_limit(p_bucket text, p_limit_per_minute integer, p_limit_per_hour integer)"
+    },
+    {
+      "level": "WARN",
+      "lint": "authenticated_security_definer_function_executable",
+      "object": "record_ai_telemetry(p_payload jsonb)"
+    },
+    {
+      "level": "INFO",
+      "lint": "rls_enabled_no_policy",
+      "object": "ai_telemetry"
+    },
+    {
+      "level": "INFO",
+      "lint": "rls_enabled_no_policy",
+      "object": "voice_rate_limits"
+    }
+  ]
+}

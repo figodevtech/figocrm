@@ -1,0 +1,578 @@
+{
+  "functions": [
+    {
+      "name": "apply_obligation_settlement",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "consume_voice_rate_limit",
+      "args": "p_bucket text, p_limit_per_minute integer, p_limit_per_hour integer",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "execute_deal_transaction",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "get_dashboard_indicators",
+      "args": "p_user_id uuid",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_adjustment_applied",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_payment_received",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_totals_changed",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_new_user",
+      "args": "",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_updated_at",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "record_ai_telemetry",
+      "args": "p_payload jsonb",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "reschedule_installment",
+      "args": "p_payload jsonb",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "telemetry_clamp",
+      "args": "p_value numeric, p_max numeric",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "update_overdue_installments",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    }
+  ],
+  "tables": [
+    {
+      "name": "adjustments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "ai_interactions",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "ai_telemetry",
+      "rls": true,
+      "policies": 0
+    },
+    {
+      "name": "audit_log",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "cash_movements",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "conversation_context",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "customers",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deal_items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deals",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "installments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "item_costs",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payables",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "profiles",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "receivables",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "voice_rate_limits",
+      "rls": true,
+      "policies": 0
+    }
+  ],
+  "findings": [
+    {
+      "level": "WARN",
+      "lint": "authenticated_security_definer_function_executable",
+      "object": "consume_voice_rate_limit(p_bucket text, p_limit_per_minute integer, p_limit_per_hour integer)"
+    },
+    {
+      "level": "WARN",
+      "lint": "authenticated_security_definer_function_executable",
+      "object": "record_ai_telemetry(p_payload jsonb)"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "conversation_context.conversation_context_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "conversation_context.conversation_context_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "conversation_context.conversation_context_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "conversation_context.conversation_context_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "profiles.profiles_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "profiles.profiles_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "customers.customers_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "customers.customers_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "customers.customers_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "customers.customers_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "items.items_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "items.items_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "items.items_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "items.items_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "item_costs.item_costs_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "item_costs.item_costs_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "item_costs.item_costs_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "item_costs.item_costs_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deals.deals_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deals.deals_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deals.deals_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deals.deals_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "cash_movements.cash_movements_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deal_items.deal_items_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deal_items.deal_items_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deal_items.deal_items_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "deal_items.deal_items_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "cash_movements.cash_movements_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "cash_movements.cash_movements_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "cash_movements.cash_movements_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "receivables.receivables_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "receivables.receivables_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "receivables.receivables_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "receivables.receivables_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payables.payables_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payables.payables_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payables.payables_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payables.payables_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "installments.installments_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "installments.installments_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "installments.installments_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "installments.installments_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payments.payments_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payments.payments_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payments.payments_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "payments.payments_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "adjustments.adjustments_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "adjustments.adjustments_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "adjustments.adjustments_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "adjustments.adjustments_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "ai_interactions.ai_interactions_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "ai_interactions.ai_interactions_insert_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "ai_interactions.ai_interactions_update_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "ai_interactions.ai_interactions_delete_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "audit_log.audit_log_select_own"
+    },
+    {
+      "level": "WARN",
+      "lint": "auth_rls_initplan",
+      "object": "audit_log.audit_log_insert_own"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "adjustments.deal_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "deals.customer_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "cash_movements.deal_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "receivables.customer_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "adjustments.counter_item_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "payables.customer_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "ai_interactions.target_deal_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "conversation_context.last_customer_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "conversation_context.last_item_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "conversation_context.last_deal_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "unindexed_foreign_keys",
+      "object": "conversation_context.last_receivable_id"
+    },
+    {
+      "level": "INFO",
+      "lint": "rls_enabled_no_policy",
+      "object": "ai_telemetry"
+    },
+    {
+      "level": "INFO",
+      "lint": "rls_enabled_no_policy",
+      "object": "voice_rate_limits"
+    }
+  ]
+}
