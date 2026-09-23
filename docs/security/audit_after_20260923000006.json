@@ -1,0 +1,148 @@
+{
+  "functions": [
+    {
+      "name": "execute_deal_transaction",
+      "args": "p_payload jsonb",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "get_dashboard_indicators",
+      "args": "p_user_id uuid",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": true,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_installment_payment_received",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_new_user",
+      "args": "",
+      "security_definer": true,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "handle_updated_at",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    },
+    {
+      "name": "update_overdue_installments",
+      "args": "",
+      "security_definer": false,
+      "config": "search_path=public, pg_temp",
+      "anon": false,
+      "authenticated": false,
+      "service_role": true,
+      "public_grant": false
+    }
+  ],
+  "tables": [
+    {
+      "name": "adjustments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "ai_interactions",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "audit_log",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "cash_movements",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "conversation_context",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "customers",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deal_items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "deals",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "installments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "item_costs",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "items",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payables",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "payments",
+      "rls": true,
+      "policies": 4
+    },
+    {
+      "name": "profiles",
+      "rls": true,
+      "policies": 2
+    },
+    {
+      "name": "receivables",
+      "rls": true,
+      "policies": 4
+    }
+  ],
+  "findings": [
+    {
+      "level": "WARN",
+      "lint": "authenticated_security_definer_function_executable",
+      "object": "execute_deal_transaction(p_payload jsonb)"
+    }
+  ]
+}
