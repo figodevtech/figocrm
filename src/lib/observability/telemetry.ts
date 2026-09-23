@@ -1,5 +1,9 @@
 // src/lib/observability/telemetry.ts
-// Observabilidade, Telemetria e Gestão de Custos de IA (Fase 14)
+// Observabilidade e custo de IA — Fase K do hardening.
+// Registro estruturado na tabela ai_telemetry via RPC record_ai_telemetry (RLS sem policies:
+// só o backend grava, sempre em nome de auth.uid()). Nunca registra áudio, transcrição ou chaves.
+
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface LLMUsage {
   promptTokens: number;
@@ -8,44 +12,45 @@ export interface LLMUsage {
   estimatedCostUSD: number;
 }
 
-export interface VoiceMetric {
-  userId: string;
-  durationSeconds: number;
-  latencyMs: number;
-  tokens: LLMUsage;
-  status: 'success' | 'stt_error' | 'llm_error' | 'validation_error';
-  timestamp: string;
-}
-
-// Tabela de preços de referência (ex: Whisper + Llama 3 / Gemini Flash)
-const COST_PER_AUDIO_MINUTE_USD = 0.006; // ~$0.006/min
-const COST_PER_1M_INPUT_TOKENS_USD = 0.15; // ~$0.15 / 1M tokens
-const COST_PER_1M_OUTPUT_TOKENS_USD = 0.60; // ~$0.60 / 1M tokens
+// Preços de referência (USD). Estimativa operacional — conferir tabela vigente dos provedores.
+const COST_PER_AUDIO_MINUTE_USD = 0.006; // whisper-1
+const LLM_PRICES_PER_1M: Record<string, { input: number; output: number }> = {
+  'gpt-4o-mini': { input: 0.15, output: 0.6 },
+  'gemini-2.5-flash': { input: 0.3, output: 2.5 },
+};
+const DEFAULT_LLM_PRICE = { input: 0.15, output: 0.6 };
 
 // Cota mensal máxima para manter sustentabilidade do plano de R$ 24,90/mês
-export const MONTHLY_AUDIO_SECONDS_QUOTA = 3600; // 60 minutos de áudio falado por mês
-export const MONTHLY_OPERATIONS_QUOTA = 1500; // 1.500 operações por mês
+export const MONTHLY_AUDIO_SECONDS_QUOTA = 3600;
+export const MONTHLY_OPERATIONS_QUOTA = 1500;
+
+export function estimateCostUSD(input: {
+  audioSeconds?: number;
+  model?: string;
+  promptTokens?: number;
+  completionTokens?: number;
+}): number {
+  const price = (input.model && LLM_PRICES_PER_1M[input.model]) || DEFAULT_LLM_PRICE;
+  const audio = ((input.audioSeconds ?? 0) / 60) * COST_PER_AUDIO_MINUTE_USD;
+  const tokens =
+    ((input.promptTokens ?? 0) / 1_000_000) * price.input + ((input.completionTokens ?? 0) / 1_000_000) * price.output;
+  return Math.round((audio + tokens) * 1_000_000) / 1_000_000;
+}
 
 /**
  * Calcula o custo estimado de uma requisição de voz e LLM
  */
 export function calculateOperationCost(durationSeconds: number, promptTokens: number, completionTokens: number): LLMUsage {
-  const audioCost = (durationSeconds / 60) * COST_PER_AUDIO_MINUTE_USD;
-  const tokenCost = (promptTokens / 1_000_000) * COST_PER_1M_INPUT_TOKENS_USD +
-                    (completionTokens / 1_000_000) * COST_PER_1M_OUTPUT_TOKENS_USD;
-
-  const totalCost = audioCost + tokenCost;
-
   return {
     promptTokens,
     completionTokens,
     totalTokens: promptTokens + completionTokens,
-    estimatedCostUSD: Math.round(totalCost * 100000) / 100000,
+    estimatedCostUSD: estimateCostUSD({ audioSeconds: durationSeconds, promptTokens, completionTokens }),
   };
 }
 
 /**
- * Verifica se o usuário excedeu o rate limit operacional preventivo
+ * Verifica se o usuário excedeu a cota mensal preventiva
  */
 export function checkUserUsageQuota(currentMonthSeconds: number, currentMonthOperations: number): {
   isWithinQuota: boolean;
@@ -60,4 +65,60 @@ export function checkUserUsageQuota(currentMonthSeconds: number, currentMonthOpe
     remainingSeconds,
     remainingOperations,
   };
+}
+
+export interface AiTelemetryEvent {
+  endpoint: 'voice/transcribe' | 'voice/process';
+  inputType: 'audio' | 'text';
+  sttProvider?: string;
+  llmProvider?: string;
+  llmModel?: string;
+  interpretationSource?: string;
+  intent?: string;
+  executionStatus?: string;
+  sttLatencyMs?: number;
+  llmLatencyMs?: number;
+  executionLatencyMs?: number;
+  totalLatencyMs?: number;
+  audioSizeBytes?: number;
+  audioDurationSeconds?: number;
+  promptTokens?: number;
+  completionTokens?: number;
+  estimatedCostUsd?: number;
+  success: boolean;
+  errorType?: string;
+}
+
+/** Registra o evento; falhas de telemetria nunca derrubam a requisição. */
+export async function recordAiTelemetry(supabase: SupabaseClient, event: AiTelemetryEvent): Promise<void> {
+  const payload = {
+    endpoint: event.endpoint,
+    input_type: event.inputType,
+    stt_provider: event.sttProvider,
+    llm_provider: event.llmProvider,
+    llm_model: event.llmModel,
+    interpretation_source: event.interpretationSource,
+    intent: event.intent,
+    execution_status: event.executionStatus,
+    stt_latency_ms: event.sttLatencyMs,
+    llm_latency_ms: event.llmLatencyMs,
+    execution_latency_ms: event.executionLatencyMs,
+    total_latency_ms: event.totalLatencyMs,
+    audio_size_bytes: event.audioSizeBytes,
+    audio_duration_seconds: event.audioDurationSeconds,
+    prompt_tokens: event.promptTokens,
+    completion_tokens: event.completionTokens,
+    estimated_cost_usd: event.estimatedCostUsd,
+    success: event.success,
+    error_type: event.errorType,
+  };
+
+  try {
+    const { error } = await supabase.rpc('record_ai_telemetry', { p_payload: payload });
+    if (error) console.warn('[telemetry] falha ao registrar:', error.message);
+  } catch (err) {
+    console.warn('[telemetry] falha ao registrar:', err);
+  }
+  // Linha estruturada para os logs da Vercel (sem conteúdo do usuário)
+  console.log(JSON.stringify({ type: 'ai_telemetry', ...payload }));
 }
