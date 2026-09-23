@@ -3,7 +3,8 @@
 // Autenticação, assinatura e rate limit antes de qualquer chamada de LLM.
 
 import { NextResponse } from 'next/server';
-import { runVoicePipeline } from '@/lib/ai/orchestrator';
+import { runVoicePipeline, toHttpPayload } from '@/lib/ai/orchestrator';
+import { errorResponse } from '@/lib/api/assistant-response';
 import { guardVoiceRequest } from '@/lib/voice/request-guard';
 import { estimateCostUSD, recordAiTelemetry } from '@/lib/observability/telemetry';
 
@@ -19,10 +20,10 @@ export async function POST(request: Request) {
     const spokenText = body?.spokenText;
 
     if (!spokenText || typeof spokenText !== 'string' || spokenText.trim().length === 0) {
-      return NextResponse.json({ error: 'Texto falado não informado.' }, { status: 400 });
+      return NextResponse.json({ assistant: errorResponse('validation', 'Não ouvi nada. Pode falar de novo?') }, { status: 400 });
     }
     if (spokenText.length > MAX_TEXT_LENGTH) {
-      return NextResponse.json({ error: 'Comando muito longo.' }, { status: 413 });
+      return NextResponse.json({ assistant: errorResponse('validation', 'Ficou muito longo. Fala uma operação por vez.') }, { status: 413 });
     }
 
     const result = await runVoicePipeline(spokenText.trim(), { supabase: guard.supabase, userId: guard.user.id });
@@ -49,9 +50,10 @@ export async function POST(request: Request) {
       errorType: result.errorType,
     });
 
-    return NextResponse.json(result);
+    if (result.error) console.warn('[voice/process]', result.errorType, result.error);
+    return NextResponse.json(toHttpPayload(result));
   } catch (error) {
     console.error('Erro na API de voz:', error);
-    return NextResponse.json({ error: 'Falha interna ao processar comando.' }, { status: 500 });
+    return NextResponse.json({ assistant: errorResponse('internal', 'Deu um erro aqui e nada foi gravado. Tenta de novo?') }, { status: 500 });
   }
 }

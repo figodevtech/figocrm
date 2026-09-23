@@ -16,6 +16,7 @@ export const LLM_INTENTS = [
   'register_adjustment',
   'update_due_date',
   'renegotiate_debt',
+  'reverse_operation',
   'query_information',
   'clarify_ambiguity',
   'unrecognized_command',
@@ -73,6 +74,9 @@ export const LLMInterpretationSchema = z
     installmentNumber: z.number().int().positive().max(360).nullable(),
     debtHint: z.string().trim().min(1).max(160).nullable(),
     adjustmentType: z.enum(['discount', 'item_offset', 'service_offset', 'debt_offset']).nullable(),
+    operationKind: z.enum(['payment', 'adjustment']).nullable(),
+    renegotiationScope: z.enum(['overdue', 'all_open', 'listed']).nullable(),
+    installmentNumbers: z.array(z.number().int().positive().max(360)).max(24),
     queryType: z.enum(LLM_QUERY_TYPES).nullable(),
     missingInformation: z
       .array(z.object({ type: z.enum(LLM_MISSING_TYPES), question: z.string().min(1).max(300) }).strict())
@@ -135,6 +139,9 @@ export const LLM_INTERPRETATION_JSON_SCHEMA: JsonSchema = strictObject({
   installmentNumber: nullableInteger(),
   debtHint: nullableString(),
   adjustmentType: nullableEnum(['discount', 'item_offset', 'service_offset', 'debt_offset']),
+  operationKind: nullableEnum(['payment', 'adjustment']),
+  renegotiationScope: nullableEnum(['overdue', 'all_open', 'listed']),
+  installmentNumbers: { type: 'array', items: { type: 'integer' } },
   queryType: nullableEnum(LLM_QUERY_TYPES),
   missingInformation: {
     type: 'array',

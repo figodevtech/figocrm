@@ -4,14 +4,14 @@
 // resolução de entidades sem escolha silenciosa e execução atômica via RPC `execute_deal_transaction`.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { assertWritePermission } from '@/lib/subscription';
+import { assertWritePermission, writeDeniedMessage } from '@/lib/subscription';
 import { DealCommand } from '@/types/deal-command';
 import { validateDealCommandPayload } from '@/lib/ai/schemas/deal-command.schema';
 import { validateDealBalance } from '@/lib/finance/deal-balance';
 import { calculateItemCMVCents, calculateDealTotalCMVCents } from '@/lib/finance/cmv';
 import { calculateProjectedProfitCents } from '@/lib/finance/profit';
 import { generateInstallmentScheduleCents } from '@/lib/finance/installments';
-import { toCents, toReais, formatCurrencyFromCents } from '@/lib/finance/money';
+import { toCents, toReais } from '@/lib/finance/money';
 import type { ConversationContext } from '@/lib/ai/context_manager';
 import {
   EntityCandidate,
@@ -275,11 +275,12 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
   const { data: rpcResponse, error: rpcError } = await supabase.rpc('execute_deal_transaction', { p_payload: transactionPayload });
 
   if (rpcError) {
+    const subscription = rpcError.hint === 'SUBSCRIPTION_INACTIVE';
     return {
       success: false,
-      humanSummary: 'Não foi possível salvar a negociação. Nada foi gravado.',
+      humanSummary: subscription ? writeDeniedMessage('expired') : 'Não consegui salvar o negócio. Nada foi gravado.',
       error: rpcError.message,
-      errorType: 'database',
+      errorType: subscription ? 'subscription' : 'database',
     };
   }
 
@@ -300,6 +301,12 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
   };
 }
 
+const brlShort = (cents: number) => {
+  const whole = cents % 100 === 0;
+  return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+};
+
+/** Resposta curta: o que entrou/saiu e o que ficou para receber. */
 function summarizeDeal(
   cmd: DealCommand,
   dealType: string,
@@ -307,28 +314,31 @@ function summarizeDeal(
   customerName: string,
   items: ResolvedItem[]
 ): string {
-  const itemNames = items.map((i) => i.name).join(' + ') || 'Mercadoria';
+  const itemNames = items.map((i) => i.name).join(' + ') || 'mercadoria';
   const parts: string[] = [];
 
   if (dealType === 'troca') {
     const itIn = cmd.itemsIn.map((i) => i.description || i.reference).join(' + ');
-    parts.push(`Pronto. Troca registrada: ${itemNames} saiu, ${itIn} entrou, com ${customerName}.`);
+    parts.push(`Pronto. Troca com ${customerName}: saiu ${itemNames}, entrou ${itIn}.`);
+  } else if (dealType === 'compra') {
+    const itIn = cmd.itemsIn.map((i) => i.description || i.reference).join(' + ');
+    parts.push(`Pronto. Compra de ${itIn} com ${customerName} por ${brlShort(dealTotalCents)}.`);
   } else {
-    parts.push(`Pronto. ${itemNames} vendido para ${customerName} por ${formatCurrencyFromCents(dealTotalCents)}.`);
+    parts.push(`Pronto. Venda de ${itemNames} pro ${customerName} por ${brlShort(dealTotalCents)}.`);
   }
 
   const cashIn = cmd.cashIn.reduce((acc, c) => acc + toCents(c.amount), 0);
   const cashOut = cmd.cashOut.reduce((acc, c) => acc + toCents(c.amount), 0);
-  if (cashIn > 0) parts.push(`Recebido agora: ${formatCurrencyFromCents(cashIn)}.`);
-  if (cashOut > 0) parts.push(`Você pagou ${formatCurrencyFromCents(cashOut)}.`);
+  if (cashIn > 0) parts.push(`Entrou ${brlShort(cashIn)}.`);
+  if (cashOut > 0) parts.push(`Você pagou ${brlShort(cashOut)}.`);
 
   const rec = cmd.receivables[0];
   if (rec) {
     const inst = rec.installments;
     parts.push(
       inst && inst.count > 1
-        ? `A receber: ${inst.count}x de ${formatCurrencyFromCents(toCents(inst.installmentAmount))}${inst.dueDayOfMonth ? ` todo dia ${inst.dueDayOfMonth}` : ''}.`
-        : `A receber: ${formatCurrencyFromCents(toCents(rec.totalAmount))}.`
+        ? `Faltam ${inst.count}x de ${brlShort(toCents(inst.installmentAmount))}${inst.dueDayOfMonth ? ` todo dia ${inst.dueDayOfMonth}` : ''}.`
+        : `Falta receber ${brlShort(toCents(rec.totalAmount))}.`
     );
   }
   return parts.join(' ');

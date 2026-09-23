@@ -132,8 +132,15 @@ export default function AppHomePage() {
         body: JSON.stringify({ spokenText: textToSend }),
       });
 
+      // Contrato estável da API de voz (src/lib/api/assistant-response.ts)
       const data = await res.json();
-      setLastResult(data);
+      const assistant = data?.assistant;
+      setLastResult({
+        humanResponse: assistant?.message ?? data?.error ?? 'Não entendi. Pode repetir?',
+        intent: data?.intent ?? 'error',
+        requiresConfirmation: assistant?.status === 'needs_input',
+        confirmationPrompt: assistant?.status === 'needs_input' ? assistant.message : undefined,
+      });
     } catch {
       setLastResult({
         humanResponse: 'Não foi possível conectar ao assistente de voz.',

@@ -6,7 +6,7 @@
 // A LLM interpreta, o backend valida, o banco executa.
 //
 // runVoicePipeline recebe o cliente Supabase autenticado por injeção: a rota Next e o teste E2E
-// executam exatamente o mesmo código.
+// executam exatamente o mesmo código. A saída inclui `assistant`, o contrato estável para o front.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
@@ -20,14 +20,28 @@ import {
 import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import { interpretVoiceCommandWithLLM } from '@/lib/ai/interpret';
 import { buildDealCommand } from '@/lib/ai/command-builder';
-import { completenessGaps } from '@/lib/ai/grounding';
+import { completenessGaps, WRITE_INTENTS } from '@/lib/ai/grounding';
 import { executeDealCommand } from '@/lib/domain/command-executor';
 import { executeVoiceQuery } from '@/lib/domain/queries';
 import { EntityCandidate, matchCandidateAnswer, nameTokens } from '@/lib/domain/entity-resolver';
-import { resolveFinancialTarget, ResolvedDebt, OpenInstallment } from '@/lib/domain/financial-target-resolver';
-import { applySettlement, rescheduleInstallment, SettlementResult } from '@/lib/domain/financial-operations';
+import {
+  resolveFinancialTarget,
+  resolveReversalTarget,
+  ResolvedDebt,
+  OpenInstallment,
+} from '@/lib/domain/financial-target-resolver';
+import {
+  applySettlement,
+  planRenegotiation,
+  renegotiateInstallments,
+  rescheduleInstallment,
+  reverseSettlement,
+  SettlementResult,
+} from '@/lib/domain/financial-operations';
+import { getSubscriptionAccess, writeDeniedMessage } from '@/lib/subscription';
 import { extractSpokenNumbers } from '@/lib/voice/numbers';
-import { formatCurrencyFromCents, toCents } from '@/lib/finance/money';
+import { toCents } from '@/lib/finance/money';
+import { AssistantErrorCode, AssistantResponse, errorResponse, OperationType } from '@/lib/api/assistant-response';
 
 export interface VoicePipelineMetrics {
   interpretationSource?: string;
@@ -49,8 +63,11 @@ export interface VoiceProcessResult {
   missingInformation?: string[];
   executionStatus: 'executed' | 'requires_confirmation' | 'answered' | 'error';
   dealId?: string;
+  /** Detalhe técnico: só para log/telemetria, nunca enviado ao front. */
   error?: string;
   errorType?: string;
+  /** Contrato estável para o front. */
+  assistant: AssistantResponse;
   metrics: VoicePipelineMetrics;
 }
 
@@ -61,13 +78,24 @@ export interface VoicePipelineDeps {
   now?: Date;
 }
 
-type Outcome = Omit<VoiceProcessResult, 'metrics' | 'intent'> & { contextPatch?: ContextPatch };
+type Outcome = Omit<VoiceProcessResult, 'metrics' | 'intent' | 'assistant'> & {
+  contextPatch?: ContextPatch;
+  field?: string;
+  candidates?: EntityCandidate[];
+  operation?: { id?: string; type: OperationType; undoAvailable: boolean };
+  errorCode?: AssistantErrorCode;
+};
 
-const brl = (value: number) => formatCurrencyFromCents(toCents(value));
+/** R$ sem centavos quando o valor é inteiro: "R$ 1.500", "R$ 1.500,50". */
+export function brl(value: number): string {
+  const cents = toCents(value);
+  const whole = cents % 100 === 0;
+  return `R$ ${(cents / 100).toLocaleString('pt-BR', { minimumFractionDigits: whole ? 0 : 2, maximumFractionDigits: 2 })}`;
+}
 
 /** Wrapper para rotas Next: autentica pelo cookie e roda o pipeline. */
 export async function processVoiceCommand(spokenText: string): Promise<VoiceProcessResult> {
-  const supabase = await createClient();
+  const supabase = (await createClient()) as unknown as SupabaseClient;
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
     return {
@@ -77,6 +105,7 @@ export async function processVoiceCommand(spokenText: string): Promise<VoiceProc
       requiresConfirmation: false,
       executionStatus: 'error',
       errorType: 'auth',
+      assistant: errorResponse('unauthenticated', 'Você precisa estar logado.'),
       metrics: { executionLatencyMs: 0, totalLatencyMs: 0 },
     };
   }
@@ -102,11 +131,12 @@ export async function runVoicePipeline(spokenText: string, deps: VoicePipelineDe
     console.error('[voice] falha na execução:', err);
     outcome = {
       success: false,
-      humanResponse: 'Ocorreu um erro ao processar o seu comando. Nada foi gravado.',
+      humanResponse: 'Deu um erro aqui e nada foi gravado. Tenta de novo?',
       requiresConfirmation: false,
       executionStatus: 'error',
       error: err instanceof Error ? err.message : String(err),
       errorType: 'exception',
+      errorCode: 'internal',
     };
   }
   const executionLatencyMs = Date.now() - tExec;
@@ -133,11 +163,12 @@ export async function runVoicePipeline(spokenText: string, deps: VoicePipelineDe
     latency_ms: Date.now() - t0,
   });
 
-  const { contextPatch: _patch, ...result } = outcome;
-  void _patch;
+  const { contextPatch: _patch, field: _field, candidates: _candidates, operation: _operation, errorCode: _code, ...result } = outcome;
+  void _patch; void _field; void _candidates; void _operation; void _code;
   return {
     ...result,
     intent: interpreted.intent,
+    assistant: toAssistantResponse(outcome, interpreted.interpretation?.fallbackReason),
     metrics: {
       interpretationSource: meta?.source,
       provider: meta?.provider,
@@ -151,6 +182,36 @@ export async function runVoicePipeline(spokenText: string, deps: VoicePipelineDe
   };
 }
 
+/** Corpo HTTP: contrato do front + intenção e métricas; nunca o erro técnico. */
+export function toHttpPayload(result: VoiceProcessResult) {
+  return { assistant: result.assistant, intent: result.intent, metrics: result.metrics };
+}
+
+function toAssistantResponse(o: Outcome, fallbackReason?: string): AssistantResponse {
+  switch (o.executionStatus) {
+    case 'executed':
+      return {
+        status: 'executed',
+        message: o.humanResponse,
+        undoAvailable: o.operation?.undoAvailable ?? false,
+        operationId: o.operation?.id,
+        operationType: o.operation?.type,
+        dealId: o.dealId,
+      };
+    case 'answered':
+      return { status: 'answered', message: o.humanResponse };
+    case 'requires_confirmation':
+      return {
+        status: 'needs_input',
+        message: o.humanResponse,
+        field: o.field,
+        candidates: o.candidates?.map((c) => ({ id: c.id, label: c.name, detail: c.detail })),
+      };
+    default:
+      return errorResponse(o.errorCode ?? (fallbackReason === 'not_configured' ? 'provider_unavailable' : 'internal'), o.humanResponse);
+  }
+}
+
 // ------------------------------------------------------------------------------------------------
 // Execução por intenção
 // ------------------------------------------------------------------------------------------------
@@ -161,6 +222,23 @@ async function execute(
   context: ConversationContext,
   deps: VoicePipelineDeps
 ): Promise<Outcome> {
+  // Escrita exige assinatura válida (o banco também bloqueia); consulta nunca é bloqueada
+  if (WRITE_INTENTS.has(cmd.intent)) {
+    const access = await getSubscriptionAccess(deps.supabase);
+    if (!access.canWrite) {
+      const message = writeDeniedMessage(access.reason);
+      return {
+        success: false,
+        humanResponse: message,
+        requiresConfirmation: false,
+        executionStatus: 'error',
+        errorType: 'subscription',
+        errorCode: 'subscription_required',
+        contextPatch: { pendingConfirmation: null },
+      };
+    }
+  }
+
   if (cmd.requiresConfirmation) {
     const prompt = cmd.confirmationPrompt || 'Pode repetir com mais detalhes?';
     const field = fieldForMissing(cmd);
@@ -179,10 +257,17 @@ async function execute(
     case 'register_partial_payment':
     case 'register_adjustment':
     case 'update_due_date':
-    case 'renegotiate_debt':
       return executeFinancial(cmd, spokenText, context, deps);
+    case 'renegotiate_debt':
+      return cmd.installmentsCount || cmd.installmentAmount
+        ? executeRenegotiation(cmd, spokenText, context, deps)
+        : cmd.dueDay || cmd.firstDueDate
+          ? executeFinancial(cmd, spokenText, context, deps)
+          : askUser('Como fica o novo parcelamento? Em quantas parcelas?', pending('missing_info', spokenText, 'Como fica o novo parcelamento? Em quantas parcelas?', cmd, 'installmentsCount'));
+    case 'reverse_operation':
+      return executeReversal(cmd, spokenText, context, deps);
     default:
-      return askUser('Não entendi com clareza. Você vendeu, trocou ou recebeu algum valor?', null);
+      return askUser('Não entendi. Você vendeu, trocou ou recebeu algum valor?', null);
   }
 }
 
@@ -196,7 +281,7 @@ async function executeQuery(cmd: InterpretedVoiceCommand, spokenText: string, co
   );
 
   if (res.pendingChoice) {
-    return askUser(res.responseSummary, pending('entity_choice', spokenText, res.responseSummary, cmd, 'customer', res.pendingChoice.candidates));
+    return askUser(res.responseSummary, pending('entity_choice', spokenText, res.responseSummary, cmd, 'customer', res.pendingChoice.candidates), undefined, res.pendingChoice.candidates);
   }
   return {
     success: res.success,
@@ -230,7 +315,7 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
 
   if (res.pendingChoice) {
     const field = res.pendingChoice.field === 'item' ? `item:${res.pendingChoice.index ?? 0}` : 'customer';
-    return askUser(res.humanSummary, pending('entity_choice', spokenText, res.humanSummary, cmd, field, res.pendingChoice.candidates));
+    return askUser(res.humanSummary, pending('entity_choice', spokenText, res.humanSummary, cmd, field, res.pendingChoice.candidates), undefined, res.pendingChoice.candidates);
   }
   if (res.requiresConfirmation) {
     const field = res.missingInformation?.includes('customer_reference') ? 'customer' : undefined;
@@ -244,6 +329,7 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
       executionStatus: 'error',
       error: res.error,
       errorType: res.errorType,
+      errorCode: res.errorType === 'subscription' ? 'subscription_required' : res.errorType === 'resolution' ? 'not_found' : 'internal',
       contextPatch: { pendingConfirmation: null },
     };
   }
@@ -255,6 +341,7 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
     requiresConfirmation: false,
     executionStatus: 'executed',
     dealId: res.dealId,
+    operation: { id: res.dealId, type: 'deal', undoAvailable: false },
     contextPatch: {
       lastCustomer: res.resolved?.customer ? { ...res.resolved.customer, type: 'customer' } : undefined,
       lastItem: firstItem ? { ...firstItem, type: 'item' } : undefined,
@@ -265,23 +352,16 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
   };
 }
 
-async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
-  const isPayment = cmd.intent === 'register_payment' || cmd.intent === 'register_partial_payment';
-  const isReschedule = cmd.intent === 'update_due_date' || cmd.intent === 'renegotiate_debt';
+type ResolvedTarget = Extract<Awaited<ReturnType<typeof resolveFinancialTarget>>, { status: 'resolved' }>;
 
-  if (cmd.intent === 'renegotiate_debt' && !cmd.dueDay && !cmd.firstDueDate) {
-    return {
-      success: false,
-      humanResponse: 'Re-parcelamento ainda não é feito por voz. Por voz eu mudo o vencimento: diga o novo dia.',
-      requiresConfirmation: true,
-      executionStatus: 'requires_confirmation',
-      contextPatch: { pendingConfirmation: null },
-    };
-  }
-
-  const installmentRef =
-    cmd.installmentRef ?? (isReschedule || (isPayment && cmd.paymentScope === 'installment_full') ? 'next' : undefined);
-
+/** Resolve cliente → dívida (→ parcela); devolve Outcome de pergunta quando não resolve. */
+async function resolveDebtOrAsk(
+  cmd: InterpretedVoiceCommand,
+  spokenText: string,
+  context: ConversationContext,
+  deps: VoicePipelineDeps,
+  installmentRef: Parameters<typeof resolveFinancialTarget>[3]['installmentRef']
+): Promise<{ target: ResolvedTarget } | { outcome: Outcome }> {
   const target = await resolveFinancialTarget(deps.supabase, deps.userId, context, {
     customer: { id: cmd.resolvedRefs?.customerId, name: cmd.counterparty?.name },
     debtHint: cmd.debtHint,
@@ -290,44 +370,63 @@ async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string
   });
 
   if (target.status === 'ambiguous') {
-    return askUser(target.promptQuestion, pending('entity_choice', spokenText, target.promptQuestion, cmd, target.field, target.candidates));
+    return { outcome: askUser(target.promptQuestion, pending('entity_choice', spokenText, target.promptQuestion, cmd, target.field, target.candidates), undefined, target.candidates) };
   }
   if (target.status === 'not_found') {
     return {
-      success: false,
-      humanResponse: target.promptQuestion,
-      requiresConfirmation: true,
-      confirmationPrompt: target.promptQuestion,
-      executionStatus: 'requires_confirmation',
-      contextPatch: {
-        pendingConfirmation: null,
-        ...(target.customer ? { lastCustomer: { id: target.customer.id, name: target.customer.name, type: 'customer' as const } } : {}),
+      outcome: {
+        success: false,
+        humanResponse: target.promptQuestion,
+        requiresConfirmation: true,
+        confirmationPrompt: target.promptQuestion,
+        executionStatus: 'requires_confirmation',
+        contextPatch: {
+          pendingConfirmation: null,
+          ...(target.customer ? { lastCustomer: { id: target.customer.id, name: target.customer.name, type: 'customer' as const } } : {}),
+        },
       },
     };
   }
+  return { target };
+}
 
-  const { customer, debt, installment } = target;
-  const contextPatch: ContextPatch = {
-    lastCustomer: { id: customer.id, name: customer.name, type: 'customer' },
-    lastDealId: debt.dealId,
-    lastReceivableId: debt.id,
+function debtContext(target: ResolvedTarget): ContextPatch {
+  return {
+    lastCustomer: { id: target.customer.id, name: target.customer.name, type: 'customer' },
+    lastDealId: target.debt.dealId,
+    lastReceivableId: target.debt.id,
     pendingConfirmation: null,
   };
+}
+
+async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
+  const isPayment = cmd.intent === 'register_payment' || cmd.intent === 'register_partial_payment';
+  const isReschedule = cmd.intent === 'update_due_date' || cmd.intent === 'renegotiate_debt';
+
+  const installmentRef =
+    cmd.installmentRef ?? (isReschedule || (isPayment && cmd.paymentScope === 'installment_full') ? 'next' : undefined);
+
+  const resolved = await resolveDebtOrAsk(cmd, spokenText, context, deps, installmentRef);
+  if ('outcome' in resolved) return resolved.outcome;
+  const { target } = resolved;
+  const { customer, debt, installment } = target;
+  const contextPatch = debtContext(target);
 
   if (isReschedule) {
     const inst = installment ?? debt.installments.find((i) => i.balance > 0 && i.status !== 'paid');
-    if (!inst) return { success: false, humanResponse: `${customer.name} não tem parcela em aberto.`, requiresConfirmation: false, executionStatus: 'error', contextPatch };
+    if (!inst) return { success: false, humanResponse: `${customer.name} não tem parcela em aberto.`, requiresConfirmation: false, executionStatus: 'error', errorCode: 'not_found', contextPatch };
     const newDueDate = computeNewDueDate(cmd, deps.now ?? new Date());
-    if (!newDueDate) return askUser('Para qual dia fica o vencimento?', pending('missing_info', spokenText, 'Para qual dia fica o vencimento?', cmd, 'dueDay'));
+    if (!newDueDate) return askUser('Pra qual dia fica o vencimento?', pending('missing_info', spokenText, 'Pra qual dia fica o vencimento?', cmd, 'dueDay'));
 
     const res = await rescheduleInstallment(deps.supabase, { installmentId: inst.id, newDueDate, source: 'voice', reason: spokenText });
     if (!res.success) return failure(res.error, contextPatch);
     return {
       success: true,
-      humanResponse: `Pronto. Parcela ${inst.number}/${inst.totalInstallments} de ${customer.name} (${debt.label}) agora vence em ${formatDate(newDueDate)}.`,
+      humanResponse: `Pronto. A parcela ${inst.number} do ${customer.name} agora vence em ${formatDate(newDueDate)}.`,
       requiresConfirmation: false,
       executionStatus: 'executed',
       dealId: debt.dealId,
+      operation: { id: inst.id, type: 'reschedule', undoAvailable: false },
       contextPatch,
     };
   }
@@ -335,15 +434,15 @@ async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string
   const amount = cmd.amount ?? cmd.adjustmentAmount;
   const settleFull = isPayment && !amount && (cmd.paymentScope === 'debt_full' || cmd.paymentScope === 'installment_full');
   if (!settleFull && (!amount || amount <= 0)) {
-    const q = isPayment ? 'Qual foi o valor que você recebeu?' : 'Qual o valor a ser abatido?';
+    const q = isPayment ? 'Quanto ele pagou?' : 'Quanto é pra abater?';
     return askUser(q, pending('missing_info', spokenText, q, cmd, 'amount'));
   }
 
   // Excesso nunca é absorvido: pergunta antes de gravar
   const limit = installment ? installment.balance : debt.balance;
   if (!settleFull && amount! > limit) {
-    const where = installment ? `da parcela ${installment.number}` : `da dívida de ${customer.name} (${debt.label})`;
-    const q = `O saldo ${where} é ${brl(limit)}. ${brl(amount!)} passa desse valor. Qual valor devo lançar?`;
+    const where = installment ? `da parcela ${installment.number}` : `da dívida do ${customer.name} (${debt.label})`;
+    const q = `O saldo ${where} é ${brl(limit)}. ${brl(amount!)} passa disso. Qual valor eu lanço?`;
     return askUser(q, pending('missing_info', spokenText, q, cmd, 'amount'));
   }
 
@@ -366,6 +465,149 @@ async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string
     requiresConfirmation: false,
     executionStatus: 'executed',
     dealId: debt.dealId,
+    operation: { id: res.settlementId, type: isPayment ? 'payment' : 'adjustment', undoAvailable: !!res.settlementId },
+    contextPatch,
+  };
+}
+
+async function executeRenegotiation(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
+  const resolved = await resolveDebtOrAsk(cmd, spokenText, context, deps, undefined);
+  if ('outcome' in resolved) return resolved.outcome;
+  const { target } = resolved;
+  const { customer, debt } = target;
+  const contextPatch = debtContext(target);
+
+  const today = (deps.now ?? new Date()).toISOString().slice(0, 10);
+  const open = debt.installments.filter((i) => i.balance > 0 && !['paid', 'canceled', 'renegotiated'].includes(i.status));
+  const selected =
+    cmd.renegotiationScope === 'overdue'
+      ? open.filter((i) => i.dueDate < today)
+      : cmd.renegotiationScope === 'listed' && cmd.installmentNumbers?.length
+        ? open.filter((i) => cmd.installmentNumbers!.includes(i.number))
+        : open;
+
+  if (selected.length === 0) {
+    const msg = cmd.renegotiationScope === 'overdue' ? `${customer.name} não tem parcela atrasada nessa dívida.` : `${customer.name} não tem parcela em aberto pra renegociar.`;
+    return { success: false, humanResponse: msg, requiresConfirmation: true, executionStatus: 'requires_confirmation', contextPatch };
+  }
+  if (cmd.renegotiationScope === 'listed' && selected.length !== cmd.installmentNumbers?.length) {
+    const q = 'Alguma dessas parcelas já foi paga ou não existe. Quais parcelas eu junto?';
+    return askUser(q, pending('missing_info', spokenText, q, cmd));
+  }
+
+  const totalCents = selected.reduce((acc, i) => acc + toCents(i.balance), 0);
+  const plan = planRenegotiation(totalCents, cmd.installmentsCount, cmd.installmentAmount !== undefined ? toCents(cmd.installmentAmount) : undefined);
+  if (!plan.ok) {
+    const total = brl(totalCents / 100);
+    const q =
+      plan.reason === 'mismatch'
+        ? `As parcelas somam ${total}. ${cmd.installmentsCount} de ${brl(cmd.installmentAmount!)} dá ${brl(cmd.installmentsCount! * cmd.installmentAmount!)}. Como fica?`
+        : plan.reason === 'not_divisible'
+          ? `As parcelas somam ${total}, que não divide em parcelas de ${brl(cmd.installmentAmount!)}. Em quantas vezes fica?`
+          : `As parcelas somam ${total}. Em quantas vezes fica?`;
+    return askUser(q, pending('missing_info', spokenText, q, cmd, plan.reason === 'mismatch' ? undefined : 'installmentsCount'));
+  }
+
+  const res = await renegotiateInstallments(deps.supabase, {
+    receivableId: debt.id,
+    installmentIds: selected.map((i) => i.id),
+    newCount: plan.count,
+    newInstallmentAmount: plan.amountCents !== undefined ? plan.amountCents / 100 : undefined,
+    dueDay: cmd.dueDay,
+    firstDueDate: cmd.firstDueDate,
+    reason: spokenText.slice(0, 500),
+    source: 'voice',
+  });
+  if (!res.success) return failure(res.error, contextPatch);
+
+  const first = res.newInstallments?.[0];
+  const each = first ? brl(first.amount) : '';
+  const allSame = res.newInstallments?.every((i) => i.amount === first?.amount);
+  return {
+    success: true,
+    humanResponse:
+      `Pronto. Juntei ${selected.length === 1 ? '1 parcela' : `${selected.length} parcelas`} do ${customer.name} (${brl(res.renegotiatedAmount ?? 0)}) ` +
+      `em ${plan.count}${allSame ? ` de ${each}` : ' parcelas'}${cmd.dueDay ? `, todo dia ${cmd.dueDay}` : ''}. ` +
+      `A primeira vence em ${first ? formatDate(first.dueDate) : '-'}.`,
+    requiresConfirmation: false,
+    executionStatus: 'executed',
+    dealId: debt.dealId,
+    operation: { id: res.renegotiationId, type: 'renegotiation', undoAvailable: false },
+    contextPatch,
+  };
+}
+
+async function executeReversal(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
+  const target = await resolveReversalTarget(deps.supabase, deps.userId, context, {
+    customer: { id: cmd.resolvedRefs?.customerId, name: cmd.counterparty?.name },
+    amount: cmd.amount,
+    kind: cmd.operationKind,
+    settlementId: cmd.resolvedRefs?.settlementId,
+  });
+
+  if (target.status === 'ambiguous') {
+    return askUser(target.promptQuestion, pending('entity_choice', spokenText, target.promptQuestion, cmd, target.field, target.candidates), undefined, target.candidates);
+  }
+  if (target.status === 'not_found') {
+    return {
+      success: false,
+      humanResponse: target.promptQuestion,
+      requiresConfirmation: true,
+      executionStatus: 'requires_confirmation',
+      contextPatch: { pendingConfirmation: null },
+    };
+  }
+
+  return reverseAndDescribe(deps.supabase, target.settlement.id, target.customer.name, spokenText, 'voice', {
+    lastCustomer: { id: target.customer.id, name: target.customer.name, type: 'customer' },
+    ...(target.settlement.receivableId ? { lastReceivableId: target.settlement.receivableId } : {}),
+    pendingConfirmation: null,
+  });
+}
+
+/** Estorna uma operação e monta a resposta — usado pela voz e pelo botão "desfazer". */
+export async function reverseAndDescribe(
+  supabase: SupabaseClient,
+  settlementId: string,
+  customerName: string | undefined,
+  reason: string,
+  source: 'voice' | 'manual',
+  contextPatch?: ContextPatch
+): Promise<Outcome> {
+  const res = await reverseSettlement(supabase, { settlementId, reason: reason.slice(0, 500), source });
+  if (!res.success) {
+    if (res.installmentReplaced) {
+      return {
+        success: false,
+        humanResponse: 'Não dá pra desfazer: essas parcelas foram renegociadas depois.',
+        requiresConfirmation: false,
+        executionStatus: 'error',
+        errorCode: 'validation',
+        error: res.error,
+        contextPatch,
+      };
+    }
+    return failure(res.error, contextPatch ?? {});
+  }
+
+  const what = res.kind === 'adjustment' ? 'o abatimento' : 'o pagamento';
+  const who = customerName ? ` do ${customerName}` : '';
+  if (res.alreadyReversed) {
+    return {
+      success: true,
+      humanResponse: `Esse ${res.kind === 'adjustment' ? 'abatimento' : 'pagamento'} de ${brl(res.amount ?? 0)}${who} já tinha sido desfeito.`,
+      requiresConfirmation: false,
+      executionStatus: 'executed',
+      operation: { id: res.reversalSettlementId, type: 'reversal', undoAvailable: false },
+      contextPatch,
+    };
+  }
+  return {
+    success: true,
+    humanResponse: `Pronto. Desfiz ${what} de ${brl(res.amount ?? 0)}${who}. A dívida voltou pra ${brl(res.obligationBalance ?? 0)}.`,
+    requiresConfirmation: false,
+    executionStatus: 'executed',
+    operation: { id: res.reversalSettlementId, type: 'reversal', undoAvailable: false },
     contextPatch,
   };
 }
@@ -393,7 +635,7 @@ function pending(
   };
 }
 
-function askUser(prompt: string, pendingConfirmation: PendingConfirmation | null, missing?: string[]): Outcome {
+function askUser(prompt: string, pendingConfirmation: PendingConfirmation | null, missing?: string[], candidates?: EntityCandidate[]): Outcome {
   return {
     success: true,
     humanResponse: prompt,
@@ -401,30 +643,36 @@ function askUser(prompt: string, pendingConfirmation: PendingConfirmation | null
     confirmationPrompt: prompt,
     missingInformation: missing,
     executionStatus: 'requires_confirmation',
+    field: pendingConfirmation?.field,
+    candidates,
     contextPatch: { pendingConfirmation },
   };
 }
 
 function failure(error: string | undefined, contextPatch: ContextPatch): Outcome {
+  const subscription = error?.includes('Assinatura inativa');
   return {
     success: false,
-    humanResponse: 'Não consegui registrar. Nada foi alterado.',
+    humanResponse: subscription ? writeDeniedMessage('expired') : 'Não consegui registrar. Nada foi alterado.',
     requiresConfirmation: false,
     executionStatus: 'error',
     error,
-    errorType: 'database',
+    errorType: subscription ? 'subscription' : 'database',
+    errorCode: subscription ? 'subscription_required' : 'internal',
     contextPatch,
   };
 }
 
-const NUMERIC_FIELDS = new Set(['amount', 'totalValue', 'itemInValue', 'dueDay']);
+const NUMERIC_FIELDS = new Set(['amount', 'totalValue', 'itemInValue', 'dueDay', 'installmentsCount']);
+// Campos que são contagem/dia, nunca valor em milhares
+const COUNT_FIELDS = new Set(['dueDay', 'installmentsCount']);
 
 // Palavras que podem acompanhar uma resposta curta ("foi 15 mil", "pro Carlos", "dia 10")
 const ANSWER_FILLERS = new Set([
   'foi', 'e', 'era', 'ficou', 'pro', 'pra', 'para', 'por', 'r', 'reais', 'real', 'mil', 'dia', 'uns', 'umas', 'tipo',
-  'acho', 'que', 'sim', 'isso', 'na', 'no', 'cliente', 'nome', 'dele', 'dela', 'ele', 'ela', 'valor',
+  'acho', 'que', 'sim', 'isso', 'na', 'no', 'cliente', 'nome', 'dele', 'dela', 'ele', 'ela', 'valor', 'vezes', 'parcelas', 'em',
 ]);
-const BUSINESS_VERBS = /^(vend|pass|troq|peg|pag|mand|quit|abat|acert|compr|receb|dei|deu|complet|volt|joga|muda|tira|desconta)/;
+const BUSINESS_VERBS = /^(vend|pass|troq|peg|pag|mand|quit|abat|acert|compr|receb|dei|deu|complet|volt|joga|muda|tira|desconta|desfaz|estorn|junta)/;
 
 /** A fala é só a resposta (número/nome), sem outro comando junto? */
 function isBareAnswer(text: string): boolean {
@@ -436,6 +684,7 @@ const FIELD_MISSING_TYPES: Record<string, string[]> = {
   totalValue: ['deal_total', 'acquisition_cost'],
   itemInValue: ['acquisition_cost'],
   dueDay: ['installment_due_date'],
+  installmentsCount: ['installments_count'],
   customer: ['customer_reference'],
 };
 
@@ -446,6 +695,7 @@ function fieldForMissing(cmd: InterpretedVoiceCommand): string | undefined {
   if ((type === 'deal_total' || type === 'payment_breakdown') && financial) return 'amount';
   if (type === 'deal_total' || type === 'acquisition_cost') return 'totalValue';
   if (type === 'installment_due_date') return 'dueDay';
+  if (type === 'installments_count') return 'installmentsCount';
   if (type === 'customer_reference') return 'customer';
   return undefined;
 }
@@ -465,6 +715,7 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
     if (!choice) return null;
     if (p.field === 'customer') refs.customerId = choice.id;
     else if (p.field === 'debt') refs.receivableId = choice.id;
+    else if (p.field === 'settlement') refs.settlementId = choice.id;
     else if (p.field.startsWith('item:')) refs.itemOutIds = { ...(refs.itemOutIds ?? {}), [Number(p.field.split(':')[1])]: choice.id };
     return { ...draft, resolvedRefs: refs, interpretation: { source: 'resume' } };
   }
@@ -479,7 +730,7 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
     const numbers = extractSpokenNumbers(spokenText).filter((n) => n > 0);
     if (numbers.length !== 1) return null;
     let value = numbers[0];
-    if (p.field !== 'dueDay' && value < 100 && !/\b(reais|real|mil)\b/i.test(spokenText) && draftUsesThousands(draft)) {
+    if (!COUNT_FIELDS.has(p.field) && value < 100 && !/\b(reais|real|mil)\b/i.test(spokenText) && draftUsesThousands(draft)) {
       value *= 1000;
     }
     (filled as unknown as Record<string, unknown>)[p.field] = value;
@@ -489,8 +740,7 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
     const tokens = nameTokens(spokenText).filter((t) => !ANSWER_FILLERS.has(t));
     // Nome puro ("Carlos", "pro Carlos Souza"): sem números nem verbos de negócio
     if (tokens.length === 0 || tokens.length > 3 || tokens.some((t) => !/^[a-z]{2,}$/.test(t) || BUSINESS_VERBS.test(t))) return null;
-    const name = tokens;
-    filled.counterparty = { name: name.map((t) => t[0].toUpperCase() + t.slice(1)).join(' ') };
+    filled.counterparty = { name: tokens.map((t) => t[0].toUpperCase() + t.slice(1)).join(' ') };
   } else {
     return null;
   }
@@ -533,9 +783,10 @@ export function computeNewDueDate(cmd: Pick<InterpretedVoiceCommand, 'dueDay' | 
 
 function formatDate(iso: string): string {
   const [y, m, d] = iso.split('-');
-  return `${d}/${m}/${y}`;
+  return `${d}/${m}`.concat(y && Number(y) !== new Date().getUTCFullYear() ? `/${y}` : '');
 }
 
+/** Resposta curta para quem está no meio de uma venda: o que foi feito e quanto falta. */
 function settlementSummary(
   isPayment: boolean,
   customerName: string,
@@ -544,15 +795,15 @@ function settlementSummary(
   res: SettlementResult
 ): string {
   const total = brl(res.amount ?? 0);
-  const balance = res.obligationBalance ?? 0;
-  const where =
-    res.allocations && res.allocations.length === 1
-      ? `na parcela ${res.allocations[0].installmentNumber}/${installment?.totalInstallments ?? debt.installments.length}`
-      : `em ${res.allocations?.length ?? 0} parcelas`;
+  const debtBalance = res.obligationBalance ?? 0;
+  const single = res.allocations && res.allocations.length === 1 ? res.allocations[0] : undefined;
 
-  const head = isPayment
-    ? `Pronto. Recebimento de ${total} de ${customerName} ${where} (${debt.label}).`
-    : `Pronto. Abatimento de ${total} na dívida de ${customerName} (${debt.label}), sem movimentar caixa.`;
-  const tail = balance <= 0 ? ' Dívida quitada.' : ` Saldo da dívida: ${brl(balance)}.`;
-  return head + tail;
+  const head = isPayment ? `Pronto. Registrei ${total} do ${customerName}.` : `Pronto. Abati ${total} da dívida do ${customerName}, sem mexer no caixa.`;
+  if (debtBalance <= 0) return `${head} Dívida quitada.`;
+  if (single && (installment || single.balanceAfter > 0)) {
+    return single.balanceAfter > 0
+      ? `${head} Ainda faltam ${brl(single.balanceAfter)} nessa parcela.`
+      : `${head} Parcela ${single.installmentNumber} quitada. Falta ${brl(debtBalance)} no total.`;
+  }
+  return `${head} Falta ${brl(debtBalance)} no total${debt.label ? ` (${debt.label})` : ''}.`;
 }

@@ -21,6 +21,7 @@ export type InterpretedIntent =
   | 'register_adjustment'
   | 'update_due_date'
   | 'renegotiate_debt'
+  | 'reverse_operation'
   | 'query_information'
   | 'clarify_ambiguity'
   | 'unrecognized_command';
@@ -73,6 +74,11 @@ export interface InterpretedVoiceCommand {
   installmentRef?: InstallmentReference;
   /** Referência da dívida pela mercadoria ("a dívida da moto"). */
   debtHint?: string;
+  /** Desfazer: tipo da operação a estornar. */
+  operationKind?: 'payment' | 'adjustment';
+  /** Renegociação: quais parcelas juntar (atrasadas, todas as abertas ou as citadas). */
+  renegotiationScope?: 'overdue' | 'all_open' | 'listed';
+  installmentNumbers?: number[];
   queryType?: string;
   requiresConfirmation: boolean;
   confirmationPrompt?: string;
@@ -83,6 +89,7 @@ export interface InterpretedVoiceCommand {
     customerId?: string;
     itemOutIds?: Record<number, string>;
     receivableId?: string;
+    settlementId?: string;
   };
   interpretation?: InterpretationMeta;
   rawText: string;
@@ -171,6 +178,48 @@ export function interpretVoiceCommand(
       counterparty: cust ? { name: cust } : undefined,
       requiresConfirmation: false,
       missingInformation: [],
+      ambiguities: [],
+      rawText: spokenText,
+      normalizedText: text,
+    };
+  }
+
+  // 3b. Desfazer / estornar operação já lançada
+  if (/\b(desfaz|desfazer|desfaça|estorna|estornar|estorne|volta aquele|cancela aquele|cancela esse)\b/.test(normalizedTextWithNumbers)) {
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+    const amount = extractFirstNumber(normalizedTextWithNumbers);
+    return {
+      intent: 'reverse_operation',
+      counterparty: cust ? { name: cust } : undefined,
+      amount: amount || undefined,
+      operationKind: /abat|descont/.test(normalizedTextWithNumbers) ? 'adjustment' : /pag|receb|mandou|pix|acert/.test(normalizedTextWithNumbers) ? 'payment' : undefined,
+      requiresConfirmation: false,
+      missingInformation: [],
+      ambiguities: [],
+      rawText: spokenText,
+      normalizedText: text,
+    };
+  }
+
+  // 3c. Renegociação com novo parcelamento ("junta as duas atrasadas e faz 4 de 500 todo dia 10")
+  if (/\b(junta|juntar|reparcela|refaz|renegocia)\b/.test(normalizedTextWithNumbers) && /\b\d+\s*(vezes|parcelas|de)\b/.test(normalizedTextWithNumbers)) {
+    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+    const values = extractSaleNumbers(normalizedTextWithNumbers.replace(/\bjunta as \d+\b/, 'junta as'));
+    if (!values.installmentsCount) {
+      const onlyCount = normalizedTextWithNumbers.match(/\b(\d{1,2})\s*(vezes|parcelas)\b/);
+      if (onlyCount) values.installmentsCount = parseInt(onlyCount[1], 10);
+    }
+    return {
+      intent: 'renegotiate_debt',
+      counterparty: cust ? { name: cust } : undefined,
+      installmentsCount: values.installmentsCount,
+      installmentAmount: values.installmentAmount,
+      dueDay: values.dueDay,
+      renegotiationScope: /atrasad|vencid/.test(normalizedTextWithNumbers) ? 'overdue' : 'all_open',
+      requiresConfirmation: !values.installmentsCount,
+      missingInformation: values.installmentsCount
+        ? []
+        : [{ type: 'installments_count', description: 'Novo parcelamento não informado', promptQuestion: 'Em quantas parcelas fica?' }],
       ambiguities: [],
       rawText: spokenText,
       normalizedText: text,

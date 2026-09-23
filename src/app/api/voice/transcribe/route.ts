@@ -4,7 +4,7 @@
 // → telemetria estruturada. Áudio bruto e chaves nunca são persistidos nem logados.
 
 import { NextResponse } from 'next/server';
-import { runVoicePipeline, VoiceProcessResult } from '@/lib/ai/orchestrator';
+import { runVoicePipeline, toHttpPayload, VoiceProcessResult } from '@/lib/ai/orchestrator';
 import { guardVoiceRequest } from '@/lib/voice/request-guard';
 import { estimateCostUSD, recordAiTelemetry } from '@/lib/observability/telemetry';
 
@@ -191,10 +191,11 @@ export async function POST(request: Request) {
       errorType: processResult?.errorType,
     });
 
+    if (processResult?.error) console.warn('[voice/transcribe]', processResult.errorType, processResult.error);
     return NextResponse.json({
       success: true,
       transcribedText: stt.text,
-      processResult,
+      processResult: processResult ? toHttpPayload(processResult) : null,
       metrics: {
         provider: stt.provider,
         audioSizeBytes: audioFile.size,

@@ -29,7 +29,11 @@ register_payment / register_partial_payment: cliente pagou dívida existente. am
   register_payment: pagou a parcela/dívida (inclusive "mandou N para quitar a parcela"). register_partial_payment: disse que foi só parte ("só conseguiu", "daquela parcela de mil", "da primeira").
 register_adjustment: abatimento sem dinheiro. amount = valor abatido. adjustmentType: item_offset (bem/mercadoria), service_offset (serviço), discount (desconto), debt_offset (compensação de dívida).
 update_due_date: mudar vencimento. dueDay = novo dia; dueMonthOffset = 1 se "mês que vem"; firstDueDate só se a data completa foi dita.
-renegotiate_debt: re-parcelar dívida existente.
+renegotiate_debt: re-parcelar dívida existente ("junta as duas atrasadas e faz quatro de 500 todo dia 10").
+  installmentsCount = nova quantidade; installmentAmount = novo valor de cada (se dito); dueDay/firstDueDate = novo vencimento.
+  renegotiationScope: overdue ("as atrasadas"), all_open ("tudo", "o que falta"), listed (parcelas citadas em installmentNumbers).
+reverse_operation: desfazer/estornar um pagamento ou abatimento já lançado ("desfaz aquele pagamento de 500 do Carlos").
+  operationKind: payment | adjustment (se dito); amount = valor da operação a desfazer (se dito).
 query_information: pergunta, nada é gravado. queryType:
   quanto_fulano_deve ("quanto o Carlos me deve"), quanto_tenho_na_rua ("quanto tenho na rua / a receber"),
   quanto_tenho_em_mercadoria ("quanto tenho em estoque", "quantas motos tenho"), quem_esta_atrasado ("quem tá atrasado"),

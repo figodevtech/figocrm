@@ -147,9 +147,9 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand): AmbiguityI
   ];
 }
 
-const WRITE_INTENTS = new Set([
+export const WRITE_INTENTS = new Set([
   'create_sale', 'create_trade', 'create_purchase', 'register_payment', 'register_partial_payment',
-  'register_adjustment', 'update_due_date', 'renegotiate_debt',
+  'register_adjustment', 'update_due_date', 'renegotiate_debt', 'reverse_operation',
 ]);
 
 /** Campos obrigatórios por intenção — aplicado a qualquer interpretação (LLM ou regras). */

@@ -98,6 +98,7 @@ export function pickInstallment(
     const n = ref === 'first' ? 1 : ref;
     const inst = all.find((i) => i.number === n);
     if (!inst) return { error: `Essa dívida não tem parcela ${n}.` };
+    if (inst.status === 'renegotiated') return { error: `A parcela ${n} foi renegociada.` };
     if (!open.includes(inst)) return { error: `A parcela ${n} já está quitada.` };
     return { installment: inst };
   }
@@ -224,5 +225,113 @@ function ambiguousDebts(customer: ResolvedCustomer, rows: ReceivableRow[]): Fina
     customer,
     candidates,
     promptQuestion: `${customer.name} tem mais de uma dívida. Qual delas: ${joinOr(candidates.map((c) => c.name))}?`,
+  };
+}
+
+// ------------------------------------------------------------------------------------------------
+// Alvo de estorno: cliente → operações (settlements) ainda não estornadas → uma operação
+// ------------------------------------------------------------------------------------------------
+
+export interface ReversibleSettlement {
+  id: string;
+  kind: 'payment' | 'adjustment';
+  amount: number;
+  createdAt: string;
+  receivableId: string | null;
+}
+
+export type ReversalTargetResult =
+  | { status: 'resolved'; customer: ResolvedCustomer; settlement: ReversibleSettlement }
+  | { status: 'ambiguous'; field: 'customer' | 'settlement'; promptQuestion: string; candidates: EntityCandidate[]; customer?: ResolvedCustomer }
+  | { status: 'not_found'; promptQuestion: string; customer?: ResolvedCustomer };
+
+/** Sem valor dito, só vale a operação feita nesta conversa (janela do contexto). */
+export const REVERSAL_RECENT_WINDOW_MS = 30 * 60 * 1000;
+
+const brlLabel = (v: number) => `R$ ${v.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+
+export function settlementLabel(s: ReversibleSettlement): string {
+  const when = new Date(s.createdAt).toLocaleDateString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+  return `${s.kind === 'payment' ? 'pagamento' : 'abatimento'} de ${brlLabel(s.amount)} em ${when}`;
+}
+
+/** Seleção pura entre as operações do cliente (testável sem banco). */
+export function pickSettlement(
+  rows: ReversibleSettlement[],
+  filter: { amount?: number; kind?: 'payment' | 'adjustment' },
+  now: number = Date.now()
+): { status: 'resolved'; settlement: ReversibleSettlement } | { status: 'ambiguous' | 'not_found'; matches: ReversibleSettlement[] } {
+  let matches = rows.filter((r) => (!filter.kind || r.kind === filter.kind));
+  if (filter.amount !== undefined) {
+    matches = matches.filter((r) => Math.round(r.amount * 100) === Math.round(filter.amount! * 100));
+  } else {
+    matches = matches.filter((r) => now - new Date(r.createdAt).getTime() <= REVERSAL_RECENT_WINDOW_MS);
+  }
+  if (matches.length === 1) return { status: 'resolved', settlement: matches[0] };
+  return { status: matches.length === 0 ? 'not_found' : 'ambiguous', matches };
+}
+
+export async function resolveReversalTarget(
+  supabase: SupabaseClient,
+  userId: string,
+  context: ConversationContext,
+  request: { customer: { id?: string; name?: string }; amount?: number; kind?: 'payment' | 'adjustment'; settlementId?: string }
+): Promise<ReversalTargetResult> {
+  const customerRes = await resolveCustomerReference(supabase, userId, {
+    id: request.customer.id,
+    name: request.customer.name,
+    context: context.lastCustomer,
+  });
+  if (customerRes.status === 'ambiguous') {
+    return { status: 'ambiguous', field: 'customer', promptQuestion: customerRes.promptQuestion!, candidates: customerRes.candidates! };
+  }
+  if (!customerRes.entity) {
+    return { status: 'not_found', promptQuestion: customerRes.promptQuestion || 'De qual cliente é a operação que você quer desfazer?' };
+  }
+  const customer = customerRes.entity;
+
+  const { data, error } = await supabase
+    .from('settlements')
+    .select('id, kind, amount, created_at, receivable_id, reversal_of')
+    .eq('user_id', userId)
+    .eq('customer_id', customer.id)
+    .order('created_at', { ascending: false })
+    .limit(50);
+  if (error) throw new Error(`Falha ao consultar operações: ${error.message}`);
+
+  const all = (data || []) as Array<{ id: string; kind: 'payment' | 'adjustment'; amount: number; created_at: string; receivable_id: string | null; reversal_of: string | null }>;
+  const reversed = new Set(all.filter((r) => r.reversal_of).map((r) => r.reversal_of!));
+  const rows: ReversibleSettlement[] = all
+    .filter((r) => !r.reversal_of && !reversed.has(r.id))
+    .map((r) => ({ id: r.id, kind: r.kind, amount: Number(r.amount), createdAt: r.created_at, receivableId: r.receivable_id }));
+
+  if (request.settlementId) {
+    const chosen = rows.find((r) => r.id === request.settlementId);
+    return chosen
+      ? { status: 'resolved', customer, settlement: chosen }
+      : { status: 'not_found', customer, promptQuestion: 'Essa operação já foi desfeita ou não existe mais.' };
+  }
+
+  const picked = pickSettlement(rows, { amount: request.amount, kind: request.kind });
+  if (picked.status === 'resolved') return { status: 'resolved', customer, settlement: picked.settlement };
+
+  const what = request.kind === 'adjustment' ? 'abatimento' : request.kind === 'payment' ? 'pagamento' : 'lançamento';
+  if (picked.status === 'not_found') {
+    return {
+      status: 'not_found',
+      customer,
+      promptQuestion:
+        request.amount !== undefined
+          ? `Não achei ${what} de ${brlLabel(request.amount)} do ${customer.name} para desfazer.`
+          : `Qual ${what} do ${customer.name} você quer desfazer? Me diga o valor.`,
+    };
+  }
+  const candidates = picked.matches.slice(0, 5).map((m) => ({ id: m.id, name: settlementLabel(m) }));
+  return {
+    status: 'ambiguous',
+    field: 'settlement',
+    customer,
+    candidates,
+    promptQuestion: `${customer.name} tem mais de um ${what} assim. Qual deles: ${joinOr(candidates.map((c) => c.name))}?`,
   };
 }
