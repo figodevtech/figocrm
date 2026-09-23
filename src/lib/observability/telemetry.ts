@@ -30,7 +30,13 @@ export function estimateCostUSD(input: {
   promptTokens?: number;
   completionTokens?: number;
 }): number {
-  const price = (input.model && LLM_PRICES_PER_1M[input.model]) || DEFAULT_LLM_PRICE;
+  // LLM_PRICE_INPUT_PER_1M / LLM_PRICE_OUTPUT_PER_1M sobrescrevem a tabela (ex.: modelo sem preço cadastrado)
+  const envInput = Number(process.env.LLM_PRICE_INPUT_PER_1M);
+  const envOutput = Number(process.env.LLM_PRICE_OUTPUT_PER_1M);
+  const price =
+    envInput > 0 && envOutput > 0
+      ? { input: envInput, output: envOutput }
+      : (input.model && LLM_PRICES_PER_1M[input.model]) || DEFAULT_LLM_PRICE;
   const audio = ((input.audioSeconds ?? 0) / 60) * COST_PER_AUDIO_MINUTE_USD;
   const tokens =
     ((input.promptTokens ?? 0) / 1_000_000) * price.input + ((input.completionTokens ?? 0) / 1_000_000) * price.output;

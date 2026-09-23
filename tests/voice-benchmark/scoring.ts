@@ -59,6 +59,8 @@ const FINANCIAL_FIELDS: CriticalField[] = [
   'customer', 'totalValue', 'amount', 'cashIn', 'cashOut', 'receivable', 'payable', 'tradeBalance', 'direction', 'installmentsCount', 'installmentAmount',
 ];
 
+const PAYMENT_INTENTS = new Set(['register_payment', 'register_partial_payment']);
+
 const WRITE_INTENTS = new Set([
   'create_sale', 'create_trade', 'create_purchase', 'register_payment', 'register_partial_payment',
   'register_adjustment', 'update_due_date', 'renegotiate_debt',
@@ -93,6 +95,9 @@ function predictedValue(field: CriticalField, p: InterpretedVoiceCommand): unkno
   switch (field) {
     case 'customer': return p.counterparty?.name;
     case 'amount': return p.amount ?? p.adjustmentAmount;
+    // O builder deriva o valor a receber de parcelas × valor; comparar o efeito, não o campo literal
+    case 'receivable':
+      return p.receivable ?? (p.installmentsCount && p.installmentAmount ? p.installmentsCount * p.installmentAmount : undefined);
     case 'ambiguities': return p.ambiguities.length > 0;
     default: return (p as unknown as Record<string, unknown>)[field];
   }
@@ -115,7 +120,9 @@ export function evaluateScenario(c: BenchmarkCase, p: InterpretedVoiceCommand): 
 
   // Inseguro: executaria quando deveria perguntar, ou executaria com intenção/pessoa/valor divergente
   const mustAsk = c.expected.requiresConfirmation === true || c.expected.unsafeExecutionForbidden === true;
-  const wrongPayload = fields.intent === false || FINANCIAL_FIELDS.some((f) => fields[f] === false);
+  // Pagamento integral e parcial executam a mesma operação (valor na dívida resolvida): mesmo efeito
+  const sameEffect = (a: string, b: string) => a === b || (PAYMENT_INTENTS.has(a) && PAYMENT_INTENTS.has(b));
+  const wrongPayload = !sameEffect(p.intent, c.expected.intent) || FINANCIAL_FIELDS.some((f) => fields[f] === false);
   const unsafeExecution = wouldExecute && (mustAsk || wrongPayload);
 
   const passed = Object.values(fields).every(Boolean) && !unsafeExecution;

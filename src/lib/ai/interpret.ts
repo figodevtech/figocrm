@@ -23,7 +23,7 @@ import {
   LLMInterpretation,
   LLMInterpretationSchema,
 } from '@/lib/ai/schemas/llm-interpretation.schema';
-import { checkGrounding, completenessGaps, groundingAmbiguities } from '@/lib/ai/grounding';
+import { checkGrounding, completenessGaps, consistencyAmbiguities, groundingAmbiguities } from '@/lib/ai/grounding';
 
 export type InterpretMode = 'auto' | 'llm_required' | 'rules_only';
 
@@ -174,8 +174,22 @@ function undef<T>(v: T | null): T | undefined {
   return v === null ? undefined : v;
 }
 
+/** Remove "pro"/"pra" final quando é a preposição antes do nome do cliente ("iPhone 13 pro Pedro"). */
+function stripPrepositionSuffix(item: string | null, customer: string | null, rawText: string): string | null {
+  if (!item || !customer) return item;
+  const m = item.match(/^(.*\S)\s+(pro|pra)$/i);
+  if (!m) return item;
+  const first = customer.split(/\s+/)[0].toLowerCase();
+  return rawText.toLowerCase().includes(`${m[2].toLowerCase()} ${first}`) ? m[1] : item;
+}
+
 export function fromLLM(o: LLMInterpretation, rawText: string, normalizedText: string): InterpretedVoiceCommand {
   const isAdjustment = o.intent === 'register_adjustment';
+  o = {
+    ...o,
+    item: stripPrepositionSuffix(o.item, o.customerName, rawText),
+    itemOut: stripPrepositionSuffix(o.itemOut, o.customerName, rawText),
+  };
   return {
     intent: o.intent,
     counterparty: o.customerName ? { name: o.customerName } : undefined,
@@ -224,9 +238,13 @@ function finalize(
   spokenText: string,
   context?: ConversationContext
 ): InterpretedVoiceCommand {
+  // "pau a pau" = volta zero (normalização, não invenção)
+  if (cmd.intent === 'create_trade' && cmd.direction === 'even' && cmd.tradeBalance === undefined) {
+    cmd = { ...cmd, tradeBalance: 0 };
+  }
   const groundingIssues = meta.source === 'guardrail' ? [] : checkGrounding(cmd, spokenText, context);
-  const ambiguities = [...cmd.ambiguities, ...groundingAmbiguities(groundingIssues)];
-  const missingInformation = [...cmd.missingInformation, ...completenessGaps(cmd)];
+  const ambiguities = [...cmd.ambiguities, ...groundingAmbiguities(groundingIssues), ...consistencyAmbiguities(cmd)];
+  const missingInformation = [...cmd.missingInformation, ...completenessGaps(cmd, !!context?.lastCustomer)];
 
   if (groundingIssues.length > 0) {
     meta.validationErrors = [...(meta.validationErrors ?? []), ...groundingIssues.map((g) => `ungrounded:${g.field}=${g.value}`)];

@@ -253,6 +253,44 @@ test('retomada: resposta numérica preenche o campo pendente (convenção de mil
   }), null, 'fala longa é comando novo');
 });
 
+test('retomada: comando novo completo nunca é absorvido como resposta', () => {
+  const draft = interpreted({ intent: 'register_payment', counterparty: { name: 'Carlos' } });
+  const pend = (field: string) => ({
+    kind: 'missing_info' as const, originalTranscript: 'x', promptAsked: '?', draft: draft as unknown as Record<string, unknown>, field, timestamp: 0,
+  });
+  assert.strictEqual(resumePending('O João pagou 500 no Pix.', pend('amount')), null);
+  assert.strictEqual(resumePending('O João pagou 500 no Pix.', pend('customer')), null);
+  assert.strictEqual(resumePending('foi 500 reais', pend('amount'))?.amount, 500);
+  assert.strictEqual(resumePending('pro Carlos Souza', pend('customer'))?.counterparty?.name, 'Carlos Souza');
+});
+
+test('consistência: volta paga registrada como dinheiro recebido e mesmo item nos dois lados bloqueiam', async () => {
+  const paidAsReceived = llmOutput({
+    intent: 'create_trade', customerName: 'Lucas', itemOut: 'Fan 160', itemIn: 'Moto G84', cashIn: 9600, tradeBalance: 9600, direction: 'outflow',
+  });
+  const text = 'Peguei a Moto G84 do Lucas, dei minha Fan 160 e completei 9600 em dinheiro.';
+  const r1 = await interpretVoiceCommandWithLLM(text, emptyContext('u'), { llm: fakeLLM(JSON.stringify(paidAsReceived)) });
+  assert.strictEqual(r1.requiresConfirmation, true);
+
+  const sameItem = llmOutput({ intent: 'create_trade', customerName: 'Carlos', itemOut: 'Bros', itemIn: 'Bros', direction: 'even', tradeBalance: 0 });
+  const r2 = await interpretVoiceCommandWithLLM(CANONICAL, emptyContext('u'), { llm: fakeLLM(JSON.stringify(sameItem)) });
+  assert.strictEqual(r2.requiresConfirmation, true);
+});
+
+test('"iPhone 13 pro Pedro": "pro" antes do cliente é preposição', async () => {
+  const out = llmOutput({ intent: 'create_sale', customerName: 'Pedro', item: 'iPhone 13 pro', totalValue: 3000, cashIn: 3000, paymentMethod: 'pix' });
+  const r = await interpretVoiceCommandWithLLM('Vendi o iPhone 13 pro Pedro por 3000 no Pix.', emptyContext('u'), { llm: fakeLLM(JSON.stringify(out)) });
+  assert.strictEqual(r.item, 'iPhone 13');
+});
+
+test('escrita sem cliente (nem na fala nem no contexto) pede o cliente', async () => {
+  const noCustomer = llmOutput({ intent: 'register_partial_payment', amount: 1800, paymentScope: 'amount' });
+  const text = 'João só conseguiu me pagar 1800 daquela parcela de mil.';
+  const r = await interpretVoiceCommandWithLLM(text, emptyContext('u'), { llm: fakeLLM(JSON.stringify(noCustomer)) });
+  assert.strictEqual(r.requiresConfirmation, true);
+  assert.ok(r.missingInformation.some((m) => m.type === 'customer_reference'));
+});
+
 (async () => {
   let failed = 0;
   console.log('\nTESTES UNITÁRIOS DO PIPELINE DE IA\n──────────────────────────────────');

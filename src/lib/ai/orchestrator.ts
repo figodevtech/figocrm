@@ -418,6 +418,19 @@ function failure(error: string | undefined, contextPatch: ContextPatch): Outcome
 }
 
 const NUMERIC_FIELDS = new Set(['amount', 'totalValue', 'itemInValue', 'dueDay']);
+
+// Palavras que podem acompanhar uma resposta curta ("foi 15 mil", "pro Carlos", "dia 10")
+const ANSWER_FILLERS = new Set([
+  'foi', 'e', 'era', 'ficou', 'pro', 'pra', 'para', 'por', 'r', 'reais', 'real', 'mil', 'dia', 'uns', 'umas', 'tipo',
+  'acho', 'que', 'sim', 'isso', 'na', 'no', 'cliente', 'nome', 'dele', 'dela', 'ele', 'ela', 'valor',
+]);
+const BUSINESS_VERBS = /^(vend|pass|troq|peg|pag|mand|quit|abat|acert|compr|receb|dei|deu|complet|volt|joga|muda|tira|desconta)/;
+
+/** A fala é só a resposta (número/nome), sem outro comando junto? */
+function isBareAnswer(text: string): boolean {
+  const rest = nameTokens(text).filter((t) => !ANSWER_FILLERS.has(t) && !/^\d/.test(t) && extractSpokenNumbers(t).length === 0);
+  return rest.length === 0;
+}
 const FIELD_MISSING_TYPES: Record<string, string[]> = {
   amount: ['payment_breakdown', 'deal_total'],
   totalValue: ['deal_total', 'acquisition_cost'],
@@ -462,6 +475,7 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
 
   const filled: InterpretedVoiceCommand = { ...draft, resolvedRefs: refs };
   if (NUMERIC_FIELDS.has(p.field)) {
+    if (!isBareAnswer(spokenText)) return null;
     const numbers = extractSpokenNumbers(spokenText).filter((n) => n > 0);
     if (numbers.length !== 1) return null;
     let value = numbers[0];
@@ -472,8 +486,10 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
     if (p.field === 'amount' && ['register_payment', 'register_partial_payment'].includes(draft.intent)) filled.paymentScope = 'amount';
     if (p.field === 'amount' && draft.intent === 'register_adjustment') filled.adjustmentAmount = value;
   } else if (p.field === 'customer') {
-    const name = nameTokens(spokenText).filter((t) => /^[a-z]{2,}$/.test(t));
-    if (name.length === 0 || name.length > 4) return null;
+    const tokens = nameTokens(spokenText).filter((t) => !ANSWER_FILLERS.has(t));
+    // Nome puro ("Carlos", "pro Carlos Souza"): sem números nem verbos de negócio
+    if (tokens.length === 0 || tokens.length > 3 || tokens.some((t) => !/^[a-z]{2,}$/.test(t) || BUSINESS_VERBS.test(t))) return null;
+    const name = tokens;
     filled.counterparty = { name: name.map((t) => t[0].toUpperCase() + t.slice(1)).join(' ') };
   } else {
     return null;
@@ -482,7 +498,8 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
   const answered = FIELD_MISSING_TYPES[p.field] ?? [];
   const missingInformation = draft.missingInformation.filter((m) => !answered.includes(m.type));
   const withGaps = { ...filled, missingInformation };
-  const gaps = completenessGaps(withGaps);
+  // Cliente em contexto é tratado adiante pelos resolvedores (que perguntam se não houver)
+  const gaps = completenessGaps(withGaps, true);
   const allMissing = [...missingInformation, ...gaps];
   return {
     ...withGaps,

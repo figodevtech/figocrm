@@ -6,7 +6,8 @@
 // Configuração (env):
 //   OPENAI_API_KEY / GEMINI_API_KEY   — chaves (nunca logadas)
 //   LLM_PROVIDER                      — auto (padrão) | openai | gemini
-//   OPENAI_MODEL                      — padrão gpt-4o-mini
+//   OPENAI_MODEL                      — padrão gpt-5.4-mini (melhor resultado no benchmark LLM)
+//   OPENAI_REASONING_EFFORT           — só modelos de raciocínio (gpt-5*, o*); padrão low
 //   GEMINI_MODEL                      — padrão gemini-2.5-flash
 //   LLM_TIMEOUT_MS                    — padrão 15000
 
@@ -36,7 +37,9 @@ export class LLMProviderError extends Error {
   constructor(
     public readonly type: LLMErrorType,
     message: string,
-    public readonly provider?: 'openai' | 'gemini'
+    public readonly provider?: 'openai' | 'gemini',
+    /** Definido quando a falha é transitória (429/5xx) e vale tentar de novo. */
+    public readonly retryAfterMs?: number
   ) {
     super(message);
     this.name = 'LLMProviderError';
@@ -72,8 +75,12 @@ async function fetchWithTimeout(url: string, init: RequestInit, provider: 'opena
   }
 }
 
+function isReasoningModel(model: string): boolean {
+  return /^(gpt-5|o\d)/.test(model) && !/chat/.test(model);
+}
+
 async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
-  const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+  const model = process.env.OPENAI_MODEL || 'gpt-5.4-mini';
   const start = Date.now();
   const response = await fetchWithTimeout(
     'https://api.openai.com/v1/chat/completions',
@@ -82,7 +89,10 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
       headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
       body: JSON.stringify({
         model,
-        temperature: 0,
+        // Modelos de raciocínio não aceitam temperature; usam reasoning_effort
+        ...(isReasoningModel(model)
+          ? { reasoning_effort: process.env.OPENAI_REASONING_EFFORT || 'low' }
+          : { temperature: 0 }),
         messages: request.messages,
         response_format: request.jsonSchema
           ? { type: 'json_schema', json_schema: { name: request.schemaName || 'structured_output', strict: true, schema: request.jsonSchema } }
@@ -94,7 +104,7 @@ async function callOpenAI(request: LLMRequest): Promise<LLMResponse> {
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    throw new LLMProviderError('http_error', `OpenAI HTTP ${response.status}: ${body.slice(0, 300)}`, 'openai');
+    throw new LLMProviderError('http_error', `OpenAI HTTP ${response.status}: ${body.slice(0, 300)}`, 'openai', retryDelayMs(response.status, response.headers));
   }
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content;
@@ -134,7 +144,7 @@ async function callGemini(request: LLMRequest): Promise<LLMResponse> {
 
   if (!response.ok) {
     const body = await response.text().catch(() => '');
-    throw new LLMProviderError('http_error', `Gemini HTTP ${response.status}: ${body.slice(0, 300)}`, 'gemini');
+    throw new LLMProviderError('http_error', `Gemini HTTP ${response.status}: ${body.slice(0, 300)}`, 'gemini', retryDelayMs(response.status, response.headers));
   }
   const data = await response.json();
   const content = data.candidates?.[0]?.content?.parts?.[0]?.text;
@@ -162,12 +172,28 @@ export const callLLMStructured: LLMCaller = async (request) => {
 
   let lastError: LLMProviderError | undefined;
   for (const provider of providers) {
-    try {
-      return provider === 'openai' ? await callOpenAI(request) : await callGemini(request);
-    } catch (err) {
-      lastError = err instanceof LLMProviderError ? err : new LLMProviderError('network', String(err), provider);
-      console.warn(`[llm] ${provider} falhou (${lastError.type}): ${lastError.message.slice(0, 200)}`);
+    for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+      try {
+        return provider === 'openai' ? await callOpenAI(request) : await callGemini(request);
+      } catch (err) {
+        lastError = err instanceof LLMProviderError ? err : new LLMProviderError('network', String(err), provider);
+        const retryable = lastError.retryAfterMs !== undefined && attempt < MAX_RETRIES;
+        console.warn(`[llm] ${provider} falhou (${lastError.type}${retryable ? ', nova tentativa' : ''}): ${lastError.message.slice(0, 200)}`);
+        if (!retryable) break;
+        await new Promise((resolve) => setTimeout(resolve, lastError!.retryAfterMs));
+      }
     }
   }
   throw lastError!;
 };
+
+const MAX_RETRIES = 2;
+
+/** 429 e 5xx são transitórios: espera o retry-after informado (limitado a 5 s) ou backoff curto. */
+function retryDelayMs(status: number, headers: Headers, attempt = 0): number | undefined {
+  if (status !== 429 && status < 500) return undefined;
+  const ms = Number(headers.get('retry-after-ms'));
+  const s = Number(headers.get('retry-after'));
+  const hinted = Number.isFinite(ms) && ms > 0 ? ms : Number.isFinite(s) && s > 0 ? s * 1000 : 1000 * 2 ** attempt;
+  return Math.min(hinted, 5000);
+}

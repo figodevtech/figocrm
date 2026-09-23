@@ -114,17 +114,64 @@ export function groundingAmbiguities(issues: GroundingIssue[]): AmbiguityItem[] 
   });
 }
 
+/**
+ * Contradições internas que a LLM pode produzir mesmo com valores ancorados na fala
+ * (ex.: "completei 9600" como dinheiro RECEBIDO com direção outflow). Viram ambiguidade.
+ */
+export function consistencyAmbiguities(cmd: InterpretedVoiceCommand): AmbiguityItem[] {
+  if (cmd.intent !== 'create_trade') return [];
+  if (cmd.itemOut && cmd.itemIn && nameTokens(cmd.itemOut).join(' ') === nameTokens(cmd.itemIn).join(' ')) {
+    return [
+      {
+        field: 'itemIn',
+        type: 'item',
+        description: 'Mesmo item nos dois lados da troca.',
+        possibleInterpretations: [],
+        suggestedPrompt: 'Qual mercadoria saiu e qual entrou nessa troca?',
+      },
+    ];
+  }
+  const conflict =
+    (cmd.direction === 'outflow' && (cmd.cashIn ?? 0) > 0) ||
+    (cmd.direction === 'inflow' && (cmd.cashOut ?? 0) > 0) ||
+    (cmd.direction === 'even' && ((cmd.cashIn ?? 0) > 0 || (cmd.cashOut ?? 0) > 0));
+  if (!conflict) return [];
+  return [
+    {
+      field: 'direction',
+      type: 'direction',
+      description: 'Direção da volta contradiz o dinheiro informado.',
+      possibleInterpretations: ['Você recebeu a volta', 'Você pagou a volta'],
+      suggestedPrompt: 'Essa volta foi você que recebeu ou você que pagou?',
+    },
+  ];
+}
+
+const WRITE_INTENTS = new Set([
+  'create_sale', 'create_trade', 'create_purchase', 'register_payment', 'register_partial_payment',
+  'register_adjustment', 'update_due_date', 'renegotiate_debt',
+]);
+
 /** Campos obrigatórios por intenção — aplicado a qualquer interpretação (LLM ou regras). */
-export function completenessGaps(cmd: InterpretedVoiceCommand): MissingInformationItem[] {
+export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAvailable = false): MissingInformationItem[] {
   const gaps: MissingInformationItem[] = [];
   const add = (type: MissingInformationItem['type'], promptQuestion: string) => {
     if (!cmd.missingInformation.some((m) => m.type === type)) gaps.push({ type, description: promptQuestion, promptQuestion });
   };
 
+  // Toda escrita precisa de uma pessoa: dita na fala ou em contexto (nunca adivinhada)
+  if (WRITE_INTENTS.has(cmd.intent) && !cmd.counterparty?.name && !cmd.resolvedRefs?.customerId && !contextCustomerAvailable) {
+    add('customer_reference', 'De qual cliente você está falando?');
+  }
+
   switch (cmd.intent) {
     case 'create_sale':
       if (!cmd.item) add('item_reference', 'Qual mercadoria você vendeu?');
       if (cmd.totalValue === undefined) add('deal_total', `Por quanto você vendeu ${cmd.item || 'a mercadoria'}?`);
+      // Venda sem pagamento no ato e sem valor a receber: não sabemos como foi paga
+      if (cmd.totalValue !== undefined && !cmd.cashIn && !cmd.receivable && !cmd.installmentsCount) {
+        add('payment_breakdown', 'Como ele pagou: à vista ou ficou devendo?');
+      }
       break;
     case 'create_purchase':
       if (!cmd.item) add('item_reference', 'Qual mercadoria você comprou?');
