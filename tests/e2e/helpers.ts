@@ -37,6 +37,7 @@ export function adminClient(): SupabaseClient {
 export interface TestUser {
   id: string;
   email: string;
+  password: string;
   client: SupabaseClient;
 }
 
@@ -60,7 +61,7 @@ export async function createTestUser(label: string): Promise<TestUser> {
   const { error: signInError } = await client.auth.signInWithPassword({ email, password });
   if (signInError) throw new Error(`Falha no login do usuário de teste: ${signInError.message}`);
 
-  return { id: data.user.id, email, client };
+  return { id: data.user.id, email, password, client };
 }
 
 // Ordem respeita FKs com ON DELETE RESTRICT (payments → installments, deals → customers).
