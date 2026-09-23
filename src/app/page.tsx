@@ -162,7 +162,7 @@ export default function LandingPage() {
                     <span className="font-semibold text-emerald-400">+ R$ 5.000,00</span>
                   </div>
                   <div className="flex justify-between items-center pb-2 border-b border-white/5">
-                    <span className="text-slate-400 font-sans">Ficou "Na Rua":</span>
+                    <span className="text-slate-400 font-sans">Ficou &quot;Na Rua&quot;:</span>
                     <span className="font-semibold text-amber-300">R$ 10.000,00</span>
                   </div>
                   <div className="flex justify-between items-center text-xs text-slate-400 font-sans pt-1">

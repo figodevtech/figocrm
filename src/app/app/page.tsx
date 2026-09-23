@@ -2,7 +2,7 @@
 // Home do Aplicativo Mobile-First e Voice-First (Fase 19)
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import {
   Mic,
@@ -59,10 +59,19 @@ export default function AppHomePage() {
     setLastResult(null);
     setUndoMessage(null);
 
-    // Se o browser suportar Web Speech API
+    interface BrowserSpeechRecognition {
+      lang: string;
+      continuous: boolean;
+      interimResults: boolean;
+      onresult: ((event: { results: Array<Array<{ transcript: string }>> }) => void) | null;
+      onerror: (() => void) | null;
+      onend: (() => void) | null;
+      start: () => void;
+    }
+
     const windowWithSpeech = window as unknown as {
-      webkitSpeechRecognition?: new () => any;
-      SpeechRecognition?: new () => any;
+      webkitSpeechRecognition?: new () => BrowserSpeechRecognition;
+      SpeechRecognition?: new () => BrowserSpeechRecognition;
     };
     const SpeechClass = windowWithSpeech.webkitSpeechRecognition || windowWithSpeech.SpeechRecognition;
 
@@ -72,7 +81,7 @@ export default function AppHomePage() {
       recognition.continuous = false;
       recognition.interimResults = false;
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: { results: Array<Array<{ transcript: string }>> }) => {
         const spoken = event.results[0][0].transcript;
         setTranscript(spoken);
         setIsListening(false);
@@ -105,7 +114,7 @@ export default function AppHomePage() {
       'Troquei pau a pau meu videogame pelo notebook do Felipe.',
       'Gastei 250 de bateria no celular do estoque.',
     ];
-    const picked = demoPhrases[Math.floor(Math.random() * demoPhrases.length)];
+    const picked = demoPhrases[0];
     setTranscript(picked);
     setIsListening(false);
     handleSendVoice(picked);
