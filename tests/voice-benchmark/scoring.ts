@@ -30,6 +30,11 @@ export interface BenchmarkCase {
     requiresConfirmation?: boolean;
     ambiguities?: boolean;
     unsafeExecutionForbidden?: boolean;
+    /** Intenções alternativas igualmente corretas (ex.: pedir esclarecimento num caso contraditório). */
+    acceptIntents?: string[];
+    /** Fala limítrofe: perguntar OU executar com os valores esperados são ambos aceitáveis. */
+    allowConfirmation?: boolean;
+    note?: string;
   };
 }
 
@@ -110,9 +115,16 @@ export function evaluateScenario(c: BenchmarkCase, p: InterpretedVoiceCommand): 
     if (expected === undefined) continue;
     const actual = predictedValue(field, p);
     fields[field] =
-      typeof expected === 'string' && ['customer', 'item', 'itemOut', 'itemIn'].includes(field)
-        ? namesMatch(expected, actual as string | undefined)
-        : actual === expected;
+      field === 'intent'
+        ? actual === expected || (c.expected.acceptIntents ?? []).includes(actual as string)
+        : typeof expected === 'string' && ['customer', 'item', 'itemOut', 'itemIn'].includes(field)
+          ? namesMatch(expected, actual as string | undefined)
+          : actual === expected;
+  }
+
+  // Fala limítrofe: se o sistema perguntou, os campos de valor não são cobrados (não executou nada)
+  if (c.expected.allowConfirmation && p.requiresConfirmation) {
+    for (const f of Object.keys(fields) as CriticalField[]) if (f !== 'intent') fields[f] = true;
   }
 
   const wouldExecute =
@@ -121,7 +133,8 @@ export function evaluateScenario(c: BenchmarkCase, p: InterpretedVoiceCommand): 
   // Inseguro: executaria quando deveria perguntar, ou executaria com intenção/pessoa/valor divergente
   const mustAsk = c.expected.requiresConfirmation === true || c.expected.unsafeExecutionForbidden === true;
   // Pagamento integral e parcial executam a mesma operação (valor na dívida resolvida): mesmo efeito
-  const sameEffect = (a: string, b: string) => a === b || (PAYMENT_INTENTS.has(a) && PAYMENT_INTENTS.has(b));
+  const sameEffect = (a: string, b: string) =>
+    a === b || (PAYMENT_INTENTS.has(a) && PAYMENT_INTENTS.has(b)) || (c.expected.acceptIntents ?? []).includes(a);
   const wrongPayload = !sameEffect(p.intent, c.expected.intent) || FINANCIAL_FIELDS.some((f) => fields[f] === false);
   const unsafeExecution = wouldExecute && (mustAsk || wrongPayload);
 
@@ -190,8 +203,14 @@ export function computeBenchmarkScore(results: ScenarioEvaluationResult[], cases
   };
 }
 
-export function loadCases(): BenchmarkCase[] {
-  return JSON.parse(fs.readFileSync(path.resolve(__dirname, 'cases.json'), 'utf-8'));
+export type Dataset = 'core' | 'realworld' | 'all';
+
+/** core = cases.json (400, modelos fixos); realworld = cases_realworld.json (fala variada). */
+export function loadCases(dataset: Dataset = 'core'): BenchmarkCase[] {
+  const read = (f: string) => JSON.parse(fs.readFileSync(path.resolve(__dirname, f), 'utf-8')) as BenchmarkCase[];
+  if (dataset === 'core') return read('cases.json');
+  if (dataset === 'realworld') return read('cases_realworld.json');
+  return [...read('cases.json'), ...read('cases_realworld.json')];
 }
 
 export function printReport(title: string, metrics: BenchmarkMetrics, results: ScenarioEvaluationResult[]): void {

@@ -1497,7 +1497,12 @@
       "intent": "register_partial_payment",
       "customer": "Felipe",
       "amount": 1100,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1519,7 +1524,12 @@
       "intent": "register_partial_payment",
       "customer": "Matheus",
       "amount": 1200,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1541,7 +1551,12 @@
       "intent": "register_partial_payment",
       "customer": "Carlos",
       "amount": 1300,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1563,7 +1578,12 @@
       "intent": "register_partial_payment",
       "customer": "João",
       "amount": 1400,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1585,7 +1605,12 @@
       "intent": "register_partial_payment",
       "customer": "Felipe",
       "amount": 1500,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1607,7 +1632,12 @@
       "intent": "register_partial_payment",
       "customer": "Matheus",
       "amount": 1600,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1629,7 +1659,12 @@
       "intent": "register_partial_payment",
       "customer": "Carlos",
       "amount": 1700,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1651,7 +1686,12 @@
       "intent": "register_partial_payment",
       "customer": "João",
       "amount": 1800,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1673,7 +1713,12 @@
       "intent": "register_partial_payment",
       "customer": "Felipe",
       "amount": 1900,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1695,7 +1740,12 @@
       "intent": "register_partial_payment",
       "customer": "Matheus",
       "amount": 2000,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1717,7 +1767,12 @@
       "intent": "register_partial_payment",
       "customer": "Carlos",
       "amount": 2100,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1739,7 +1794,12 @@
       "intent": "register_partial_payment",
       "customer": "João",
       "amount": 2200,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1761,7 +1821,12 @@
       "intent": "register_partial_payment",
       "customer": "Felipe",
       "amount": 2300,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1783,7 +1848,12 @@
       "intent": "register_partial_payment",
       "customer": "Matheus",
       "amount": 2400,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {
@@ -1805,7 +1875,12 @@
       "intent": "register_partial_payment",
       "customer": "Carlos",
       "amount": 2500,
-      "requiresConfirmation": false
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true,
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "note": "Contraditório: pagou mais do que a parcela citada. Correto é perguntar (REC_115 e equivalentes)."
     }
   },
   {

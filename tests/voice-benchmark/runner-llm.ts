@@ -7,7 +7,7 @@
 //   npm run test:benchmark:llm -- --limit=50
 //   npm run test:benchmark:llm -- --category=troca_com_volta --limit=10
 //   npm run test:benchmark:llm -- --sample=40 --seed=7
-//   --concurrency=4  --min-accuracy=90  --out=caminho.json
+//   --dataset=all|core|realworld (padrão all)  --concurrency=4  --min-accuracy=90  --out=caminho.json
 //
 // Requer OPENAI_API_KEY ou GEMINI_API_KEY (lidas do ambiente ou de .env.local).
 
@@ -17,7 +17,7 @@ import dotenv from 'dotenv';
 import { interpretVoiceCommandWithLLM } from '../../src/lib/ai/interpret';
 import { isLLMConfigured } from '../../src/lib/ai/provider';
 import { estimateCostUSD } from '../../src/lib/observability/telemetry';
-import { BenchmarkCase, computeBenchmarkScore, evaluateScenario, loadCases, printReport, ScenarioEvaluationResult } from './scoring';
+import { BenchmarkCase, computeBenchmarkScore, Dataset, evaluateScenario, loadCases, printReport, ScenarioEvaluationResult } from './scoring';
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local'), quiet: true });
 
@@ -44,7 +44,8 @@ function seededShuffle<T>(items: T[], s: number): T[] {
   return out;
 }
 
-let cases: BenchmarkCase[] = loadCases();
+const dataset = (['core', 'realworld', 'all'].includes(String(args.dataset)) ? args.dataset : 'all') as Dataset;
+let cases: BenchmarkCase[] = loadCases(dataset);
 if (args.category) cases = cases.filter((c) => c.category === args.category);
 if (sample) cases = seededShuffle(cases, seed).slice(0, sample);
 if (limit) cases = cases.slice(0, limit);

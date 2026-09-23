@@ -1,0 +1,6323 @@
+[
+  {
+    "id": "RW_001",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: Adriana levou o iPhone 11 por 4.200 reais, pagou à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "iPhone 11",
+      "totalValue": 4200,
+      "cashIn": 4200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_002",
+    "category": "rw_venda_a_vista",
+    "input": "Então, Rose levou a CG 150 por 12000, pagou à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "CG 150",
+      "totalValue": 12000,
+      "cashIn": 12000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_003",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que fechei a Smart TV com o Vanderlei por 900 reais no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Vanderlei",
+      "item": "Smart TV",
+      "totalValue": 900,
+      "cashIn": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_004",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que fechei o iPhone 12 com o Wesley por 1.300 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "item": "iPhone 12",
+      "totalValue": 1300,
+      "cashIn": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_005",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo Patrícia levou o iPhone 11 por 3.500, pagou no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Patrícia",
+      "item": "iPhone 11",
+      "totalValue": 3500,
+      "cashIn": 3500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_006",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: vendi a Titan 160 pro Vanderlei por dezoito mil e quinhentos em dinheiro viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Vanderlei",
+      "item": "Titan 160",
+      "totalValue": 18500,
+      "cashIn": 18500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_007",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo fechei o Gol 2012 com o Cleiton por 20000 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "Gol 2012",
+      "totalValue": 20000,
+      "cashIn": 20000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_008",
+    "category": "rw_venda_a_vista",
+    "input": "É... fechei a Biz 125 com a Neide por 11.500 reais no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Neide",
+      "item": "Biz 125",
+      "totalValue": 11500,
+      "cashIn": 11500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_009",
+    "category": "rw_venda_a_vista",
+    "input": "Olha só, saiu o Palio 2011 pro Rogério, 20 mil no cartão, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Palio 2011",
+      "totalValue": 20000,
+      "cashIn": 20000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_010",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: saiu a bicicleta aro 29 pro Seu Jorge, 2900 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "bicicleta aro 29",
+      "totalValue": 2900,
+      "cashIn": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_011",
+    "category": "rw_venda_a_vista",
+    "input": "Olha só, saiu a Biz 125 pra Dona Lurdes, 13.500 reais no pix viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "Biz 125",
+      "totalValue": 13500,
+      "cashIn": 13500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_012",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, vendi a Titan 160 pra Juliana por 14.000 reais em dinheiro viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "Titan 160",
+      "totalValue": 14000,
+      "cashIn": 14000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_013",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, vendi a Pop 110 pro Seu Jorge por 8.000 reais no cartão, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Pop 110",
+      "totalValue": 8000,
+      "cashIn": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_014",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: fechei a Factor 150 com a Juliana por oito mil na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "Factor 150",
+      "totalValue": 8000,
+      "cashIn": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_015",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, vendi o Galaxy S21 pra Fabiana por 3.500 no dinheiro vivo, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "Galaxy S21",
+      "totalValue": 3500,
+      "cashIn": 3500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_016",
+    "category": "rw_venda_a_vista",
+    "input": "Então, vendi a Smart TV pro Rogério por 2400 no dinheiro vivo, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Smart TV",
+      "totalValue": 2400,
+      "cashIn": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_017",
+    "category": "rw_venda_a_vista",
+    "input": "Olha só, vendi o iPhone 12 pra Kelly por 1.300 à vista no pix, anota aí.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Kelly",
+      "item": "iPhone 12",
+      "totalValue": 1300,
+      "cashIn": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_018",
+    "category": "rw_venda_a_vista",
+    "input": "Vendi o Galaxy A54 pro Valdir por 1.800 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Galaxy A54",
+      "totalValue": 1800,
+      "cashIn": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_019",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, fechei o Moto G84 com a Fabiana por 2.900 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "Moto G84",
+      "totalValue": 2900,
+      "cashIn": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_020",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo saiu a Factor 150 pra Juliana, quatorze mil em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "Factor 150",
+      "totalValue": 14000,
+      "cashIn": 14000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_021",
+    "category": "rw_venda_a_vista",
+    "input": "Então, Cleiton levou a Fazer 250 por 15.500 reais, pagou no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "Fazer 250",
+      "totalValue": 15500,
+      "cashIn": 15500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_022",
+    "category": "rw_venda_a_vista",
+    "input": "Então, vendi a Smart TV pra Fabiana por 1.600 reais no pix viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "Smart TV",
+      "totalValue": 1600,
+      "cashIn": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_023",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, fechei a bicicleta aro 29 com a Dona Lurdes por 700 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "bicicleta aro 29",
+      "totalValue": 700,
+      "cashIn": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_024",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, vendi o iPhone 11 pra Dona Célia por quatro mil no Pix, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "iPhone 11",
+      "totalValue": 4000,
+      "cashIn": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_025",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo Dona Célia levou a Biz 125 por 9 mil, pagou no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Biz 125",
+      "totalValue": 9000,
+      "cashIn": 9000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_026",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo fechei a Twister 250 com o Seu Jorge por 7.500 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Twister 250",
+      "totalValue": 7500,
+      "cashIn": 7500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_027",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que vendi a Pop 110 pro Seu Jorge por dezenove mil no Pix viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Pop 110",
+      "totalValue": 19000,
+      "cashIn": 19000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_028",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, Dona Lurdes levou o Celta 2008 por vinte e oito mil, pagou no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "Celta 2008",
+      "totalValue": 28000,
+      "cashIn": 28000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_029",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que fechei o Galaxy A54 com o Marquinhos por quatro mil e quinhentos no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marquinhos",
+      "item": "Galaxy A54",
+      "totalValue": 4500,
+      "cashIn": 4500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_030",
+    "category": "rw_venda_a_vista",
+    "input": "É... saiu o Moto G84 pro Wesley, 2.800 reais no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "item": "Moto G84",
+      "totalValue": 2800,
+      "cashIn": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_031",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: saiu o notebook Lenovo pra Dona Lurdes, dois mil e cem à vista no pix, anota aí.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "notebook Lenovo",
+      "totalValue": 2100,
+      "cashIn": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_032",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: saiu a roçadeira Stihl pra Juliana, 3000 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "roçadeira Stihl",
+      "totalValue": 3000,
+      "cashIn": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_033",
+    "category": "rw_venda_a_vista",
+    "input": "Deixa eu te falar, saiu o Palio 2011 pra Sandra, vinte e quatro mil em dinheiro viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "Palio 2011",
+      "totalValue": 24000,
+      "cashIn": 24000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_034",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, vendi a NXR 160 pro Robson por 12.500 reais à vista no pix, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "NXR 160",
+      "totalValue": 12500,
+      "cashIn": 12500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_035",
+    "category": "rw_venda_a_vista",
+    "input": "É... saiu a Titan 160 pro Seu Antônio, 17000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Titan 160",
+      "totalValue": 17000,
+      "cashIn": 17000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_036",
+    "category": "rw_venda_a_vista",
+    "input": "Então, vendi o iPhone 12 pro Cleiton por 3.600 em dinheiro, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "iPhone 12",
+      "totalValue": 3600,
+      "cashIn": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_037",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: vendi o iPhone 12 pro Edson por quatro mil e quatrocentos no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Edson",
+      "item": "iPhone 12",
+      "totalValue": 4400,
+      "cashIn": 4400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_038",
+    "category": "rw_venda_a_vista",
+    "input": "Olha só, saiu a Fazer 250 pro Rogério, 12 mil no pix viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Fazer 250",
+      "totalValue": 12000,
+      "cashIn": 12000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_039",
+    "category": "rw_venda_a_vista",
+    "input": "É... fechei o Celta 2008 com a Rose por quinze mil no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "Celta 2008",
+      "totalValue": 15000,
+      "cashIn": 15000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_040",
+    "category": "rw_venda_a_vista",
+    "input": "Então, Rogério levou o iPhone 12 por 3.600, pagou no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "iPhone 12",
+      "totalValue": 3600,
+      "cashIn": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_041",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: vendi a geladeira Brastemp pro Seu Jorge por 2.800 reais no Pix, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "geladeira Brastemp",
+      "totalValue": 2800,
+      "cashIn": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_042",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, vendi o fogão Atlas pra Juliana por 1400 no Pix, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "fogão Atlas",
+      "totalValue": 1400,
+      "cashIn": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_043",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: Cleiton levou o PS4 por dois mil e trezentos, pagou no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "PS4",
+      "totalValue": 2300,
+      "cashIn": 2300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_044",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo vendi o Redmi Note 12 pro Valdir por 1.200 reais no pix, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Redmi Note 12",
+      "totalValue": 1200,
+      "cashIn": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_045",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que Leandro levou o iPhone 12 por novecentos, pagou no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "iPhone 12",
+      "totalValue": 900,
+      "cashIn": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_046",
+    "category": "rw_venda_a_vista",
+    "input": "Pronto, foi o seguinte: saiu o Gol 2012 pra Kelly, 14 mil em dinheiro viu.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Kelly",
+      "item": "Gol 2012",
+      "totalValue": 14000,
+      "cashIn": 14000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_047",
+    "category": "rw_venda_a_vista",
+    "input": "Rapaz, bota aí que vendi o Moto G84 pro Edson por 2.300 reais no cartão, beleza?.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Edson",
+      "item": "Moto G84",
+      "totalValue": 2300,
+      "cashIn": 2300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_048",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: fechei o iPhone 11 com o Edson por quatro mil e trezentos na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Edson",
+      "item": "iPhone 11",
+      "totalValue": 4300,
+      "cashIn": 4300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_049",
+    "category": "rw_venda_a_vista",
+    "input": "Então, fechei o Celta 2008 com o Seu Antônio por 28.000 no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Celta 2008",
+      "totalValue": 28000,
+      "cashIn": 28000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_050",
+    "category": "rw_venda_a_vista",
+    "input": "É... fechei a bicicleta aro 29 com a Patrícia por 1.600 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Patrícia",
+      "item": "bicicleta aro 29",
+      "totalValue": 1600,
+      "cashIn": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_051",
+    "category": "rw_venda_a_vista",
+    "input": "É... vendi o iPhone 11 pra Juliana por 1500 no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "iPhone 11",
+      "totalValue": 1500,
+      "cashIn": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_052",
+    "category": "rw_venda_a_vista",
+    "input": "Hoje cedo Marquinhos levou o Galaxy A54 por 2.700 reais, pagou no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marquinhos",
+      "item": "Galaxy A54",
+      "totalValue": 2700,
+      "cashIn": 2700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_053",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, fechei o iPhone 12 com a Adriana por 1.400 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "iPhone 12",
+      "totalValue": 1400,
+      "cashIn": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_054",
+    "category": "rw_venda_a_vista",
+    "input": "Olha só, Rogério levou a Pop 110 por 13.000, pagou no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Pop 110",
+      "totalValue": 13000,
+      "cashIn": 13000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_055",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, fechei a Pop 110 com o Robson por 18.500 reais à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "Pop 110",
+      "totalValue": 18500,
+      "cashIn": 18500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_056",
+    "category": "rw_venda_a_vista",
+    "input": "Anota aí: vendi a NXR 160 pro Valdir por quatorze mil à vista no pix, anota aí.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "NXR 160",
+      "totalValue": 14000,
+      "cashIn": 14000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_057",
+    "category": "rw_venda_a_vista",
+    "input": "Saiu a CG 150 pra Patrícia, 19000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Patrícia",
+      "item": "CG 150",
+      "totalValue": 19000,
+      "cashIn": 19000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_058",
+    "category": "rw_venda_a_vista",
+    "input": "Ó, saiu a motosserra pro Seu Antônio, 2.500 reais no pix, pode lançar.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "motosserra",
+      "totalValue": 2500,
+      "cashIn": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_059",
+    "category": "rw_venda_a_vista",
+    "input": "Fechei o PS4 com a Sandra por 900 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "PS4",
+      "totalValue": 900,
+      "cashIn": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_060",
+    "category": "rw_venda_a_vista",
+    "input": "Então, fechei o Uno 2010 com a Fabiana por 25 mil em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "Uno 2010",
+      "totalValue": 25000,
+      "cashIn": 25000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_061",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que passei o Galaxy S21 pra Rose por 2600, deu 800 de entrada e o resto em 6 vezes de 300 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "Galaxy S21",
+      "totalValue": 2600,
+      "cashIn": 800,
+      "receivable": 1800,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_062",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: passei o Celta 2008 pra Rose por 22.400 reais, deu sete mil de entrada e o resto em 7 parcelas de 2.200.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "Celta 2008",
+      "totalValue": 22400,
+      "cashIn": 7000,
+      "receivable": 15400,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_063",
+    "category": "rw_venda_parcelada",
+    "input": "É... passei a Pop 110 pro Seu Antônio por 12.600, deu 7.000 de entrada e o resto em 7 parcelas de 800.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Pop 110",
+      "totalValue": 12600,
+      "cashIn": 7000,
+      "receivable": 5600,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_064",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, Leandro pegou a Fazer 250 por 12400, me deu 2000 agora e vai pagar 8 vezes de 1300.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "Fazer 250",
+      "totalValue": 12400,
+      "cashIn": 2000,
+      "receivable": 10400,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_065",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, passei a Titan 160 pra Dona Célia por treze mil, deu 7000 de entrada e o resto em 3 vezes de dois mil.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Titan 160",
+      "totalValue": 13000,
+      "cashIn": 7000,
+      "receivable": 6000,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_066",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, passei a Pop 110 pro Leandro por onze mil e seiscentos, deu 6 mil de entrada e o resto em 2 vezes de 2.800.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "Pop 110",
+      "totalValue": 11600,
+      "cashIn": 6000,
+      "receivable": 5600,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_067",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que passei a Fazer 250 pro Seu Jorge por 14.400, deu seis mil de entrada e o resto em 4 parcelas de 2.100.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Fazer 250",
+      "totalValue": 14400,
+      "cashIn": 6000,
+      "receivable": 8400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_068",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, Sandra pegou o Galaxy S21 por 3 mil, me deu 600 reais agora e vai pagar 8 parcelas de trezentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "Galaxy S21",
+      "totalValue": 3000,
+      "cashIn": 600,
+      "receivable": 2400,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_069",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo vendi o Gol 2012 pro Vanderlei por 15.700 reais: 7 mil de entrada no pix e o restante ficou em 3x de 2.900 reais todo dia 9.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Vanderlei",
+      "item": "Gol 2012",
+      "totalValue": 15700,
+      "cashIn": 7000,
+      "receivable": 8700,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_070",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, vendi a roçadeira Stihl pra Juliana por 2.100: 600 de entrada no pix e o restante ficou em 3 vezes de 500 todo dia 20.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "roçadeira Stihl",
+      "totalValue": 2100,
+      "cashIn": 600,
+      "receivable": 1500,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_071",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo vendi a Factor 150 pra Dona Célia por 8.800 reais: 6000 de entrada no pix e o restante ficou em 4 vezes de 700 todo dia 15.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Factor 150",
+      "totalValue": 8800,
+      "cashIn": 6000,
+      "receivable": 2800,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_072",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo Valdir pegou a Factor 150 por 13.200 reais, me deu 4.000 agora e vai pagar 4x de 2.300.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Factor 150",
+      "totalValue": 13200,
+      "cashIn": 4000,
+      "receivable": 9200,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_073",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: passei a Fazer 250 pra Sandra por 12800, deu quatro mil de entrada e o resto em 4 vezes de 2200.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "Fazer 250",
+      "totalValue": 12800,
+      "cashIn": 4000,
+      "receivable": 8800,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_074",
+    "category": "rw_venda_parcelada",
+    "input": "Deixa eu te falar, passei o Galaxy S21 pro Gilmar por 1.300, deu 500 de entrada e o resto em 4 vezes de 200 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Gilmar",
+      "item": "Galaxy S21",
+      "totalValue": 1300,
+      "cashIn": 500,
+      "receivable": 800,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_075",
+    "category": "rw_venda_parcelada",
+    "input": "Passei o notebook Lenovo pra Fabiana por 1.800, deu 800 de entrada e o resto em 5 parcelas de 200.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "notebook Lenovo",
+      "totalValue": 1800,
+      "cashIn": 800,
+      "receivable": 1000,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_076",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: vendi a Fazer 250 pra Rose por 12600: sete mil de entrada no pix e o restante ficou em 2 parcelas de 2.800 reais todo dia 2.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "Fazer 250",
+      "totalValue": 12600,
+      "cashIn": 7000,
+      "receivable": 5600,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_077",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, passei o PS4 pro Leandro por 2.400 reais, deu trezentos de entrada e o resto em 7 parcelas de 300 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "PS4",
+      "totalValue": 2400,
+      "cashIn": 300,
+      "receivable": 2100,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_078",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: vendi o Redmi Note 12 pro Cleiton por 2100: 500 de entrada no pix e o restante ficou em 4x de quatrocentos todo dia 23.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "Redmi Note 12",
+      "totalValue": 2100,
+      "cashIn": 500,
+      "receivable": 1600,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_079",
+    "category": "rw_venda_parcelada",
+    "input": "Pronto, foi o seguinte: passei a CG 150 pra Fabiana por 13.800, deu 1.000 reais de entrada e o resto em 8 parcelas de 1.600 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "CG 150",
+      "totalValue": 13800,
+      "cashIn": 1000,
+      "receivable": 12800,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_080",
+    "category": "rw_venda_parcelada",
+    "input": "Seu Jorge pegou o Moto G84 por dois mil e oitocentos, me deu 400 reais agora e vai pagar 4x de seiscentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Moto G84",
+      "totalValue": 2800,
+      "cashIn": 400,
+      "receivable": 2400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_081",
+    "category": "rw_venda_parcelada",
+    "input": "É... vendi o Palio 2011 pro Rogério por 17200: 1.000 de entrada no pix e o restante ficou em 6x de 2.700 todo dia 7.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Palio 2011",
+      "totalValue": 17200,
+      "cashIn": 1000,
+      "receivable": 16200,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_082",
+    "category": "rw_venda_parcelada",
+    "input": "Dona Célia pegou o Galaxy A54 por 1.900 reais, me deu 300 agora e vai pagar 4 vezes de 400.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Galaxy A54",
+      "totalValue": 1900,
+      "cashIn": 300,
+      "receivable": 1600,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_083",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que Dona Célia pegou o Galaxy S21 por 1600, me deu quatrocentos agora e vai pagar 2 parcelas de 600.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Galaxy S21",
+      "totalValue": 1600,
+      "cashIn": 400,
+      "receivable": 1200,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_084",
+    "category": "rw_venda_parcelada",
+    "input": "É... vendi a geladeira Brastemp pra Rose por 700 reais: 200 de entrada no pix e o restante ficou em 5 parcelas de 100 todo dia 14.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rose",
+      "item": "geladeira Brastemp",
+      "totalValue": 700,
+      "cashIn": 200,
+      "receivable": 500,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_085",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo passei a NXR 160 pro Rogério por 3.000, deu 1.000 de entrada e o resto em 4 vezes de 500 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "NXR 160",
+      "totalValue": 3000,
+      "cashIn": 1000,
+      "receivable": 2000,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_086",
+    "category": "rw_venda_parcelada",
+    "input": "Passei o iPhone 11 pra Adriana por dois mil e setecentos, deu 300 reais de entrada e o resto em 4 parcelas de 600 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "iPhone 11",
+      "totalValue": 2700,
+      "cashIn": 300,
+      "receivable": 2400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_087",
+    "category": "rw_venda_parcelada",
+    "input": "Então, passei a Pop 110 pro Seu Antônio por 10000, deu 3000 de entrada e o resto em 5x de mil e quatrocentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Pop 110",
+      "totalValue": 10000,
+      "cashIn": 3000,
+      "receivable": 7000,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_088",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, Valdir pegou o Celta 2008 por doze mil e quatrocentos, me deu 4000 agora e vai pagar 4 parcelas de dois mil e cem.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Celta 2008",
+      "totalValue": 12400,
+      "cashIn": 4000,
+      "receivable": 8400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_089",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, vendi o Gol 2012 pro Seu Antônio por 8.200: 1.000 de entrada no pix e o restante ficou em 8x de 900 todo dia 1.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Gol 2012",
+      "totalValue": 8200,
+      "cashIn": 1000,
+      "receivable": 7200,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_090",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo passei o iPhone 12 pro Robson por 3700, deu novecentos de entrada e o resto em 7 vezes de 400 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "iPhone 12",
+      "totalValue": 3700,
+      "cashIn": 900,
+      "receivable": 2800,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_091",
+    "category": "rw_venda_parcelada",
+    "input": "É... vendi a Factor 150 pra Adriana por 14.300: oito mil de entrada no pix e o restante ficou em 3 vezes de 2100 todo dia 16.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "Factor 150",
+      "totalValue": 14300,
+      "cashIn": 8000,
+      "receivable": 6300,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_092",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, vendi o Galaxy A54 pra Sandra por 2.800 reais: mil de entrada no pix e o restante ficou em 6 vezes de trezentos todo dia 9.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "Galaxy A54",
+      "totalValue": 2800,
+      "cashIn": 1000,
+      "receivable": 1800,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_093",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo vendi a NXR 160 pro Vanderlei por 9.100 reais: 1.000 de entrada no pix e o restante ficou em 3 vezes de dois mil e setecentos todo dia 13.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Vanderlei",
+      "item": "NXR 160",
+      "totalValue": 9100,
+      "cashIn": 1000,
+      "receivable": 8100,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_094",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: vendi a Biz 125 pra Dona Lurdes por quatorze mil: 7.000 reais de entrada no pix e o restante ficou em 7 vezes de mil todo dia 2.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "Biz 125",
+      "totalValue": 14000,
+      "cashIn": 7000,
+      "receivable": 7000,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_095",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo vendi a NXR 160 pra Juliana por 11.600 reais: 6.000 reais de entrada no pix e o restante ficou em 2 vezes de 2.800 reais todo dia 9.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "NXR 160",
+      "totalValue": 11600,
+      "cashIn": 6000,
+      "receivable": 5600,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_096",
+    "category": "rw_venda_parcelada",
+    "input": "Então, vendi a roçadeira Stihl pro Leandro por dois mil e oitocentos: 700 reais de entrada no pix e o restante ficou em 7 vezes de 300 todo dia 28.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "roçadeira Stihl",
+      "totalValue": 2800,
+      "cashIn": 700,
+      "receivable": 2100,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_097",
+    "category": "rw_venda_parcelada",
+    "input": "Ó, passei o Galaxy A54 pro Seu Antônio por 3200, deu setecentos de entrada e o resto em 5 parcelas de 500 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Galaxy A54",
+      "totalValue": 3200,
+      "cashIn": 700,
+      "receivable": 2500,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_098",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: vendi o PS4 pra Sandra por 1.100: 300 de entrada no pix e o restante ficou em 8 vezes de cem todo dia 2.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Sandra",
+      "item": "PS4",
+      "totalValue": 1100,
+      "cashIn": 300,
+      "receivable": 800,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_099",
+    "category": "rw_venda_parcelada",
+    "input": "Então, vendi o Palio 2011 pro Leandro por 18.800 reais: oito mil de entrada no pix e o restante ficou em 6x de mil e oitocentos todo dia 9.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "Palio 2011",
+      "totalValue": 18800,
+      "cashIn": 8000,
+      "receivable": 10800,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_100",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, Tonho pegou a geladeira Brastemp por 1300, me deu quinhentos agora e vai pagar 2 parcelas de 400 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Tonho",
+      "item": "geladeira Brastemp",
+      "totalValue": 1300,
+      "cashIn": 500,
+      "receivable": 800,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_101",
+    "category": "rw_venda_parcelada",
+    "input": "É... passei a Twister 250 pro Rogério por 4 mil, deu 3.000 de entrada e o resto em 2 parcelas de 500.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Twister 250",
+      "totalValue": 4000,
+      "cashIn": 3000,
+      "receivable": 1000,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_102",
+    "category": "rw_venda_parcelada",
+    "input": "Passei a geladeira Brastemp pro Seu Jorge por 600, deu 200 reais de entrada e o resto em 4x de 100 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "geladeira Brastemp",
+      "totalValue": 600,
+      "cashIn": 200,
+      "receivable": 400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_103",
+    "category": "rw_venda_parcelada",
+    "input": "Passei a Biz 125 pra Dona Célia por 9.800, deu cinco mil de entrada e o resto em 6 vezes de 800 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Biz 125",
+      "totalValue": 9800,
+      "cashIn": 5000,
+      "receivable": 4800,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_104",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que Tonho pegou o iPhone 12 por dois mil e novecentos, me deu 900 agora e vai pagar 4 vezes de quinhentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Tonho",
+      "item": "iPhone 12",
+      "totalValue": 2900,
+      "cashIn": 900,
+      "receivable": 2000,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_105",
+    "category": "rw_venda_parcelada",
+    "input": "Hoje cedo Adriana pegou a Fazer 250 por 5.800, me deu mil agora e vai pagar 2 vezes de 2400.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "Fazer 250",
+      "totalValue": 5800,
+      "cashIn": 1000,
+      "receivable": 4800,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_106",
+    "category": "rw_venda_parcelada",
+    "input": "Vendi o Palio 2011 pra Neide por doze mil e quinhentos: 8 mil de entrada no pix e o restante ficou em 3 vezes de 1.500 todo dia 4.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Neide",
+      "item": "Palio 2011",
+      "totalValue": 12500,
+      "cashIn": 8000,
+      "receivable": 4500,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_107",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que passei o iPhone 11 pra Juliana por 3.500, deu 700 de entrada e o resto em 7 vezes de 400 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "iPhone 11",
+      "totalValue": 3500,
+      "cashIn": 700,
+      "receivable": 2800,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_108",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: passei o Celta 2008 pro Robson por 7800, deu 3000 de entrada e o resto em 4 vezes de mil e duzentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "Celta 2008",
+      "totalValue": 7800,
+      "cashIn": 3000,
+      "receivable": 4800,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_109",
+    "category": "rw_venda_parcelada",
+    "input": "Anota aí: Dona Lurdes pegou o iPhone 11 por mil e quinhentos, me deu 300 reais agora e vai pagar 3 parcelas de 400.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "iPhone 11",
+      "totalValue": 1500,
+      "cashIn": 300,
+      "receivable": 1200,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_110",
+    "category": "rw_venda_parcelada",
+    "input": "Passei a geladeira Brastemp pra Adriana por 1.800, deu 800 de entrada e o resto em 5 parcelas de 200 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "geladeira Brastemp",
+      "totalValue": 1800,
+      "cashIn": 800,
+      "receivable": 1000,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_111",
+    "category": "rw_venda_parcelada",
+    "input": "É... vendi a Twister 250 pro Leandro por 6000: 3000 de entrada no pix e o restante ficou em 3 vezes de 1 mil todo dia 14.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "Twister 250",
+      "totalValue": 6000,
+      "cashIn": 3000,
+      "receivable": 3000,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_112",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, Cleiton pegou a Pop 110 por 11200, me deu 6.000 reais agora e vai pagar 4x de 1.300 reais.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "item": "Pop 110",
+      "totalValue": 11200,
+      "cashIn": 6000,
+      "receivable": 5200,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_113",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que Fabiana pegou a Pop 110 por 14.000 reais, me deu sete mil agora e vai pagar 7x de 1 mil.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "Pop 110",
+      "totalValue": 14000,
+      "cashIn": 7000,
+      "receivable": 7000,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_114",
+    "category": "rw_venda_parcelada",
+    "input": "Valdir pegou a NXR 160 por 8 mil, me deu 2 mil agora e vai pagar 5x de mil e duzentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "NXR 160",
+      "totalValue": 8000,
+      "cashIn": 2000,
+      "receivable": 6000,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_115",
+    "category": "rw_venda_parcelada",
+    "input": "Passei a roçadeira Stihl pro Leandro por 1100, deu trezentos de entrada e o resto em 4x de duzentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "roçadeira Stihl",
+      "totalValue": 1100,
+      "cashIn": 300,
+      "receivable": 800,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_116",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, Seu Antônio pegou o Galaxy S21 por cinco mil e duzentos, me deu 400 agora e vai pagar 8x de 600.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Galaxy S21",
+      "totalValue": 5200,
+      "cashIn": 400,
+      "receivable": 4800,
+      "installmentsCount": 8,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_117",
+    "category": "rw_venda_parcelada",
+    "input": "É... passei a Smart TV pro Tonho por 3.000 reais, deu 1 mil de entrada e o resto em 4 vezes de quinhentos.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Tonho",
+      "item": "Smart TV",
+      "totalValue": 3000,
+      "cashIn": 1000,
+      "receivable": 2000,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_118",
+    "category": "rw_venda_parcelada",
+    "input": "Pronto, foi o seguinte: vendi o PS4 pro Beto por 1.900 reais: setecentos de entrada no pix e o restante ficou em 6 parcelas de duzentos todo dia 16.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Beto",
+      "item": "PS4",
+      "totalValue": 1900,
+      "cashIn": 700,
+      "receivable": 1200,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_119",
+    "category": "rw_venda_parcelada",
+    "input": "Olha só, vendi o iPhone 12 pra Neide por 1700: 300 reais de entrada no pix e o restante ficou em 7 parcelas de 200 reais todo dia 6.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Neide",
+      "item": "iPhone 12",
+      "totalValue": 1700,
+      "cashIn": 300,
+      "receivable": 1400,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_120",
+    "category": "rw_venda_parcelada",
+    "input": "Rapaz, bota aí que vendi o Moto G84 pra Adriana por 2900: 400 de entrada no pix e o restante ficou em 5x de 500 reais todo dia 6.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "item": "Moto G84",
+      "totalValue": 2900,
+      "cashIn": 400,
+      "receivable": 2500,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_121",
+    "category": "rw_correcao",
+    "input": "Anota aí: Valdir pagou 700... não, 600 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Valdir",
+      "amount": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_122",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que vendi a roçadeira Stihl pro Rogério por 1.300 reais, aliás mil e duzentos no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "roçadeira Stihl",
+      "totalValue": 1200,
+      "cashIn": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_123",
+    "category": "rw_correcao",
+    "input": "É... Robson pagou 400... não, 200 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Robson",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_124",
+    "category": "rw_correcao",
+    "input": "Anota aí: vendi a Titan 160 pra Kelly por dez mil, quer dizer, 11 mil no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Kelly",
+      "item": "Titan 160",
+      "totalValue": 11000,
+      "cashIn": 11000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_125",
+    "category": "rw_correcao",
+    "input": "Vendi o iPhone 12 pro Wesley por mil e quinhentos, quer dizer, dois mil à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "item": "iPhone 12",
+      "totalValue": 2000,
+      "cashIn": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_126",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que vendi o Galaxy A54 pro Leandro por 3.800, quer dizer, 4300 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "Galaxy A54",
+      "totalValue": 4300,
+      "cashIn": 4300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_127",
+    "category": "rw_correcao",
+    "input": "Hoje cedo vendi a Biz 125 pro Valdir por 7.500, aliás oito mil no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Biz 125",
+      "totalValue": 8000,
+      "cashIn": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_128",
+    "category": "rw_correcao",
+    "input": "Então, vendi a Fazer 250 pra Dona Lurdes por 16.500 reais, quer dizer, 15.500 reais no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "Fazer 250",
+      "totalValue": 15500,
+      "cashIn": 15500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_129",
+    "category": "rw_correcao",
+    "input": "Então, Seu Antônio pagou mil e duzentos... não, 1.000 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Antônio",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_130",
+    "category": "rw_correcao",
+    "input": "Hoje cedo vendi o fogão Atlas pro Leandro por mil e oitocentos, não, foi 2800 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Leandro",
+      "item": "fogão Atlas",
+      "totalValue": 2800,
+      "cashIn": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_131",
+    "category": "rw_correcao",
+    "input": "Pronto, foi o seguinte: Juliana pagou 2.100 reais... não, 1.900 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_132",
+    "category": "rw_correcao",
+    "input": "Ó, vendi a Twister 250 pro Seu Jorge por 14.000, aliás quatorze mil e quinhentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "item": "Twister 250",
+      "totalValue": 14500,
+      "cashIn": 14500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_133",
+    "category": "rw_correcao",
+    "input": "Olha só, vendi a Fazer 250 pro Valdir por 8.000, aliás 9000 no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "Fazer 250",
+      "totalValue": 9000,
+      "cashIn": 9000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_134",
+    "category": "rw_correcao",
+    "input": "Hoje cedo Gilmar pagou 1.500 reais... não, 1300 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Gilmar",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_135",
+    "category": "rw_correcao",
+    "input": "Pronto, foi o seguinte: Robson pagou 1200... não, 1.000 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Robson",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_136",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que vendi o Uno 2010 pro Seu Antônio por trinta mil, não, foi 29000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Uno 2010",
+      "totalValue": 29000,
+      "cashIn": 29000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_137",
+    "category": "rw_correcao",
+    "input": "Olha só, vendi a geladeira Brastemp pro Rogério por mil e seiscentos, aliás 2.100 reais no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "geladeira Brastemp",
+      "totalValue": 2100,
+      "cashIn": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_138",
+    "category": "rw_correcao",
+    "input": "É... vendi o Redmi Note 12 pra Dona Célia por 2.200 reais, aliás 3.200 reais em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "Redmi Note 12",
+      "totalValue": 3200,
+      "cashIn": 3200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_139",
+    "category": "rw_correcao",
+    "input": "Ó, vendi a Fazer 250 pro Robson por 7.900, aliás 8 mil à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "Fazer 250",
+      "totalValue": 8000,
+      "cashIn": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_140",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que Kelly pagou 2800... não, 2.900 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Kelly",
+      "amount": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_141",
+    "category": "rw_correcao",
+    "input": "Pronto, foi o seguinte: vendi o iPhone 12 pro Vanderlei por 3.600, não, foi 4.100 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Vanderlei",
+      "item": "iPhone 12",
+      "totalValue": 4100,
+      "cashIn": 4100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_142",
+    "category": "rw_correcao",
+    "input": "Vendi a Titan 160 pro Robson por 11.000 reais, aliás 11.500 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Robson",
+      "item": "Titan 160",
+      "totalValue": 11500,
+      "cashIn": 11500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_143",
+    "category": "rw_correcao",
+    "input": "Hoje cedo vendi a Biz 125 pro Rogério por 15.500 reais, não, foi dezesseis mil no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "item": "Biz 125",
+      "totalValue": 16000,
+      "cashIn": 16000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_144",
+    "category": "rw_correcao",
+    "input": "Hoje cedo Edson pagou mil... não, 800 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Edson",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_145",
+    "category": "rw_correcao",
+    "input": "Então, vendi a roçadeira Stihl pro Valdir por 600, aliás 1100 no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "item": "roçadeira Stihl",
+      "totalValue": 1100,
+      "cashIn": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_146",
+    "category": "rw_correcao",
+    "input": "Vendi o Palio 2011 pra Dona Lurdes por 20.100... não, 20 mil na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "item": "Palio 2011",
+      "totalValue": 20000,
+      "cashIn": 20000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_147",
+    "category": "rw_correcao",
+    "input": "É... Leandro pagou mil e oitocentos... não, mil e seiscentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Leandro",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_148",
+    "category": "rw_correcao",
+    "input": "Hoje cedo Valdir pagou 300... não, quatrocentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Valdir",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_149",
+    "category": "rw_correcao",
+    "input": "Anota aí: vendi o iPhone 11 pra Fabiana por 2.300 reais, aliás 2200 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "item": "iPhone 11",
+      "totalValue": 2200,
+      "cashIn": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_150",
+    "category": "rw_correcao",
+    "input": "Valdir pagou 1200... não, 1.100 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Valdir",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_151",
+    "category": "rw_correcao",
+    "input": "Pronto, foi o seguinte: Gilmar pagou 400 reais... não, 300 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Gilmar",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_152",
+    "category": "rw_correcao",
+    "input": "Pronto, foi o seguinte: vendi o iPhone 11 pro Gilmar por 1.400 reais... não, 900 no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Gilmar",
+      "item": "iPhone 11",
+      "totalValue": 900,
+      "cashIn": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_153",
+    "category": "rw_correcao",
+    "input": "Então, vendi a Saveiro 2014 pro Seu Antônio por 20 mil... não, 21000 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Antônio",
+      "item": "Saveiro 2014",
+      "totalValue": 21000,
+      "cashIn": 21000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_154",
+    "category": "rw_correcao",
+    "input": "Ó, vendi o iPhone 11 pro Wesley por 2.500 reais, quer dizer, 3.500 reais na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "item": "iPhone 11",
+      "totalValue": 3500,
+      "cashIn": 3500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_155",
+    "category": "rw_correcao",
+    "input": "Anota aí: vendi a roçadeira Stihl pra Juliana por 1600, não, foi 1.500 reais no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Juliana",
+      "item": "roçadeira Stihl",
+      "totalValue": 1500,
+      "cashIn": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_156",
+    "category": "rw_correcao",
+    "input": "Hoje cedo vendi a motosserra pra Kelly por mil e quatrocentos, aliás 1.300 à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Kelly",
+      "item": "motosserra",
+      "totalValue": 1300,
+      "cashIn": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_157",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que Adriana pagou 400... não, 500 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Adriana",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_158",
+    "category": "rw_correcao",
+    "input": "Ó, vendi a geladeira Brastemp pra Dona Célia por -500 reais, aliás 500 em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Célia",
+      "item": "geladeira Brastemp",
+      "totalValue": 500,
+      "cashIn": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_159",
+    "category": "rw_correcao",
+    "input": "Rapaz, bota aí que Leandro pagou mil e cem... não, 1000 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Leandro",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_160",
+    "category": "rw_correcao",
+    "input": "Deixa eu te falar, Vanderlei pagou seiscentos... não, 500 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Vanderlei",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_161",
+    "category": "rw_recebimento",
+    "input": "Anota aí: caiu 2.000 do Vanderlei aqui no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Vanderlei",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_162",
+    "category": "rw_recebimento",
+    "input": "Deixa eu te falar, recebi três mil e trezentos da Fabiana, beleza?.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Fabiana",
+      "amount": 3300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_163",
+    "category": "rw_recebimento",
+    "input": "É... Rose me passou três mil e duzentos no pix agora, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rose",
+      "amount": 3200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_164",
+    "category": "rw_recebimento",
+    "input": "É... Vanderlei acertou comigo mil e quinhentos viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Vanderlei",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_165",
+    "category": "rw_recebimento",
+    "input": "Olha só, Rogério quitou tudo.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rogério",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_166",
+    "category": "rw_recebimento",
+    "input": "Anota aí: Juliana deu uma parte, 200.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_167",
+    "category": "rw_recebimento",
+    "input": "Olha só, Seu Jorge pagou o resto da dívida.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Jorge",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_168",
+    "category": "rw_recebimento",
+    "input": "É... Seu Antônio me passou 1.900 reais no pix agora.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Antônio",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_169",
+    "category": "rw_recebimento",
+    "input": "Ó, Cleiton pagou o resto da dívida.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Cleiton",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_170",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Marquinhos mandou mais quatrocentos no pix, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Marquinhos",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_171",
+    "category": "rw_recebimento",
+    "input": "Anota aí: Juliana mandou mais 2900 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_172",
+    "category": "rw_recebimento",
+    "input": "Deixa eu te falar, recebi 1400 do Rogério.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rogério",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_173",
+    "category": "rw_recebimento",
+    "input": "Rapaz, bota aí que Cleiton acertou comigo 2.600 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Cleiton",
+      "amount": 2600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_174",
+    "category": "rw_recebimento",
+    "input": "Olha só, recebi 1.000 do Beto.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Beto",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_175",
+    "category": "rw_recebimento",
+    "input": "É... recebi 600 reais do Seu Jorge viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Jorge",
+      "amount": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_176",
+    "category": "rw_recebimento",
+    "input": "Olha só, Rose mandou mais dois mil e novecentos no pix viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rose",
+      "amount": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_177",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Patrícia pagou o resto da dívida.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Patrícia",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_178",
+    "category": "rw_recebimento",
+    "input": "Pronto, foi o seguinte: Seu Antônio acertou comigo 2.500 reais, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Antônio",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_179",
+    "category": "rw_recebimento",
+    "input": "Rapaz, bota aí que Valdir acertou o que faltava.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Valdir",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_180",
+    "category": "rw_recebimento",
+    "input": "Rapaz, bota aí que caiu 2.900 do Juliana aqui no pix, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_181",
+    "category": "rw_recebimento",
+    "input": "Fabiana acertou comigo 2.500.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Fabiana",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_182",
+    "category": "rw_recebimento",
+    "input": "É... caiu dois mil e oitocentos do Valdir aqui no pix, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Valdir",
+      "amount": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_183",
+    "category": "rw_recebimento",
+    "input": "Deixa eu te falar, Juliana acertou comigo mil e setecentos.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_184",
+    "category": "rw_recebimento",
+    "input": "Rapaz, bota aí que recebi 800 do Vanderlei, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Vanderlei",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_185",
+    "category": "rw_recebimento",
+    "input": "É... caiu 1.500 do Rogério aqui no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rogério",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_186",
+    "category": "rw_recebimento",
+    "input": "Ó, Patrícia mandou mais 3.300 reais no pix, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Patrícia",
+      "amount": 3300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_187",
+    "category": "rw_recebimento",
+    "input": "Fabiana mandou um dinheiro aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment",
+        "clarify_ambiguity"
+      ],
+      "customer": "Fabiana",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_188",
+    "category": "rw_recebimento",
+    "input": "Rogério mandou mais 4.000 reais no pix viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rogério",
+      "amount": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_189",
+    "category": "rw_recebimento",
+    "input": "Deixa eu te falar, Rose pagou um pouco.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment",
+        "clarify_ambiguity"
+      ],
+      "customer": "Rose",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_190",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Dona Lurdes pagou o resto da dívida.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lurdes",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_191",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Cleiton me passou mil no pix agora.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Cleiton",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_192",
+    "category": "rw_recebimento",
+    "input": "É... caiu 4.000 do Kelly aqui no pix, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Kelly",
+      "amount": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_193",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Dona Lurdes quitou tudo.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lurdes",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_194",
+    "category": "rw_recebimento",
+    "input": "Então, Dona Lurdes pagou 1100 daquela conta.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Lurdes",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_195",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo caiu 1.500 do Neide aqui no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Neide",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_196",
+    "category": "rw_recebimento",
+    "input": "Deixa eu te falar, Beto deu uma parte.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment",
+        "clarify_ambiguity"
+      ],
+      "customer": "Beto",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_197",
+    "category": "rw_recebimento",
+    "input": "Pronto, foi o seguinte: Wesley deu uma parte.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment",
+        "clarify_ambiguity"
+      ],
+      "customer": "Wesley",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_198",
+    "category": "rw_recebimento",
+    "input": "Recebi três mil e seiscentos do Leandro.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Leandro",
+      "amount": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_199",
+    "category": "rw_recebimento",
+    "input": "É... Beto mandou mais 1100 no pix, beleza?.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Beto",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_200",
+    "category": "rw_recebimento",
+    "input": "Ó, Sandra deu uma parte, 2.700 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Sandra",
+      "amount": 2700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_201",
+    "category": "rw_recebimento",
+    "input": "Anota aí: Seu Antônio acertou o que faltava.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Antônio",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_202",
+    "category": "rw_recebimento",
+    "input": "Olha só, caiu 800 do Dona Célia aqui no pix viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Célia",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_203",
+    "category": "rw_recebimento",
+    "input": "Pronto, foi o seguinte: recebi 3600 do Valdir viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Valdir",
+      "amount": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_204",
+    "category": "rw_recebimento",
+    "input": "Ó, Rogério mandou mais 900 reais no pix, beleza?.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rogério",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_205",
+    "category": "rw_recebimento",
+    "input": "Olha só, Patrícia mandou mais três mil e quinhentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Patrícia",
+      "amount": 3500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_206",
+    "category": "rw_recebimento",
+    "input": "Olha só, Juliana deu uma parte, 1.100.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_207",
+    "category": "rw_recebimento",
+    "input": "É... Dona Célia pagou 3.200 daquela conta, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Célia",
+      "amount": 3200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_208",
+    "category": "rw_recebimento",
+    "input": "Recebi 700 reais da Patrícia, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Patrícia",
+      "amount": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_209",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Gilmar deu uma parte, 2.500.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Gilmar",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_210",
+    "category": "rw_recebimento",
+    "input": "Olha só, Wesley pagou 1900 daquela conta viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Wesley",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_211",
+    "category": "rw_recebimento",
+    "input": "Então, Dona Célia acertou comigo dois mil, beleza?.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Célia",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_212",
+    "category": "rw_recebimento",
+    "input": "Rapaz, bota aí que Patrícia quitou tudo.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Patrícia",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_213",
+    "category": "rw_recebimento",
+    "input": "Hoje cedo Leandro acertou o que faltava.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Leandro",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_214",
+    "category": "rw_recebimento",
+    "input": "É... Valdir mandou um dinheiro aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment",
+        "clarify_ambiguity"
+      ],
+      "customer": "Valdir",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_215",
+    "category": "rw_recebimento",
+    "input": "Olha só, Sandra acertou comigo 1.400, anota aí.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Sandra",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_216",
+    "category": "rw_recebimento",
+    "input": "É... recebi 100 do Beto viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Beto",
+      "amount": 100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_217",
+    "category": "rw_recebimento",
+    "input": "É... caiu 400 do Rose aqui no pix, pode lançar.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rose",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_218",
+    "category": "rw_recebimento",
+    "input": "Pronto, foi o seguinte: recebi 2.400 do Vanderlei.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Vanderlei",
+      "amount": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_219",
+    "category": "rw_recebimento",
+    "input": "Então, caiu 2.500 do Juliana aqui no pix viu.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Juliana",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_220",
+    "category": "rw_recebimento",
+    "input": "Então, Marquinhos mandou mais mil e quinhentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Marquinhos",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_221",
+    "category": "rw_troca",
+    "input": "Olha só, entrou o Moto G84 na troca, saiu minha roçadeira Stihl pra Patrícia e eu voltei 500 reais.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Patrícia",
+      "itemOut": "roçadeira Stihl",
+      "itemIn": "Moto G84",
+      "direction": "outflow",
+      "tradeBalance": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_222",
+    "category": "rw_troca",
+    "input": "Anota aí: troquei meu Galaxy A54 no Uno 2010 da Adriana e tive que completar 3000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Adriana",
+      "itemOut": "Galaxy A54",
+      "itemIn": "Uno 2010",
+      "direction": "outflow",
+      "tradeBalance": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_223",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, entrou o iPhone 12 na troca, saiu meu Galaxy S21 pro Leandro e eu voltei 2.600 reais.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Leandro",
+      "itemOut": "Galaxy S21",
+      "itemIn": "iPhone 12",
+      "direction": "outflow",
+      "tradeBalance": 2600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_224",
+    "category": "rw_troca",
+    "input": "Troquei minha Biz 125 na Fazer 250 da Neide e peguei 700 na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Neide",
+      "itemOut": "Biz 125",
+      "itemIn": "Fazer 250",
+      "direction": "inflow",
+      "tradeBalance": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_225",
+    "category": "rw_troca",
+    "input": "Ó, peguei o Moto G84 da Dona Lurdes na troca da minha CG 150 e ele completou 800 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "CG 150",
+      "itemIn": "Moto G84",
+      "direction": "inflow",
+      "tradeBalance": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_226",
+    "category": "rw_troca",
+    "input": "Anota aí: troquei minha bicicleta aro 29 na Titan 160 da Dona Lurdes e tive que completar 3.900 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "bicicleta aro 29",
+      "itemIn": "Titan 160",
+      "direction": "outflow",
+      "tradeBalance": 3900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_227",
+    "category": "rw_troca",
+    "input": "Anota aí: troquei minha Biz 125 no Palio 2011 da Neide e tive que completar 3.000 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Neide",
+      "itemOut": "Biz 125",
+      "itemIn": "Palio 2011",
+      "direction": "outflow",
+      "tradeBalance": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_228",
+    "category": "rw_troca",
+    "input": "É... peguei a Pop 110 do Rogério na troca do meu Redmi Note 12 e ele completou 2.100 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Rogério",
+      "itemOut": "Redmi Note 12",
+      "itemIn": "Pop 110",
+      "direction": "inflow",
+      "tradeBalance": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_229",
+    "category": "rw_troca",
+    "input": "Hoje cedo entrou o Galaxy S21 do Gilmar na troca, saiu meu Moto G84, e ele me voltou 2.600 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Moto G84",
+      "itemIn": "Galaxy S21",
+      "direction": "inflow",
+      "tradeBalance": 2600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_230",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, troquei minha NXR 160 no Redmi Note 12 do Edson na troca seca.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Edson",
+      "itemOut": "NXR 160",
+      "itemIn": "Redmi Note 12",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_231",
+    "category": "rw_troca",
+    "input": "Hoje cedo fiz troca seca com o Beto: saiu minha Fazer 250, entrou o iPhone 11.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Beto",
+      "itemOut": "Fazer 250",
+      "itemIn": "iPhone 11",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_232",
+    "category": "rw_troca",
+    "input": "Hoje cedo troquei minha NXR 160 no Moto G84 da Patrícia e peguei mil e oitocentos na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Patrícia",
+      "itemOut": "NXR 160",
+      "itemIn": "Moto G84",
+      "direction": "inflow",
+      "tradeBalance": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_233",
+    "category": "rw_troca",
+    "input": "Troquei meu iPhone 12 na Saveiro 2014 do Gilmar e peguei 3000 na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "iPhone 12",
+      "itemIn": "Saveiro 2014",
+      "direction": "inflow",
+      "tradeBalance": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_234",
+    "category": "rw_troca",
+    "input": "Ó, troquei meu Galaxy A54 no Palio 2011 do Robson e peguei mil e novecentos na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Robson",
+      "itemOut": "Galaxy A54",
+      "itemIn": "Palio 2011",
+      "direction": "inflow",
+      "tradeBalance": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_235",
+    "category": "rw_troca",
+    "input": "Pronto, foi o seguinte: troquei minha Smart TV na Titan 160 da Fabiana e peguei 2.100 na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Fabiana",
+      "itemOut": "Smart TV",
+      "itemIn": "Titan 160",
+      "direction": "inflow",
+      "tradeBalance": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_236",
+    "category": "rw_troca",
+    "input": "Troquei meu iPhone 12 na Biz 125 do Robson na troca seca.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Robson",
+      "itemOut": "iPhone 12",
+      "itemIn": "Biz 125",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_237",
+    "category": "rw_troca",
+    "input": "Ó, fiz troca seca com a Dona Lurdes: saiu meu Galaxy S21, entrou a Twister 250.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "Galaxy S21",
+      "itemIn": "Twister 250",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_238",
+    "category": "rw_troca",
+    "input": "Olha só, troquei meu Celta 2008 na Smart TV do Gilmar e peguei 2.800 reais na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Celta 2008",
+      "itemIn": "Smart TV",
+      "direction": "inflow",
+      "tradeBalance": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_239",
+    "category": "rw_troca",
+    "input": "É... troquei minha Fazer 250 no Uno 2010 do Gilmar elas por elas, ninguém voltou nada.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Fazer 250",
+      "itemIn": "Uno 2010",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_240",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, troquei minha Biz 125 no fogão Atlas do Vanderlei e tive que completar 900 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Vanderlei",
+      "itemOut": "Biz 125",
+      "itemIn": "fogão Atlas",
+      "direction": "outflow",
+      "tradeBalance": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_241",
+    "category": "rw_troca",
+    "input": "Ó, peguei o Redmi Note 12 do Beto, dei meu Moto G84 e completei 1.300 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Beto",
+      "itemOut": "Moto G84",
+      "itemIn": "Redmi Note 12",
+      "direction": "outflow",
+      "tradeBalance": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_242",
+    "category": "rw_troca",
+    "input": "Rapaz, bota aí que fiz troca seca com a Rose: saiu minha bicicleta aro 29, entrou o fogão Atlas.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Rose",
+      "itemOut": "bicicleta aro 29",
+      "itemIn": "fogão Atlas",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_243",
+    "category": "rw_troca",
+    "input": "Hoje cedo troquei meu Galaxy S21 na Smart TV da Dona Lurdes e peguei 2.600 reais na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "Galaxy S21",
+      "itemIn": "Smart TV",
+      "direction": "inflow",
+      "tradeBalance": 2600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_244",
+    "category": "rw_troca",
+    "input": "Então, troquei meu iPhone 11 na Fazer 250 do Leandro e tive que completar 3.100 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Leandro",
+      "itemOut": "iPhone 11",
+      "itemIn": "Fazer 250",
+      "direction": "outflow",
+      "tradeBalance": 3100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_245",
+    "category": "rw_troca",
+    "input": "Anota aí: entrou a Factor 150 na troca, saiu meu notebook Lenovo pro Valdir e eu voltei dois mil e duzentos.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Valdir",
+      "itemOut": "notebook Lenovo",
+      "itemIn": "Factor 150",
+      "direction": "outflow",
+      "tradeBalance": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_246",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, peguei o iPhone 12 da Dona Célia, dei meu Redmi Note 12 e completei 2100 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Célia",
+      "itemOut": "Redmi Note 12",
+      "itemIn": "iPhone 12",
+      "direction": "outflow",
+      "tradeBalance": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_247",
+    "category": "rw_troca",
+    "input": "Troquei minha Fazer 250 na NXR 160 do Seu Antônio e tive que completar 1.700 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Antônio",
+      "itemOut": "Fazer 250",
+      "itemIn": "NXR 160",
+      "direction": "outflow",
+      "tradeBalance": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_248",
+    "category": "rw_troca",
+    "input": "Hoje cedo troquei minha Saveiro 2014 no Galaxy S21 do Beto elas por elas, ninguém voltou nada.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Beto",
+      "itemOut": "Saveiro 2014",
+      "itemIn": "Galaxy S21",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_249",
+    "category": "rw_troca",
+    "input": "Ó, entrou o iPhone 11 da Dona Lurdes na troca, saiu meu Uno 2010, e ele me voltou 2200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "Uno 2010",
+      "itemIn": "iPhone 11",
+      "direction": "inflow",
+      "tradeBalance": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_250",
+    "category": "rw_troca",
+    "input": "Anota aí: troquei minha CG 150 no Gol 2012 do Valdir e peguei 2.700 na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Valdir",
+      "itemOut": "CG 150",
+      "itemIn": "Gol 2012",
+      "direction": "inflow",
+      "tradeBalance": 2700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_251",
+    "category": "rw_troca",
+    "input": "É... peguei a Twister 250 do Cleiton, dei minha Factor 150 e completei 500 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Cleiton",
+      "itemOut": "Factor 150",
+      "itemIn": "Twister 250",
+      "direction": "outflow",
+      "tradeBalance": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_252",
+    "category": "rw_troca",
+    "input": "Ó, troquei meu iPhone 11 na Biz 125 do Rogério e tive que completar novecentos em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Rogério",
+      "itemOut": "iPhone 11",
+      "itemIn": "Biz 125",
+      "direction": "outflow",
+      "tradeBalance": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_253",
+    "category": "rw_troca",
+    "input": "Então, troquei minha NXR 160 no Celta 2008 do Wesley e tive que completar 3.900 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Wesley",
+      "itemOut": "NXR 160",
+      "itemIn": "Celta 2008",
+      "direction": "outflow",
+      "tradeBalance": 3900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_254",
+    "category": "rw_troca",
+    "input": "Pronto, foi o seguinte: entrou a Pop 110 na troca, saiu meu fogão Atlas pra Sandra e eu voltei oitocentos.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Sandra",
+      "itemOut": "fogão Atlas",
+      "itemIn": "Pop 110",
+      "direction": "outflow",
+      "tradeBalance": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_255",
+    "category": "rw_troca",
+    "input": "Anota aí: entrou o Palio 2011 na troca, saiu minha Titan 160 pro Gilmar e eu voltei 4.000.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Titan 160",
+      "itemIn": "Palio 2011",
+      "direction": "outflow",
+      "tradeBalance": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_256",
+    "category": "rw_troca",
+    "input": "É... peguei o iPhone 11 do Gilmar na troca da minha Smart TV e ele completou 600 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Smart TV",
+      "itemIn": "iPhone 11",
+      "direction": "inflow",
+      "tradeBalance": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_257",
+    "category": "rw_troca",
+    "input": "Hoje cedo peguei a CG 150 do Robson, dei meu iPhone 12 e completei 4.000 reais no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Robson",
+      "itemOut": "iPhone 12",
+      "itemIn": "CG 150",
+      "direction": "outflow",
+      "tradeBalance": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_258",
+    "category": "rw_troca",
+    "input": "Olha só, peguei a geladeira Brastemp da Adriana, dei meu Uno 2010 e completei 300 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Adriana",
+      "itemOut": "Uno 2010",
+      "itemIn": "geladeira Brastemp",
+      "direction": "outflow",
+      "tradeBalance": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_259",
+    "category": "rw_troca",
+    "input": "Então, troquei minha Biz 125 na CG 150 da Patrícia e peguei 2500 na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Patrícia",
+      "itemOut": "Biz 125",
+      "itemIn": "CG 150",
+      "direction": "inflow",
+      "tradeBalance": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_260",
+    "category": "rw_troca",
+    "input": "Rapaz, bota aí que peguei a Smart TV do Leandro, dei minha motosserra e completei 2800 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Leandro",
+      "itemOut": "motosserra",
+      "itemIn": "Smart TV",
+      "direction": "outflow",
+      "tradeBalance": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_261",
+    "category": "rw_troca",
+    "input": "Anota aí: entrou a Biz 125 na troca, saiu meu Celta 2008 pro Vanderlei e eu voltei mil.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Vanderlei",
+      "itemOut": "Celta 2008",
+      "itemIn": "Biz 125",
+      "direction": "outflow",
+      "tradeBalance": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_262",
+    "category": "rw_troca",
+    "input": "Rapaz, bota aí que entrou a Titan 160 na troca, saiu meu Moto G84 pro Rogério e eu voltei 2.500 reais.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Rogério",
+      "itemOut": "Moto G84",
+      "itemIn": "Titan 160",
+      "direction": "outflow",
+      "tradeBalance": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_263",
+    "category": "rw_troca",
+    "input": "Anota aí: troquei minha Factor 150 no Celta 2008 do Seu Jorge e tive que completar 3100 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Jorge",
+      "itemOut": "Factor 150",
+      "itemIn": "Celta 2008",
+      "direction": "outflow",
+      "tradeBalance": 3100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_264",
+    "category": "rw_troca",
+    "input": "Hoje cedo entrou a CG 150 do Leandro na troca, saiu meu Moto G84, e ele me voltou mil e cem em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Leandro",
+      "itemOut": "Moto G84",
+      "itemIn": "CG 150",
+      "direction": "inflow",
+      "tradeBalance": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_265",
+    "category": "rw_troca",
+    "input": "Pronto, foi o seguinte: troquei meu iPhone 11 no iPhone 12 da Fabiana e peguei 2.400 reais na volta.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Fabiana",
+      "itemOut": "iPhone 11",
+      "itemIn": "iPhone 12",
+      "direction": "inflow",
+      "tradeBalance": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_266",
+    "category": "rw_troca",
+    "input": "Ó, troquei meu iPhone 11 no fogão Atlas do Edson na troca seca.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Edson",
+      "itemOut": "iPhone 11",
+      "itemIn": "fogão Atlas",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_267",
+    "category": "rw_troca",
+    "input": "Anota aí: peguei a NXR 160 do Robson, dei meu fogão Atlas e completei 2.100 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Robson",
+      "itemOut": "fogão Atlas",
+      "itemIn": "NXR 160",
+      "direction": "outflow",
+      "tradeBalance": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_268",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, entrou a Titan 160 na troca, saiu minha Smart TV pro Marquinhos e eu voltei dois mil e quatrocentos.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Marquinhos",
+      "itemOut": "Smart TV",
+      "itemIn": "Titan 160",
+      "direction": "outflow",
+      "tradeBalance": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_269",
+    "category": "rw_troca",
+    "input": "Rapaz, bota aí que fiz troca seca com a Patrícia: saiu minha Biz 125, entrou o Palio 2011.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Patrícia",
+      "itemOut": "Biz 125",
+      "itemIn": "Palio 2011",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_270",
+    "category": "rw_troca",
+    "input": "Olha só, entrou a Pop 110 do Edson na troca, saiu minha CG 150, e ele me voltou 800 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Edson",
+      "itemOut": "CG 150",
+      "itemIn": "Pop 110",
+      "direction": "inflow",
+      "tradeBalance": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_271",
+    "category": "rw_troca",
+    "input": "Ó, peguei a roçadeira Stihl do Cleiton na troca da minha Smart TV e ele completou dois mil no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Cleiton",
+      "itemOut": "Smart TV",
+      "itemIn": "roçadeira Stihl",
+      "direction": "inflow",
+      "tradeBalance": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_272",
+    "category": "rw_troca",
+    "input": "Troquei minha Titan 160 no Galaxy S21 do Vanderlei elas por elas, ninguém voltou nada.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Vanderlei",
+      "itemOut": "Titan 160",
+      "itemIn": "Galaxy S21",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_273",
+    "category": "rw_troca",
+    "input": "Ó, troquei meu iPhone 11 na motosserra da Adriana na troca seca.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Adriana",
+      "itemOut": "iPhone 11",
+      "itemIn": "motosserra",
+      "direction": "even",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_274",
+    "category": "rw_troca",
+    "input": "Então, entrou a Titan 160 da Rose na troca, saiu minha NXR 160, e ele me voltou 4.000 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Rose",
+      "itemOut": "NXR 160",
+      "itemIn": "Titan 160",
+      "direction": "inflow",
+      "tradeBalance": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_275",
+    "category": "rw_troca",
+    "input": "Olha só, peguei a Pop 110 da Dona Célia na troca do meu Galaxy S21 e ele completou 300 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Célia",
+      "itemOut": "Galaxy S21",
+      "itemIn": "Pop 110",
+      "direction": "inflow",
+      "tradeBalance": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_276",
+    "category": "rw_troca",
+    "input": "Deixa eu te falar, peguei o notebook Lenovo da Dona Lurdes, dei meu Celta 2008 e completei 1.100 reais no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Lurdes",
+      "itemOut": "Celta 2008",
+      "itemIn": "notebook Lenovo",
+      "direction": "outflow",
+      "tradeBalance": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_277",
+    "category": "rw_troca",
+    "input": "É... entrou a Titan 160 do Seu Antônio na troca, saiu minha Factor 150, e ele me voltou 2.900 reais em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Antônio",
+      "itemOut": "Factor 150",
+      "itemIn": "Titan 160",
+      "direction": "inflow",
+      "tradeBalance": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_278",
+    "category": "rw_troca",
+    "input": "Ó, peguei o PS4 do Gilmar na troca da minha Twister 250 e ele completou 3.000 no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Gilmar",
+      "itemOut": "Twister 250",
+      "itemIn": "PS4",
+      "direction": "inflow",
+      "tradeBalance": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_279",
+    "category": "rw_troca",
+    "input": "Hoje cedo peguei a bicicleta aro 29 do Edson na troca da minha CG 150 e ele completou dois mil e quinhentos no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Edson",
+      "itemOut": "CG 150",
+      "itemIn": "bicicleta aro 29",
+      "direction": "inflow",
+      "tradeBalance": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_280",
+    "category": "rw_troca",
+    "input": "Peguei a Biz 125 do Edson, dei minha Titan 160 e completei mil e quatrocentos no pix.",
+    "expected": {
+      "intent": "create_trade",
+      "customer": "Edson",
+      "itemOut": "Titan 160",
+      "itemIn": "Biz 125",
+      "direction": "outflow",
+      "tradeBalance": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_281",
+    "category": "rw_abatimento",
+    "input": "Ó, Neide me deu um capacete de dois mil pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Neide",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_282",
+    "category": "rw_abatimento",
+    "input": "Ó, abate 300 da dívida do Gilmar, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Gilmar",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_283",
+    "category": "rw_abatimento",
+    "input": "Ó, tira 800 da conta do Beto que ele arrumou minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Beto",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_284",
+    "category": "rw_abatimento",
+    "input": "Ó, abate 2.200 reais da dívida do Wesley, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Wesley",
+      "amount": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_285",
+    "category": "rw_abatimento",
+    "input": "Anota aí: Tonho me deu uma caixa de som de 1800 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Tonho",
+      "amount": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_286",
+    "category": "rw_abatimento",
+    "input": "Deixa eu te falar, Sandra me deu uma bateria de mil e quatrocentos pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Sandra",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_287",
+    "category": "rw_abatimento",
+    "input": "Valdir me deu uma caixa de som de 1.300 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Valdir",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_288",
+    "category": "rw_abatimento",
+    "input": "Rapaz, bota aí que desconta 1.300 reais do Wesley pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Wesley",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_289",
+    "category": "rw_abatimento",
+    "input": "Anota aí: desconta 2.500 reais da Neide pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Neide",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_290",
+    "category": "rw_abatimento",
+    "input": "Anota aí: abate 2.100 da dívida da Neide, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Neide",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_291",
+    "category": "rw_abatimento",
+    "input": "Anota aí: Rose me deu uma caixa de som de novecentos pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rose",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_292",
+    "category": "rw_abatimento",
+    "input": "Então, Adriana me deu uma bateria de 200 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Adriana",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_293",
+    "category": "rw_abatimento",
+    "input": "Olha só, desconta 800 do Leandro pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Leandro",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_294",
+    "category": "rw_abatimento",
+    "input": "Hoje cedo tira 1.700 reais da conta do Cleiton que ele arrumou minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Cleiton",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_295",
+    "category": "rw_abatimento",
+    "input": "Olha só, tira 1.100 reais da conta do Robson que ele arrumou minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Robson",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_296",
+    "category": "rw_abatimento",
+    "input": "Pronto, foi o seguinte: Beto me deu um capacete de 2.100 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Beto",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_297",
+    "category": "rw_abatimento",
+    "input": "Olha só, desconta quatrocentos da Rose pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rose",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_298",
+    "category": "rw_abatimento",
+    "input": "Olha só, Dona Lurdes me deu um capacete de 1500 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lurdes",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_299",
+    "category": "rw_abatimento",
+    "input": "Pronto, foi o seguinte: desconta 300 da Sandra pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Sandra",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_300",
+    "category": "rw_abatimento",
+    "input": "Olha só, desconta 2.300 reais do Valdir pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Valdir",
+      "amount": 2300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_301",
+    "category": "rw_abatimento",
+    "input": "Ó, tira 300 da conta do Valdir que ele arrumou minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Valdir",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_302",
+    "category": "rw_abatimento",
+    "input": "Ó, desconta 2.400 da Rose pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rose",
+      "amount": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_303",
+    "category": "rw_abatimento",
+    "input": "Então, Rogério me deu um capacete de 400 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rogério",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_304",
+    "category": "rw_abatimento",
+    "input": "Olha só, abate dois mil da dívida da Fabiana, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Fabiana",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_305",
+    "category": "rw_abatimento",
+    "input": "Olha só, tira dois mil e cem da conta do Gilmar que ele arrumou minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Gilmar",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_306",
+    "category": "rw_abatimento",
+    "input": "Abate 2000 da dívida do Cleiton, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Cleiton",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_307",
+    "category": "rw_abatimento",
+    "input": "Anota aí: desconta 300 reais do Gilmar pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Gilmar",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_308",
+    "category": "rw_abatimento",
+    "input": "Então, Seu Antônio me deu uma bateria de 400 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Antônio",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_309",
+    "category": "rw_abatimento",
+    "input": "Rose me deu um capacete de 1.600 reais pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rose",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_310",
+    "category": "rw_abatimento",
+    "input": "Desconta 1.500 da Rose pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rose",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_311",
+    "category": "rw_abatimento",
+    "input": "Deixa eu te falar, abate 1.900 reais da dívida do Valdir, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Valdir",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_312",
+    "category": "rw_abatimento",
+    "input": "Deixa eu te falar, abate 1.100 da dívida da Fabiana, ficou de desconto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Fabiana",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_313",
+    "category": "rw_abatimento",
+    "input": "Ó, Sandra me deu um capacete de 2200 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Sandra",
+      "amount": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_314",
+    "category": "rw_abatimento",
+    "input": "Hoje cedo desconta 500 do Gilmar pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Gilmar",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_315",
+    "category": "rw_abatimento",
+    "input": "Hoje cedo Leandro me deu uma caixa de som de 1.200 pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Leandro",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_316",
+    "category": "rw_abatimento",
+    "input": "Ó, Wesley me deu uma caixa de som de 1 mil pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Wesley",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_317",
+    "category": "rw_abatimento",
+    "input": "Hoje cedo Valdir me deu um capacete de setecentos pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Valdir",
+      "amount": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_318",
+    "category": "rw_abatimento",
+    "input": "Pronto, foi o seguinte: Adriana me deu uma caixa de som de dois mil e quatrocentos pra abater.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Adriana",
+      "amount": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_319",
+    "category": "rw_abatimento",
+    "input": "Desconta mil e quatrocentos do Cleiton pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Cleiton",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_320",
+    "category": "rw_abatimento",
+    "input": "Rapaz, bota aí que desconta 1.100 da Dona Lurdes pelo serviço que ele fez.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lurdes",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_321",
+    "category": "rw_nomes",
+    "input": "Olha só, recebi 1700 do João Paulo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_322",
+    "category": "rw_nomes",
+    "input": "Pronto, foi o seguinte: recebi 2.100 do João Paulo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_323",
+    "category": "rw_nomes",
+    "input": "Então, o Carlos Eduardo mandou 2700 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 2700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_324",
+    "category": "rw_nomes",
+    "input": "Olha só, a Maria do salão pagou 400.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Maria",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_325",
+    "category": "rw_nomes",
+    "input": "Hoje cedo recebi 1.100 do João Paulo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_326",
+    "category": "rw_nomes",
+    "input": "Então, o Zé do Gol pagou dois mil e novecentos.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Zé",
+      "amount": 2900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_327",
+    "category": "rw_nomes",
+    "input": "Hoje cedo o Paulinho da oficina mandou mil e oitocentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Paulinho",
+      "amount": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_328",
+    "category": "rw_nomes",
+    "input": "Então, recebi 200 do João Paulo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_329",
+    "category": "rw_nomes",
+    "input": "Então, João Paulo mandou 400 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_330",
+    "category": "rw_nomes",
+    "input": "Rapaz, bota aí que João Paulo pagou 1000.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_331",
+    "category": "rw_nomes",
+    "input": "Hoje cedo o Carlos Eduardo pagou 500 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_332",
+    "category": "rw_nomes",
+    "input": "Olha só, recebi 900 do Carlos Eduardo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_333",
+    "category": "rw_nomes",
+    "input": "Ó, o Carlos Eduardo mandou 1.100 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_334",
+    "category": "rw_nomes",
+    "input": "O Zé do Gol mandou 900 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Zé",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_335",
+    "category": "rw_nomes",
+    "input": "Então, o Zé do Gol mandou 1 mil no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Zé",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_336",
+    "category": "rw_nomes",
+    "input": "Pronto, foi o seguinte: o João da XRE mandou 2.000 reais no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_337",
+    "category": "rw_nomes",
+    "input": "Rapaz, bota aí que o Carlos Eduardo mandou dois mil e cem no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_338",
+    "category": "rw_nomes",
+    "input": "Ó, o Paulinho da oficina pagou 2.200 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Paulinho",
+      "amount": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_339",
+    "category": "rw_nomes",
+    "input": "Pronto, foi o seguinte: recebi 400 do João da XRE.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_340",
+    "category": "rw_nomes",
+    "input": "Deixa eu te falar, recebi 1200 do João Paulo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_341",
+    "category": "rw_nomes",
+    "input": "Olha só, o João da XRE pagou 2.300 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João",
+      "amount": 2300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_342",
+    "category": "rw_nomes",
+    "input": "João Paulo mandou 800 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_343",
+    "category": "rw_nomes",
+    "input": "Anota aí: o Carlos Eduardo pagou mil e novecentos.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Carlos Eduardo",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_344",
+    "category": "rw_nomes",
+    "input": "Ó, a Maria do salão mandou mil e setecentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Maria",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_345",
+    "category": "rw_nomes",
+    "input": "Olha só, recebi 2 mil da Maria do salão.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Maria",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_346",
+    "category": "rw_nomes",
+    "input": "Pronto, foi o seguinte: a Maria do salão pagou 1900.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Maria",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_347",
+    "category": "rw_nomes",
+    "input": "Deixa eu te falar, o João da XRE mandou mil e seiscentos no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_348",
+    "category": "rw_nomes",
+    "input": "Anota aí: João Paulo pagou 3 mil.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "João Paulo",
+      "amount": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_349",
+    "category": "rw_nomes",
+    "input": "Rapaz, bota aí que a Maria do salão pagou 2.800 reais.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Maria",
+      "amount": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_350",
+    "category": "rw_nomes",
+    "input": "Ó, o Zé do Gol mandou 1200 no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Zé",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_351",
+    "category": "rw_valores",
+    "input": "Ó, vendi o celular pro Wesley por seis e duzentos no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "totalValue": 6200,
+      "cashIn": 6200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_352",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi o iPhone 11 pro Seu Jorge por sete e quatrocentos no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Jorge",
+      "totalValue": 7400,
+      "cashIn": 7400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_353",
+    "category": "rw_valores",
+    "input": "Olha só, vendi a Smart TV pra Neide por dois quinhentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Neide",
+      "totalValue": 2500,
+      "cashIn": 2500,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_354",
+    "category": "rw_valores",
+    "input": "Deixa eu te falar, Adriana me pagou onze pau no Pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Adriana",
+      "amount": 11000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_355",
+    "category": "rw_valores",
+    "input": "Olha só, Marquinhos me pagou três pau na transferência.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Marquinhos",
+      "amount": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_356",
+    "category": "rw_valores",
+    "input": "Deixa eu te falar, vendi a bicicleta aro 29 pra Fabiana por oito e duzentos no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "totalValue": 8200,
+      "cashIn": 8200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_357",
+    "category": "rw_valores",
+    "input": "Anota aí: vendi a bicicleta aro 29 pro Cleiton por nove e trezentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "totalValue": 9300,
+      "cashIn": 9300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_358",
+    "category": "rw_valores",
+    "input": "Ó, vendi uma capinha pro Wesley por trinta e quatro conto à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "totalValue": 34,
+      "cashIn": 34,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_359",
+    "category": "rw_valores",
+    "input": "Anota aí: vendi a bicicleta aro 29 pro Valdir por três e seiscentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "totalValue": 3600,
+      "cashIn": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_360",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi o Moto G84 pra Kelly por nove oitocentos na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Kelly",
+      "totalValue": 9800,
+      "cashIn": 9800,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_361",
+    "category": "rw_valores",
+    "input": "Então, Rogério me pagou quatro pau no Pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rogério",
+      "amount": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_362",
+    "category": "rw_valores",
+    "input": "Vendi o iPhone 11 pra Fabiana por cinco e trezentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "totalValue": 5300,
+      "cashIn": 5300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_363",
+    "category": "rw_valores",
+    "input": "É... vendi o Moto G84 pro Seu Antônio por 4 e 5 no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Antônio",
+      "totalValue": 4500,
+      "cashIn": 4500,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_364",
+    "category": "rw_valores",
+    "input": "Ó, vendi o iPhone 11 pro Rogério por dois e quatrocentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rogério",
+      "totalValue": 2400,
+      "cashIn": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_365",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi o notebook Lenovo pro Wesley por 4 e 2 no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Wesley",
+      "totalValue": 4200,
+      "cashIn": 4200,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_366",
+    "category": "rw_valores",
+    "input": "Ó, vendi um fone pra Fabiana por sessenta e oito conto à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "totalValue": 68,
+      "cashIn": 68,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_367",
+    "category": "rw_valores",
+    "input": "Rose me pagou nove pau no dinheiro vivo.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Rose",
+      "amount": 9000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_368",
+    "category": "rw_valores",
+    "input": "Olha só, vendi a Smart TV pro Seu Antônio por 4 e 8 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Antônio",
+      "totalValue": 4800,
+      "cashIn": 4800,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_369",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o iPhone 11 pra Adriana por sete e quatrocentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Adriana",
+      "totalValue": 7400,
+      "cashIn": 7400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_370",
+    "category": "rw_valores",
+    "input": "Anota aí: vendi o celular pro Cleiton por três e oitocentos no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "totalValue": 3800,
+      "cashIn": 3800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_371",
+    "category": "rw_valores",
+    "input": "Deixa eu te falar, Beto me pagou sete pau à vista no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Beto",
+      "amount": 7000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_372",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi o celular pra Fabiana por dois e oitocentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Fabiana",
+      "totalValue": 2800,
+      "cashIn": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_373",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o notebook Lenovo pra Kelly por nove duzentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Kelly",
+      "totalValue": 9200,
+      "cashIn": 9200,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_374",
+    "category": "rw_valores",
+    "input": "Olha só, vendi o iPhone 11 pro Valdir por dois e quinhentos no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Valdir",
+      "totalValue": 2500,
+      "cashIn": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_375",
+    "category": "rw_valores",
+    "input": "Vendi o celular pro Marquinhos por sete e oitocentos em dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marquinhos",
+      "totalValue": 7800,
+      "cashIn": 7800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_376",
+    "category": "rw_valores",
+    "input": "Olha só, Sandra me pagou dez pau à vista no pix.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Sandra",
+      "amount": 10000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_377",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o notebook Lenovo pra Juliana por 3 e 1 no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Juliana",
+      "totalValue": 3100,
+      "cashIn": 3100,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_378",
+    "category": "rw_valores",
+    "input": "Hoje cedo vendi o celular pro Cleiton por sete e quatrocentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Cleiton",
+      "totalValue": 7400,
+      "cashIn": 7400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_379",
+    "category": "rw_valores",
+    "input": "Anota aí: vendi a Smart TV pro Wesley por cinco duzentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Wesley",
+      "totalValue": 5200,
+      "cashIn": 5200,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_380",
+    "category": "rw_valores",
+    "input": "É... vendi uma capinha pra Neide por quarenta e um conto no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Neide",
+      "totalValue": 41,
+      "cashIn": 41,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_381",
+    "category": "rw_valores",
+    "input": "Hoje cedo vendi o notebook Lenovo pro Marquinhos por 5 e 2 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Marquinhos",
+      "totalValue": 5200,
+      "cashIn": 5200,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_382",
+    "category": "rw_valores",
+    "input": "Ó, Dona Célia me pagou cinco pau em dinheiro.",
+    "expected": {
+      "intent": "register_payment",
+      "acceptIntents": [
+        "register_partial_payment"
+      ],
+      "customer": "Célia",
+      "amount": 5000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_383",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi o notebook Lenovo pra Juliana por 4 e 1 no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Juliana",
+      "totalValue": 4100,
+      "cashIn": 4100,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_384",
+    "category": "rw_valores",
+    "input": "Pronto, foi o seguinte: vendi a Smart TV pro Seu Antônio por 9 e 8 no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Antônio",
+      "totalValue": 9800,
+      "cashIn": 9800,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_385",
+    "category": "rw_valores",
+    "input": "Deixa eu te falar, vendi o celular pra Dona Lurdes por dois e quinhentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lurdes",
+      "totalValue": 2500,
+      "cashIn": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_386",
+    "category": "rw_valores",
+    "input": "É... vendi o iPhone 11 pra Kelly por dois e setecentos no dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Kelly",
+      "totalValue": 2700,
+      "cashIn": 2700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_387",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o iPhone 11 pro Wesley por oito e trezentos à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Wesley",
+      "totalValue": 8300,
+      "cashIn": 8300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_388",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o notebook Lenovo pro Gilmar por 3 e 5 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Gilmar",
+      "totalValue": 3500,
+      "cashIn": 3500,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_389",
+    "category": "rw_valores",
+    "input": "É... vendi um fone pro Marquinhos por setenta e sete conto à vista no pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marquinhos",
+      "totalValue": 77,
+      "cashIn": 77,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_390",
+    "category": "rw_valores",
+    "input": "Rapaz, bota aí que vendi o notebook Lenovo pro Marquinhos por oito quatrocentos no cartão.",
+    "expected": {
+      "intent": "create_sale",
+      "acceptIntents": [
+        "clarify_ambiguity"
+      ],
+      "customer": "Marquinhos",
+      "totalValue": 8400,
+      "cashIn": 8400,
+      "requiresConfirmation": false,
+      "allowConfirmation": true,
+      "note": "Forma curta regional: perguntar ou executar com o valor certo são aceitáveis."
+    }
+  },
+  {
+    "id": "RW_391",
+    "category": "rw_ambiguidade",
+    "input": "O Beto pagou uma parte.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_392",
+    "category": "rw_ambiguidade",
+    "input": "O Vanderlei pagou uma parte.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_393",
+    "category": "rw_ambiguidade",
+    "input": "Vendi a moto pro Kelly.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_394",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_395",
+    "category": "rw_ambiguidade",
+    "input": "Recebi do Kelly.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_396",
+    "category": "rw_ambiguidade",
+    "input": "O Tonho mandou aquele dinheiro.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_397",
+    "category": "rw_ambiguidade",
+    "input": "O Vanderlei pagou uma parte.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_398",
+    "category": "rw_ambiguidade",
+    "input": "Ficou faltando dois do Valdir.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_399",
+    "category": "rw_ambiguidade",
+    "input": "Ficou faltando dois do Cleiton.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_400",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_401",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Adriana, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_402",
+    "category": "rw_ambiguidade",
+    "input": "Troquei com o Edson e ficou uma volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_403",
+    "category": "rw_ambiguidade",
+    "input": "Ele me deu três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_404",
+    "category": "rw_ambiguidade",
+    "input": "Recebi do Cleiton.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_405",
+    "category": "rw_ambiguidade",
+    "input": "Lança aquilo que eu te falei.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_406",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Robson, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_407",
+    "category": "rw_ambiguidade",
+    "input": "O Patrícia mandou aquele dinheiro.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_408",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_409",
+    "category": "rw_ambiguidade",
+    "input": "Vendi a moto pro Kelly.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_410",
+    "category": "rw_ambiguidade",
+    "input": "O Marquinhos pagou uma parte.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_411",
+    "category": "rw_ambiguidade",
+    "input": "Vendi a moto pro Marquinhos.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_412",
+    "category": "rw_ambiguidade",
+    "input": "O Juliana mandou aquele dinheiro.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_413",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Adriana, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_414",
+    "category": "rw_ambiguidade",
+    "input": "Lança aquilo que eu te falei.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_415",
+    "category": "rw_ambiguidade",
+    "input": "Lança aquilo que eu te falei.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_416",
+    "category": "rw_ambiguidade",
+    "input": "Vendi a moto pro Sandra.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_417",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_418",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Edson, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_419",
+    "category": "rw_ambiguidade",
+    "input": "O Valdir mandou aquele dinheiro.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_420",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Patrícia, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_421",
+    "category": "rw_ambiguidade",
+    "input": "Troquei com o Robson e ficou uma volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_422",
+    "category": "rw_ambiguidade",
+    "input": "Lança aquilo que eu te falei.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_423",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_424",
+    "category": "rw_ambiguidade",
+    "input": "Ele me deu três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_425",
+    "category": "rw_ambiguidade",
+    "input": "Passei o celular pro Robson, depois ele acerta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_426",
+    "category": "rw_ambiguidade",
+    "input": "O Adriana pagou uma parte.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_427",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_428",
+    "category": "rw_ambiguidade",
+    "input": "Vendi a moto pro Valdir.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_429",
+    "category": "rw_ambiguidade",
+    "input": "Apaga tudo que eu lancei hoje.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_430",
+    "category": "rw_ambiguidade",
+    "input": "Lança aquilo que eu te falei.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "acceptIntents": [
+        "create_sale",
+        "create_trade",
+        "register_payment",
+        "register_partial_payment",
+        "unrecognized_command"
+      ],
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "RW_431",
+    "category": "rw_desfazer",
+    "input": "Pronto, foi o seguinte: desfaz aquele pagamento de 200 do Robson.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Robson",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_432",
+    "category": "rw_renegociacao",
+    "input": "Então, refaz as parcelas do Edson: 4 de novecentos, vencendo dia 27.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Edson",
+      "installmentsCount": 4,
+      "installmentAmount": 900,
+      "dueDay": 27,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_433",
+    "category": "rw_renegociacao",
+    "input": "Hoje cedo renegocia a dívida do Cleiton em 2 vezes de mil todo dia 18.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Cleiton",
+      "installmentsCount": 2,
+      "installmentAmount": 1000,
+      "dueDay": 18,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_434",
+    "category": "rw_renegociacao",
+    "input": "Ó, refaz as parcelas da Rose: 5 de 300, vencendo dia 15.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Rose",
+      "installmentsCount": 5,
+      "installmentAmount": 300,
+      "dueDay": 15,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_435",
+    "category": "rw_renegociacao",
+    "input": "Anota aí: junta as atrasadas do Valdir e faz em 5 de 900 todo dia 12.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Valdir",
+      "installmentsCount": 5,
+      "installmentAmount": 900,
+      "dueDay": 12,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_436",
+    "category": "rw_desfazer",
+    "input": "Pronto, foi o seguinte: estorna o pagamento de 600 reais do Tonho.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Tonho",
+      "amount": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_437",
+    "category": "rw_desfazer",
+    "input": "Anota aí: lancei errado, desfaz o pagamento de 200 reais da Rose.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Rose",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_438",
+    "category": "rw_renegociacao",
+    "input": "Deixa eu te falar, renegocia a dívida do Marquinhos em 3 vezes de 300 todo dia 18.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Marquinhos",
+      "installmentsCount": 3,
+      "installmentAmount": 300,
+      "dueDay": 18,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_439",
+    "category": "rw_renegociacao",
+    "input": "Então, renegocia a dívida da Adriana em 3 vezes de 700 reais todo dia 28.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Adriana",
+      "installmentsCount": 3,
+      "installmentAmount": 700,
+      "dueDay": 28,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_440",
+    "category": "rw_desfazer",
+    "input": "Então, lancei errado, desfaz o pagamento de 1800 da Rose.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Rose",
+      "amount": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_441",
+    "category": "rw_renegociacao",
+    "input": "Então, refaz as parcelas da Neide: 3 de quinhentos, vencendo dia 18.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Neide",
+      "installmentsCount": 3,
+      "installmentAmount": 500,
+      "dueDay": 18,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_442",
+    "category": "rw_desfazer",
+    "input": "Rapaz, bota aí que lancei errado, desfaz o pagamento de 1300 do Wesley.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Wesley",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_443",
+    "category": "rw_renegociacao",
+    "input": "Ó, junta as atrasadas da Juliana e faz em 3 de mil todo dia 9.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Juliana",
+      "installmentsCount": 3,
+      "installmentAmount": 1000,
+      "dueDay": 9,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_444",
+    "category": "rw_renegociacao",
+    "input": "Junta as atrasadas do Tonho e faz em 5 de 600 reais todo dia 18.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Tonho",
+      "installmentsCount": 5,
+      "installmentAmount": 600,
+      "dueDay": 18,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_445",
+    "category": "rw_renegociacao",
+    "input": "Ó, refaz as parcelas da Juliana: 5 de 200, vencendo dia 5.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Juliana",
+      "installmentsCount": 5,
+      "installmentAmount": 200,
+      "dueDay": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_446",
+    "category": "rw_desfazer",
+    "input": "Desfaz aquele pagamento de 1.200 reais do Beto.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Beto",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_447",
+    "category": "rw_desfazer",
+    "input": "Rapaz, bota aí que estorna o pagamento de trezentos do Tonho.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Tonho",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_448",
+    "category": "rw_desfazer",
+    "input": "Rapaz, bota aí que desfaz aquele pagamento de 300 reais do Seu Jorge.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Jorge",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_449",
+    "category": "rw_desfazer",
+    "input": "Pronto, foi o seguinte: desfaz aquele abatimento de 1.400 da Juliana.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Juliana",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_450",
+    "category": "rw_desfazer",
+    "input": "Anota aí: desfaz aquele pagamento de 1.600 da Dona Lurdes.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Lurdes",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_451",
+    "category": "rw_desfazer",
+    "input": "É... estorna o abatimento de 500 do Vanderlei.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Vanderlei",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_452",
+    "category": "rw_renegociacao",
+    "input": "Olha só, junta as atrasadas do Seu Jorge e faz em 3 de quinhentos todo dia 17.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Jorge",
+      "installmentsCount": 3,
+      "installmentAmount": 500,
+      "dueDay": 17,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_453",
+    "category": "rw_renegociacao",
+    "input": "Ó, renegocia a dívida da Kelly em 6 vezes de 600 todo dia 19.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Kelly",
+      "installmentsCount": 6,
+      "installmentAmount": 600,
+      "dueDay": 19,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_454",
+    "category": "rw_renegociacao",
+    "input": "Então, junta as atrasadas da Neide e faz em 5 de 700 todo dia 6.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Neide",
+      "installmentsCount": 5,
+      "installmentAmount": 700,
+      "dueDay": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_455",
+    "category": "rw_desfazer",
+    "input": "Ó, estorna o abatimento de trezentos do Cleiton.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Cleiton",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_456",
+    "category": "rw_renegociacao",
+    "input": "Junta as atrasadas do Cleiton e faz em 2 de 800 todo dia 14.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Cleiton",
+      "installmentsCount": 2,
+      "installmentAmount": 800,
+      "dueDay": 14,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_457",
+    "category": "rw_renegociacao",
+    "input": "Então, junta as atrasadas do Robson e faz em 6 de 800 todo dia 13.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Robson",
+      "installmentsCount": 6,
+      "installmentAmount": 800,
+      "dueDay": 13,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_458",
+    "category": "rw_desfazer",
+    "input": "Deixa eu te falar, desfaz aquele abatimento de 700 reais do Beto.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Beto",
+      "amount": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_459",
+    "category": "rw_renegociacao",
+    "input": "Então, junta as atrasadas da Patrícia e faz em 4 de 700 todo dia 14.",
+    "expected": {
+      "intent": "renegotiate_debt",
+      "customer": "Patrícia",
+      "installmentsCount": 4,
+      "installmentAmount": 700,
+      "dueDay": 14,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RW_460",
+    "category": "rw_desfazer",
+    "input": "Hoje cedo lancei errado, desfaz o abatimento de 1.600 da Dona Lurdes.",
+    "expected": {
+      "intent": "reverse_operation",
+      "customer": "Lurdes",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  }
+]
