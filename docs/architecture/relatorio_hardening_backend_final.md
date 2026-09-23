@@ -1,6 +1,6 @@
 # Relatório — Último ciclo de hardening do backend (voz → banco)
 
-Data: 23/09/2026 · Branch: `main` · Commits: `60ea6f8` → `3810f20`
+Data: 23/09/2026 · Branch: `main` · Commits a partir de `60ea6f8`
 
 ## 1. Resumo
 
@@ -93,13 +93,16 @@ Restantes, aceitos:
 
 - `interpret.ts / interpretVoiceCommandWithLLM` — função canônica usada pela produção, pelo E2E e pelo benchmark LLM.
 - `provider.ts` — OpenAI com `response_format: json_schema` **strict** (schema real) e Gemini com JSON; timeout,
-  modelos por env (`OPENAI_MODEL`, `GEMINI_MODEL`, `LLM_PROVIDER`, `LLM_TIMEOUT_MS`), tokens de uso.
+  modelos por env (`OPENAI_MODEL`, padrão **`gpt-5.4-mini`**; `OPENAI_REASONING_EFFORT`, padrão `low`; `GEMINI_MODEL`,
+  `LLM_PROVIDER`, `LLM_TIMEOUT_MS`), tokens de uso e até 2 novas tentativas em 429/5xx respeitando `retry-after`.
 - `schemas/llm-interpretation.schema.ts` — Zod `.strict()` + JSON Schema espelhado (teste garante as mesmas chaves).
 - Validação: saída inválida → **um** reparo com os erros do Zod → se falhar, pede para reformular. Nunca usa objeto parcial.
 - `grounding.ts` — cada valor monetário precisa estar na fala ou ser derivável dela (soma, diferença, produto,
   convenção "por 26" = 26 mil); contagem de parcelas e dia precisam ter sido falados; nome do cliente precisa estar
   na fala ou vir do contexto sem outro nome próprio citado ("Joana pagou" nunca vira "Carlos"). Violação vira
   ambiguidade: não executa.
+- Checagens de consistência: troca com o mesmo item nos dois lados, volta paga registrada como dinheiro recebido
+  (e vice-versa) e operação de escrita sem cliente (nem na fala nem no contexto) viram pergunta.
 - `command-builder.ts` — monta o `DealCommand` e **usa** o resultado de `DealCommandSchema.safeParse`; o executor valida de novo na entrada.
 - Forma de pagamento não dita vira `other`, nunca Pix. Vencimento não dito segue a regra documentada (30 dias).
 
@@ -137,22 +140,42 @@ cadastrado depois de todos os itens resolvidos.
 | Verificação | Resultado |
 | :--- | :--- |
 | `npm run lint` | ✓ sem erros |
-| `npm run test` (finanças + unitários + benchmark de regras + multi-turn em memória) | ✓ 11/11, 22/22, 400/400, 4/4 |
+| `npm run test` (finanças + unitários + benchmark de regras + multi-turn em memória) | ✓ 11/11, 26/26, 400/400, 4/4 |
 | `npm run build` | ✓ |
 | `npm run test:benchmark:rules` | Intent 100% · todos os campos críticos 100% · Full Scenario 100% · **Unsafe 0%** |
-| `npm run test:benchmark:llm` | **não executado** — sem `OPENAI_API_KEY`/`GEMINI_API_KEY` no ambiente local (sai com código 2) |
-| `npm run test:e2e` — multi-turn no banco real | ✓ 9/9 (interpretador: fallback determinístico, por falta de chave) |
-| `npm run test:security` | ✓ 10/10 |
-| `npm run test:smoke` contra `next start` local + Supabase real | ✓ 7/7 (401, cookie, diálogo via HTTP, transcribe, 429, telemetria) |
-| Vercel `f8abb4c` | ✓ "Deployment has completed" (status do GitHub) |
+| `npm run test:benchmark:llm` (`gpt-5.4-mini`, 400 cenários) | Intent 100% · todos os campos críticos 100% · Full Scenario **99,8%** · **Unsafe 0%** · p50 2,0 s · p95 3,2 s · 0 reparos |
+| `E2E_INTERPRETER=llm npm run test:e2e` (banco real) | ✓ 9/9 multi-turn + 10/10 segurança |
+| `npm run test:smoke` contra `next start` local + Supabase real + LLM real | ✓ 7/7; telemetria registra `openai/gpt-5.4-mini` |
+| Vercel | ✓ "Deployment has completed" nos pushes deste ciclo |
+
+A única falha do benchmark LLM é um defeito do dataset: "só conseguiu me pagar **1300** daquela parcela **de mil**" é
+contraditório e o modelo pergunta — comportamento correto; o rótulo diz que não deveria perguntar.
+
+### Escolha do modelo
+
+Primeira rodada completa com `gpt-4o-mini` e o prompt inicial: **72,8%** de acerto e 25 "execuções inseguras"
+(24 eram pagamento integral × parcial com o mesmo efeito financeiro — a pontuação passou a medir o efeito; 1 era
+parcela derivável). No diálogo canônico ele trocou XRE por Bros nos dois lados e inventou `cashOut` 8.000 a partir
+do "oito": o grounding, a checagem de balanço e as novas checagens de consistência bloquearam — nada foi gravado.
+Com o prompt revisado, amostra de 80 cenários (mesma seed):
+
+| Modelo | Acerto completo | Execução insegura | p50 | p95 |
+| :--- | :---: | :---: | :---: | :---: |
+| gpt-4o-mini | 86,3% | 0 | 2,4 s | 3,0 s |
+| gpt-4.1-mini | 78,8% | 2 | 2,2 s | 5,9 s |
+| **gpt-5.4-mini** | **90,0%** | **0** | **2,1 s** | 3,5 s |
+| gpt-5-mini | 83,8% | 0 | 6,1 s | 10,5 s (timeouts) |
+
+Depois de ajustar o prompt (a LLM relata o que foi dito; o backend decide o que perguntar) e exigir cliente em toda
+escrita, o `gpt-5.4-mini` chegou aos 99,8% da rodada completa.
 
 Benchmark de regras: o critério ficou mais rígido (compara cliente, itens, valores, direção, parcelas, confirmação e
 ambiguidade; execução insegura inclui executar com valor/cliente/intenção errados). A primeira rodada com o critério
 novo caiu para 79% em cliente e 22% em item de troca, com execuções inseguras; os defeitos do parser foram corrigidos.
-**Atenção:** o dataset tem poucos modelos de frase por categoria (2 em `recebimento`), então 100% mede cobertura
-desses modelos, não generalização.
+**Atenção:** o dataset tem poucos modelos de frase por categoria (2 em `recebimento`), então esses números medem
+cobertura desses modelos, não generalização.
 
-E2E multi-turn (banco real, usuário descartável, limpeza verificada):
+E2E multi-turn (banco real, usuário descartável, limpeza verificada — passa com a LLM e com o fallback):
 1. Troca: deal `troca` 26.000, XRE OUT (item do estoque, baixado), Bros IN (novo item, custo 15.000), caixa IN 3.000,
    receivable 8.000, 4×2.000 todo dia 15 com a 1ª no futuro, contexto com IDs reais.
 2. "Ele mandou 500 daquela primeira": parcela 1 com original 2.000, pago 500, saldo 1.500. A parcela **atrasada e mais
@@ -163,23 +186,29 @@ E2E multi-turn (banco real, usuário descartável, limpeza verificada):
 
 ## 11. Vercel
 
-- Deploy automático do push concluído com sucesso (verificado pelo status do commit no GitHub).
+- Deploy automático dos pushes concluído com sucesso (verificado pelo status do commit no GitHub).
 - **Não foi possível** revisar logs nem chamar os endpoints em produção: todas as URLs estão atrás do Vercel
   Deployment Protection (SSO, HTTP 401 "Protected deployment") e não há token da Vercel nesta máquina.
-  O mesmo smoke test pode rodar contra a produção com `SMOKE_BASE_URL=<url> VERCEL_PROTECTION_BYPASS=<segredo> npm run test:smoke`.
-- Não foi possível confirmar se a Vercel tem `OPENAI_API_KEY`/`GEMINI_API_KEY`. Sem chave, a produção funciona com o
-  fallback determinístico; a coluna `interpretation_source` de `ai_telemetry` mostra qual caminho foi usado.
+  O mesmo smoke test roda contra a produção com `SMOKE_BASE_URL=<url> VERCEL_PROTECTION_BYPASS=<segredo> npm run test:smoke`.
+- A chave da OpenAI foi configurada apenas no `.env.local` (ignorado pelo git). **Enquanto `OPENAI_API_KEY` não for
+  cadastrada na Vercel, a produção usa o fallback determinístico.** A coluna `interpretation_source` de `ai_telemetry`
+  mostra qual caminho cada comando usou.
 
 ## 12. Pendências
 
-1. **Chave de LLM**: configurar `OPENAI_API_KEY` (ou `GEMINI_API_KEY`) na Vercel e no `.env.local`, e rodar
-   `npm run test:benchmark:llm -- --limit=50` e `E2E_INTERPRETER=llm npm run test:e2e`. O caminho LLM foi testado com
-   provedor simulado (reparo, rejeição, fallback, grounding), mas **não contra a API real**.
-2. **Produção**: liberar acesso para o smoke test (bypass de automação ou domínio público) e revisar logs da Vercel.
-3. **Advisors do painel Supabase**: reexecutar para confirmar o resultado da auditoria local.
-4. **Dataset do benchmark**: adicionar falas reais e variadas; o atual é muito repetitivo.
-5. **Desfazer**: liquidações da RPC nova ainda não têm estorno automático (o botão agora avisa em vez de fingir sucesso).
-6. **Ações manuais antigas**: `createSaleAction`/trocas manuais em `src/app/actions/deals.ts` ainda fazem inserts em
-   várias etapas, fora da RPC atômica.
-7. `getSubscriptionInfo` libera escrita se o perfil não for encontrado (fail-open); avaliar bloquear.
-8. Re-parcelamento por voz (`renegotiate_debt` com novo parcelamento) não é executado; só mudança de vencimento.
+1. **Cadastrar `OPENAI_API_KEY` na Vercel** (Production) e fazer redeploy. Opcional: `OPENAI_MODEL` (padrão `gpt-5.4-mini`).
+2. **Rotacionar a chave da OpenAI**: ela foi colada no chat desta sessão. Gerar uma nova, usar a nova na Vercel e no `.env.local`, revogar a antiga.
+3. **Capacidade**: o limite da organização para `gpt-5.4-mini` é 200 mil tokens/min (≈ 100 comandos/min com o prompt
+   atual, ~2 mil tokens cada). Acima disso há 2 novas tentativas e depois o fallback de regras. Pedir aumento de limite antes de escalar.
+4. **Custo**: a tabela de preços não tem o `gpt-5.4-mini`; a estimativa usa a tarifa padrão até definir
+   `LLM_PRICE_INPUT_PER_1M` / `LLM_PRICE_OUTPUT_PER_1M` com os valores oficiais.
+5. **Não determinismo**: modelos de raciocínio ignoram `temperature`; rodadas diferentes variam alguns cenários
+   (sempre para o lado de perguntar). Acompanhar pela telemetria.
+6. **Produção**: liberar acesso para o smoke test (bypass de automação ou domínio público) e revisar logs da Vercel.
+7. **Advisors do painel Supabase**: reexecutar para confirmar o resultado da auditoria local.
+8. **Dataset do benchmark**: adicionar falas reais e variadas; corrigir o rótulo contraditório de REC_115.
+9. **Desfazer**: liquidações da RPC nova ainda não têm estorno automático (o botão agora avisa em vez de fingir sucesso).
+10. **Ações manuais antigas**: `createSaleAction`/trocas manuais em `src/app/actions/deals.ts` ainda fazem inserts em
+    várias etapas, fora da RPC atômica.
+11. `getSubscriptionInfo` libera escrita se o perfil não for encontrado (fail-open); avaliar bloquear.
+12. Re-parcelamento por voz (`renegotiate_debt` com novo parcelamento) não é executado; só mudança de vencimento.
