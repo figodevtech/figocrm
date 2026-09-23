@@ -20,7 +20,7 @@ export function roundToTwoDecimals(value: number): number {
 
 /**
  * 1. Cálculo de CMV (Custo das Mercadorias Vendidas)
- * Soma o valor de compra original com todos os custos atribuíveis adicionais (reformas, peças, despachante, guincho).
+ * Soma o valor de compra original com todos os cu stos atribuíveis adicionais (reformas, peças, despachante, guincho).
  */
 export function calculateCMV(acquisitionCost: number, additionalCosts: ItemCost[] = []): number {
   const sumAdditional = additionalCosts.reduce((acc, curr) => acc + (curr.amount || 0), 0);
