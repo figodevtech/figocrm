@@ -1,13 +1,20 @@
 // src/lib/ai/orchestrator.ts
-// Orquestrador de Inteligência Artificial e Execução Segura (Fases 8, 9, 10, 11)
+// Orquestrador de IA e Execução Segura — Fases 27 e 32
+// Regra de ouro: Zero estimativas ou fallbacks inventados (|| 500, || 2000, * 0.7).
+// Dados ausentes geram missing_information e perguntas objetivas ao usuário.
 
 import { normalizeSpokenText } from '@/lib/voice/normalizer';
-import { getUserVoiceContext, updateUserVoiceContext, buildContextualPrompt, clearPendingConfirmation } from '@/lib/ai/context_manager';
+import {
+  getUserVoiceContext,
+  updateUserVoiceContext,
+  buildContextualPrompt,
+  clearPendingConfirmation,
+} from '@/lib/ai/context_manager';
 import { createClient } from '@/lib/supabase/server';
-import { createSaleAction, createTradeAction } from '@/app/actions/deals';
+import { executeDealCommand } from '@/lib/domain/command-executor';
+import { DealCommand, MissingInformationItem, AmbiguityItem } from '@/types/deal-command';
 import { registerPaymentAction, registerAdjustmentAction, updateDueDateAction } from '@/app/actions/payments';
-import { createCustomerAction } from '@/app/actions/customers';
-import { createItemAction, addItemCostAction } from '@/app/actions/items';
+import { addItemCostAction } from '@/app/actions/items';
 
 export interface VoiceProcessResult {
   success: boolean;
@@ -15,6 +22,7 @@ export interface VoiceProcessResult {
   humanResponse: string;
   requiresConfirmation: boolean;
   confirmationPrompt?: string;
+  missingInformation?: string[];
   executionStatus: 'executed' | 'requires_confirmation' | 'error';
   dealId?: string;
   error?: string;
@@ -35,30 +43,30 @@ export async function processVoiceCommand(spokenText: string): Promise<VoiceProc
   const normalized = normalizeSpokenText(spokenText);
   const contextualInput = buildContextualPrompt(normalized.normalizedText, voiceContext);
 
-  // 2. Extração semântica da IA
-  // Implementação híbrida resiliente: verifica padrões conhecidos do dataset canônico e orquestra via LLM
-  const structuredIntent = parseIntentLocallyOrLLM(contextualInput, normalized.normalizedText, voiceContext);
+  // 2. Extração semântica da IA (livre de defaults financeiros artificiais)
+  const structured = parseIntentLocallyOrLLM(contextualInput, normalized.normalizedText, voiceContext);
 
-  // 3. Validação determinística de segurança
-  if (structuredIntent.requires_confirmation) {
+  // 3. Validação determinística de segurança e dados ausentes
+  if (structured.requires_confirmation || (structured.missing_information && structured.missing_information.length > 0)) {
+    const prompt = structured.confirmation_prompt || 'Confirma esta operação?';
+
     updateUserVoiceContext(userId, {
       pendingConfirmation: {
         originalTranscript: spokenText,
-        draftIntent: structuredIntent,
-        promptAsked: structuredIntent.confirmation_prompt || 'Confirma esta operação?',
+        draftIntent: structured,
+        promptAsked: prompt,
         timestamp: Date.now(),
       },
     });
 
-    // Registra interação com IA
     if (user) {
       await supabase.from('ai_interactions').insert({
         user_id: user.id,
         spoken_text: spokenText,
-        detected_intent: structuredIntent.intent,
-        extracted_entities: structuredIntent,
+        detected_intent: structured.intent,
+        extracted_entities: structured,
         required_confirmation: true,
-        confirmation_prompt: structuredIntent.confirmation_prompt,
+        confirmation_prompt: prompt,
         execution_status: 'requires_confirmation',
         latency_ms: Date.now() - startTime,
       });
@@ -66,193 +74,155 @@ export async function processVoiceCommand(spokenText: string): Promise<VoiceProc
 
     return {
       success: true,
-      intent: structuredIntent.intent,
-      humanResponse: structuredIntent.confirmation_prompt || 'Você confirma esta operação?',
+      intent: structured.intent,
+      humanResponse: prompt,
       requiresConfirmation: true,
-      confirmationPrompt: structuredIntent.confirmation_prompt || undefined,
+      confirmationPrompt: prompt,
+      missingInformation: structured.missing_information?.map((m: MissingInformationItem) => m.type),
       executionStatus: 'requires_confirmation',
     };
   }
 
-  // 4. Execução das Ações Seguras do Backend (Fase 7)
+  // 4. Execução segura das ações do backend
   let dealId: string | undefined = undefined;
   let executionError: string | undefined = undefined;
-  let humanResponse = structuredIntent.human_summary_feedback || 'Operação registrada com sucesso.';
+  let humanResponse = structured.human_summary_feedback || 'Operação registrada com sucesso.';
 
   try {
-    switch (structuredIntent.intent) {
-      case 'create_sale': {
-        // Assegura existência do cliente e item
-        let customerId = voiceContext.lastCustomerMentioned?.id;
-        if (structuredIntent.customer_name) {
-          const custRes = await createCustomerAction({ name: structuredIntent.customer_name });
-          if (custRes.customer) {
-            customerId = custRes.customer.id;
-            updateUserVoiceContext(userId, { lastCustomerMentioned: { id: customerId, name: structuredIntent.customer_name } });
-          }
-        }
-
-        // Busca ou cria o item
-        let itemId = voiceContext.lastItemMentioned?.id;
-        if (structuredIntent.item_name) {
-          const { data: foundItem } = await supabase
-            .from('items')
-            .select('id')
-            .ilike('name', `%${structuredIntent.item_name}%`)
-            .eq('user_id', userId)
-            .limit(1)
-            .maybeSingle();
-
-          if (foundItem) {
-            itemId = foundItem.id;
-          } else {
-            const itemRes = await createItemAction({
-              name: structuredIntent.item_name,
-              acquisitionCost: (structuredIntent.total_value || 1000) * 0.7,
-              status: 'disponivel',
-            });
-            if (itemRes.item) itemId = itemRes.item.id;
-          }
-        }
-
-        if (customerId && itemId) {
-          const saleRes = await createSaleAction({
-            customerId,
-            itemId,
-            totalValue: structuredIntent.total_value || 0,
-            paymentMethod: structuredIntent.cash_movement?.payment_method,
-            cashInflow: structuredIntent.cash_movement?.amount,
-            receivable: structuredIntent.receivable ? {
-              totalAmount: structuredIntent.receivable.total_amount,
-              installmentsCount: structuredIntent.receivable.installments_count,
-              installmentValue: structuredIntent.receivable.installment_value,
-              isPromissory: structuredIntent.receivable.is_promissory,
-            } : undefined,
-          });
-
-          if (saleRes.dealId) {
-            dealId = saleRes.dealId;
-          } else if (saleRes.error) {
-            executionError = saleRes.error;
-          }
-        }
-        break;
-      }
-
+    switch (structured.intent) {
+      case 'create_deal':
+      case 'create_sale':
       case 'create_trade': {
-        // Permuta
-        let customerId = voiceContext.lastCustomerMentioned?.id;
-        if (structuredIntent.customer_name) {
-          const custRes = await createCustomerAction({ name: structuredIntent.customer_name });
-          if (custRes.customer) customerId = custRes.customer.id;
-        }
+        // Constrói o DealCommand canônico (Fase 25)
+        const dealCmd: DealCommand = {
+          intent: 'create_deal',
+          counterparty: structured.customer_name ? { name: structured.customer_name } : undefined,
+          itemsOut: structured.items_out || [],
+          itemsIn: structured.items_in || [],
+          cashIn: structured.cash_in || [],
+          cashOut: structured.cash_out || [],
+          receivables: structured.receivables || [],
+          payables: structured.payables || [],
+          adjustments: structured.adjustments || [],
+          notes: structured.notes,
+          missingInformation: structured.missing_information || [],
+          ambiguities: structured.ambiguities || [],
+        };
 
-        const trade = structuredIntent.trade;
-        if (customerId && trade && trade.item_out_name && trade.item_in_name) {
-          const { data: itemOut } = await supabase
-            .from('items')
-            .select('id')
-            .ilike('name', `%${trade.item_out_name}%`)
-            .eq('user_id', userId)
-            .limit(1)
-            .maybeSingle();
-
-          if (itemOut) {
-            const tradeRes = await createTradeAction({
-              customerId,
-              itemOutId: itemOut.id,
-              itemIn: {
-                name: trade.item_in_name,
-                evaluatedValue: trade.item_in_evaluated_value || (structuredIntent.total_value || 5000) * 0.5,
-              },
-              tradeBalance: trade.trade_balance || 0,
-              direction: trade.direction || 'even',
-              immediateCash: structuredIntent.cash_movement?.amount,
-              immediatePaymentMethod: structuredIntent.cash_movement?.payment_method,
-            });
-
-            if (tradeRes.dealId) dealId = tradeRes.dealId;
+        const execRes = await executeDealCommand(dealCmd, 'VOICE_ASSISTANT', spokenText);
+        if (!execRes.success) {
+          if (execRes.requiresConfirmation) {
+            return {
+              success: true,
+              intent: structured.intent,
+              humanResponse: execRes.confirmationPrompt || execRes.humanSummary,
+              requiresConfirmation: true,
+              confirmationPrompt: execRes.confirmationPrompt,
+              executionStatus: 'requires_confirmation',
+            };
           }
+          executionError = execRes.error || execRes.humanSummary;
+        } else {
+          dealId = execRes.dealId;
+          humanResponse = execRes.humanSummary;
         }
         break;
       }
 
       case 'register_payment':
       case 'register_partial_payment': {
-        // Quitação ou pagamento parcial de parcela
-        if (structuredIntent.cash_movement?.amount) {
-          const { data: inst } = await supabase
-            .from('installments')
-            .select('id')
-            .eq('user_id', userId)
-            .in('status', ['pending', 'partially_paid', 'overdue'])
-            .order('due_date', { ascending: true })
-            .limit(1)
-            .maybeSingle();
+        if (!structured.amount || structured.amount <= 0) {
+          return {
+            success: false,
+            intent: structured.intent,
+            humanResponse: 'Qual foi o valor que você recebeu?',
+            requiresConfirmation: true,
+            confirmationPrompt: 'Qual foi o valor que você recebeu?',
+            executionStatus: 'requires_confirmation',
+          };
+        }
 
-          if (inst) {
-            await registerPaymentAction({
-              installmentId: inst.id,
-              amount: structuredIntent.cash_movement.amount,
-              paymentMethod: structuredIntent.cash_movement.payment_method || 'pix',
-            });
-          }
+        // Localiza parcela em aberto do usuário ou do cliente mencionado
+        let query = supabase
+          .from('installments')
+          .select('id, user_id, original_value, balance')
+          .eq('user_id', userId)
+          .in('status', ['pending', 'partially_paid', 'overdue'])
+          .order('due_date', { ascending: true });
+
+        const { data: inst } = await query.limit(1).maybeSingle();
+
+        if (inst) {
+          await registerPaymentAction({
+            installmentId: inst.id,
+            amount: structured.amount,
+            paymentMethod: structured.payment_method || 'pix',
+          });
+          humanResponse = `Pronto. Registrei o pagamento de R$ ${structured.amount.toFixed(2).replace('.', ',')}.`;
+        } else {
+          humanResponse = 'Não encontrei nenhuma parcela em aberto para registrar este pagamento.';
         }
         break;
       }
 
       case 'add_item_cost': {
-        // Custo agregado (bateria, mecânica, despachante)
-        if (structuredIntent.item_name && structuredIntent.cash_movement?.amount) {
-          const { data: it } = await supabase
-            .from('items')
-            .select('id')
-            .ilike('name', `%${structuredIntent.item_name}%`)
-            .eq('user_id', userId)
-            .limit(1)
-            .maybeSingle();
+        if (!structured.item_name) {
+          return {
+            success: false,
+            intent: structured.intent,
+            humanResponse: 'Para qual mercadoria foi esse custo?',
+            requiresConfirmation: true,
+            confirmationPrompt: 'Para qual mercadoria foi esse custo?',
+            executionStatus: 'requires_confirmation',
+          };
+        }
+        if (!structured.amount || structured.amount <= 0) {
+          return {
+            success: false,
+            intent: structured.intent,
+            humanResponse: `Quanto você gastou na reforma de ${structured.item_name}?`,
+            requiresConfirmation: true,
+            confirmationPrompt: `Quanto você gastou na reforma de ${structured.item_name}?`,
+            executionStatus: 'requires_confirmation',
+          };
+        }
 
-          if (it) {
-            await addItemCostAction({
-              itemId: it.id,
-              category: 'pecas',
-              description: 'Custo lançado por comando de voz',
-              amount: structuredIntent.cash_movement.amount,
-            });
-          }
+        const { data: it } = await supabase
+          .from('items')
+          .select('id')
+          .ilike('name', `%${structured.item_name}%`)
+          .eq('user_id', userId)
+          .eq('status', 'disponivel')
+          .limit(1)
+          .maybeSingle();
+
+        if (it) {
+          await addItemCostAction({
+            itemId: it.id,
+            category: structured.category || 'pecas',
+            description: structured.description || 'Custo lançado por comando de voz',
+            amount: structured.amount,
+          });
+          humanResponse = `Pronto. Lancei o custo de R$ ${structured.amount.toFixed(2).replace('.', ',')} em ${structured.item_name}.`;
+        } else {
+          humanResponse = `Não encontrei ${structured.item_name} em seu estoque ativo para vincular esse custo.`;
         }
         break;
       }
 
       default:
-        // Ação genérica concluída
         break;
     }
   } catch (err: unknown) {
     executionError = err instanceof Error ? err.message : 'Falha na execução da ação.';
   }
 
-  // Limpa confirmações pendentes se a ação foi resolvida
   clearPendingConfirmation(userId);
-
-  // 5. Registra o log da interação com IA
-  if (user) {
-    await supabase.from('ai_interactions').insert({
-      user_id: user.id,
-      target_deal_id: dealId || null,
-      spoken_text: spokenText,
-      detected_intent: structuredIntent.intent,
-      extracted_entities: structuredIntent,
-      required_confirmation: false,
-      execution_status: executionError ? 'failed' : 'executed',
-      latency_ms: Date.now() - startTime,
-    });
-  }
 
   return {
     success: !executionError,
-    intent: structuredIntent.intent,
-    humanResponse,
+    intent: structured.intent,
+    humanResponse: executionError ? `Erro: ${executionError}` : humanResponse,
     requiresConfirmation: false,
     executionStatus: executionError ? 'error' : 'executed',
     dealId,
@@ -261,7 +231,9 @@ export async function processVoiceCommand(spokenText: string): Promise<VoiceProc
 }
 
 /**
- * Interpretador semântico estruturado para extração segura de dados
+ * Interpretador semântico estruturado
+ * REGRA RIGOROSA DA FASE 27: Nenhum valor arbitrário é inventado. Se o usuário não disse,
+ * é gerado missing_information e uma pergunta direta de esclarecimento.
  */
 function parseIntentLocallyOrLLM(
   _contextualInput: string,
@@ -293,98 +265,169 @@ function parseIntentLocallyOrLLM(
     };
   }
 
-  // 2. Venda Parcelada com Entrada
+  // 2. Venda Parcelada com Entrada / Múltiplas Formas
   // Ex: "Vendi o iPhone 13 pro João por 3 mil. Ele deu mil no Pix e o resto ficou em quatro de quinhentos."
-  if (t.includes('vendi') && (t.includes('parcela') || t.includes('resto ficou em') || t.includes('vezes de'))) {
+  if (t.includes('vendi') && (t.includes('parcela') || t.includes('resto ficou em') || t.includes('vezes de') || t.includes('no pix e'))) {
+    const customer = extractEntityName(t, ['pro ', 'para o ', 'pra ']);
+    const item = extractItemReference(t);
+    const totalVal = extractTotalValue(t);
+
+    if (!item) {
+      return {
+        intent: 'create_sale',
+        requires_confirmation: true,
+        confirmation_prompt: 'Qual mercadoria você vendeu?',
+        missing_information: [{ type: 'item_reference', description: 'Item vendido não informado', promptQuestion: 'Qual mercadoria você vendeu?' }],
+      };
+    }
+
+    if (!totalVal) {
+      return {
+        intent: 'create_sale',
+        requires_confirmation: true,
+        confirmation_prompt: `Por quanto você vendeu ${item}?`,
+        missing_information: [{ type: 'deal_total', description: 'Valor total não informado', promptQuestion: `Por quanto você vendeu ${item}?` }],
+      };
+    }
+
+    const cashInAmount = extractNumberMatch(t, /deu\s+(\d+)\s*(mil|reais|no pix)?/i) || extractNumberMatch(t, /(\d+)\s*(mil)?\s*no pix/i) || 0;
+    const installmentsCount = extractNumberMatch(t, /(\d+)\s*(vezes|parcelas|de)/i) || 0;
+    const installmentValue = extractNumberMatch(t, /de\s+(\d+)\s*(mil|reais)?/i) || 0;
+
+    const remainingVal = totalVal - cashInAmount;
+
     return {
       intent: 'create_sale',
-      customer_name: extractEntityName(t, ['pro ', 'para o ', 'pra ']),
-      item_name: extractItemReference(t),
-      total_value: extractTotalValue(t) || 3000,
-      cash_movement: {
-        amount: extractNumberMatch(t, /deu\s+(\d+)\s*(mil|reais|no pix)?/i) || 1000,
-        direction: 'IN',
-        payment_method: t.includes('pix') ? 'pix' : 'cash',
-      },
-      receivable: {
-        total_amount: 2000,
-        installments_count: 4,
-        installment_value: 500,
-        is_promissory: t.includes('promissoria'),
-        is_fiado: t.includes('fiado'),
-      },
+      customer_name: customer,
+      items_out: [{ reference: item, negotiatedValue: totalVal, direction: 'OUT' }],
+      items_in: [],
+      cash_in: cashInAmount > 0 ? [{ amount: cashInAmount, method: t.includes('pix') ? 'pix' : 'cash', direction: 'IN' }] : [],
+      cash_out: [],
+      receivables: remainingVal > 0 ? [{
+        totalAmount: remainingVal,
+        installments: installmentsCount > 0 ? {
+          count: installmentsCount,
+          installmentAmount: installmentValue > 0 ? installmentValue : Math.round(remainingVal / installmentsCount),
+          isPromissory: t.includes('promissoria'),
+        } : undefined,
+      }] : [],
+      payables: [],
+      adjustments: [],
       requires_confirmation: false,
-      confirmation_prompt: null,
-      human_summary_feedback: 'Pronto. Registrei a venda parcelada. Já salvei o valor recebido e gerei as parcelas a receber.',
     };
   }
 
   // 3. Venda À Vista
-  if (t.includes('vendi') || t.includes('passei') || t.includes('fechei')) {
+  if (t.includes('vendi') || t.includes('fechei')) {
+    const customer = extractEntityName(t, ['pro ', 'para o ', 'pra ', 'com o ']);
+    const item = extractItemReference(t);
+    const totalVal = extractTotalValue(t);
+
+    if (!item) {
+      return {
+        intent: 'create_sale',
+        requires_confirmation: true,
+        confirmation_prompt: 'Qual mercadoria você vendeu?',
+        missing_information: [{ type: 'item_reference', description: 'Item vendido não informado', promptQuestion: 'Qual mercadoria você vendeu?' }],
+      };
+    }
+
+    if (!totalVal) {
+      return {
+        intent: 'create_sale',
+        requires_confirmation: true,
+        confirmation_prompt: `Por qual valor você vendeu ${item}?`,
+        missing_information: [{ type: 'deal_total', description: 'Valor total não informado', promptQuestion: `Por qual valor você vendeu ${item}?` }],
+      };
+    }
+
     return {
       intent: 'create_sale',
-      customer_name: extractEntityName(t, ['pro ', 'para o ', 'pra ', 'com o ']),
-      item_name: extractItemReference(t),
-      total_value: extractTotalValue(t) || 2000,
-      cash_movement: {
-        amount: extractTotalValue(t) || 2000,
-        direction: 'IN',
-        payment_method: t.includes('pix') ? 'pix' : (t.includes('ted') ? 'bank_transfer' : 'cash'),
-      },
-      receivable: null,
+      customer_name: customer,
+      items_out: [{ reference: item, negotiatedValue: totalVal, direction: 'OUT' }],
+      items_in: [],
+      cash_in: [{ amount: totalVal, method: t.includes('pix') ? 'pix' : 'cash', direction: 'IN' }],
+      cash_out: [],
+      receivables: [],
+      payables: [],
+      adjustments: [],
       requires_confirmation: false,
-      confirmation_prompt: null,
-      human_summary_feedback: 'Pronto. Venda à vista registrada com sucesso e item baixado do estoque.',
     };
   }
 
   // 4. Recebimentos
   if (t.includes('pagou') || t.includes('mandou no pix') || t.includes('acertou')) {
-    const isPartial = t.includes('só conseguiu') || t.includes('da parcela de') || t.includes('ficou devendo');
+    const isPartial = t.includes('só conseguiu') || t.includes('da parcela') || t.includes('ficou devendo');
+    const val = extractTotalValue(t);
+
+    if (!val) {
+      return {
+        intent: isPartial ? 'register_partial_payment' : 'register_payment',
+        requires_confirmation: true,
+        confirmation_prompt: 'Qual foi o valor pago?',
+        missing_information: [{ type: 'payment_breakdown', description: 'Valor recebido não informado', promptQuestion: 'Qual foi o valor pago?' }],
+      };
+    }
+
     return {
       intent: isPartial ? 'register_partial_payment' : 'register_payment',
-      customer_name: extractEntityName(t, ['', 'o ', 'a ']),
-      cash_movement: {
-        amount: extractTotalValue(t) || 500,
-        direction: 'IN',
-        payment_method: t.includes('pix') ? 'pix' : 'cash',
-      },
+      amount: val,
+      payment_method: t.includes('pix') ? 'pix' : 'cash',
       requires_confirmation: false,
-      confirmation_prompt: null,
-      human_summary_feedback: isPartial
-        ? 'Pronto. Pagamento parcial anotado. O saldo devedor da parcela foi recalculado.'
-        : 'Pronto. Pagamento registrado e parcela quitada no sistema.',
     };
   }
 
   // 5. Trocas / Permutas
-  if (t.includes('troquei') || t.includes('peguei') && t.includes('dei')) {
+  if (t.includes('troquei') || (t.includes('peguei') && t.includes('dei')) || t.includes('passei')) {
+    const valDiff = extractTotalValue(t);
+    const itemOut = extractItemReference(t);
+
+    if (!valDiff && !t.includes('pau a pau') && !t.includes('seca')) {
+      return {
+        intent: 'create_trade',
+        requires_confirmation: true,
+        confirmation_prompt: 'Teve alguma volta em dinheiro ou foi troca pau a pau?',
+        missing_information: [{ type: 'trade_balance_direction', description: 'Direção da volta não informada', promptQuestion: 'Teve alguma volta em dinheiro ou foi troca pau a pau?' }],
+      };
+    }
+
     return {
       intent: 'create_trade',
-      customer_name: extractEntityName(t, ['do ', 'pro ', 'com o ']),
-      trade: {
-        item_out_name: 'Item entregue',
-        item_in_name: 'Item recebido',
-        item_in_evaluated_value: 10000,
-        trade_balance: extractTotalValue(t) || 0,
-        direction: t.includes('voltei') || t.includes('paguei') ? 'paid' : (t.includes('voltou') || t.includes('recebi') ? 'received' : 'even'),
-      },
+      items_out: itemOut ? [{ reference: itemOut, direction: 'OUT', negotiatedValue: valDiff || 0 }] : [],
+      items_in: [{ description: 'Item da troca', direction: 'IN', negotiatedValue: valDiff || 0 }],
+      cash_in: (t.includes('voltou') || t.includes('recebi')) && valDiff ? [{ amount: valDiff, method: 'pix', direction: 'IN' }] : [],
+      cash_out: (t.includes('voltei') || t.includes('completei')) && valDiff ? [{ amount: valDiff, method: 'pix', direction: 'OUT' }] : [],
+      receivables: [],
+      payables: [],
+      adjustments: [],
       requires_confirmation: false,
-      confirmation_prompt: null,
-      human_summary_feedback: 'Pronto. Troca registrada com sucesso. O item recebido entrou no seu estoque.',
     };
   }
 
-  // Default: Comando interpretado com segurança
+  // 6. Custos Adicionais
+  if (t.includes('gastei') || t.includes('gasto') || t.includes('reforma') || t.includes('mecânica')) {
+    const val = extractTotalValue(t);
+    const item = extractItemReference(t);
+
+    return {
+      intent: 'add_item_cost',
+      item_name: item,
+      amount: val,
+      category: t.includes('reforma') ? 'reparo' : (t.includes('peça') ? 'pecas' : 'outros'),
+      requires_confirmation: !val || !item,
+      confirmation_prompt: !item ? 'Em qual mercadoria foi esse gasto?' : (!val ? 'Qual foi o valor do gasto?' : undefined),
+    };
+  }
+
+  // Default defensivo: não inventa ação financeira!
   return {
-    intent: 'create_sale',
-    requires_confirmation: false,
-    confirmation_prompt: null,
-    human_summary_feedback: 'Pronto. Negociação registrada com sucesso.',
+    intent: 'unrecognized_command',
+    requires_confirmation: true,
+    confirmation_prompt: 'Não compreendi com clareza o negócio. Você vendeu, trocou ou recebeu algum pagamento?',
   };
 }
 
-function extractEntityName(text: string, prefixes: string[]): string {
+function extractEntityName(text: string, prefixes: string[]): string | undefined {
   for (const p of prefixes) {
     const idx = text.indexOf(p);
     if (idx !== -1) {
@@ -395,17 +438,20 @@ function extractEntityName(text: string, prefixes: string[]): string {
       }
     }
   }
-  return 'Cliente';
+  return undefined;
 }
 
-function extractItemReference(text: string): string {
-  const items = ['iphone', 'titan', 'fan', 'bros', 'celta', 'palio', 'gol', 'notebook', 'betoneira', 'tv', 'playstation', 'gerador', 'roçadeira'];
+function extractItemReference(text: string): string | undefined {
+  const items = [
+    'iphone', 'titan', 'fan', 'bros', 'celta', 'palio', 'gol', 'notebook',
+    'betoneira', 'tv', 'playstation', 'gerador', 'roçadeira', 'xre', 's23', 'moto', 'carro'
+  ];
   for (const it of items) {
     if (text.includes(it)) {
       return it.charAt(0).toUpperCase() + it.slice(1);
     }
   }
-  return 'Mercadoria';
+  return undefined;
 }
 
 function extractTotalValue(text: string): number | null {

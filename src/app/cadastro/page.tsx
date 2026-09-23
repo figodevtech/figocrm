@@ -9,18 +9,23 @@ import { signUpAction } from '@/app/auth/actions';
 
 export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
+    setSuccess(null);
 
     const formData = new FormData(e.currentTarget);
     const res = await signUpAction(null, formData);
 
     if (res?.error) {
       setError(res.error);
+      setLoading(false);
+    } else if (res?.success && res?.message) {
+      setSuccess(res.message);
       setLoading(false);
     }
   };
@@ -50,6 +55,21 @@ export default function SignUpPage() {
             <div className="mb-6 p-3.5 rounded-xl bg-rose-500/10 border border-rose-500/30 flex items-center gap-2.5 text-xs text-rose-300">
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
+            </div>
+          )}
+
+          {success && (
+            <div className="mb-6 p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/30 text-xs text-emerald-300 space-y-2">
+              <div className="flex items-center gap-2 font-semibold">
+                <ShieldCheck className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>{success}</span>
+              </div>
+              <Link
+                href="/login"
+                className="inline-block mt-2 text-emerald-400 hover:text-emerald-300 underline font-semibold"
+              >
+                Ir para o Login →
+              </Link>
             </div>
           )}
 

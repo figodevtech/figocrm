@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "node scripts/test_finance_v2.mjs && npx tsx tests/voice-benchmark/runner.ts",
+    "test:finance": "node scripts/test_finance_v2.mjs",
+    "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -16,7 +19,8 @@
     "next": "16.3.6",
     "pg": "^8.23.0",
     "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react-dom": "19.2.8",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",

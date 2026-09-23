@@ -1,0 +1,4622 @@
+[
+  {
+    "id": "VV_001",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 13 pro Carlos por 1000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "iPhone 13",
+      "totalValue": 1000,
+      "cashIn": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_002",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 14 pro Marcos por 1250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "iPhone 14",
+      "totalValue": 1250,
+      "cashIn": 1250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_003",
+    "category": "venda_a_vista",
+    "input": "Vendi o Titan 160 pro João por 1500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Titan 160",
+      "totalValue": 1500,
+      "cashIn": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_004",
+    "category": "venda_a_vista",
+    "input": "Vendi o Fan 160 pro Lucas por 1750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Fan 160",
+      "totalValue": 1750,
+      "cashIn": 1750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_005",
+    "category": "venda_a_vista",
+    "input": "Vendi o Bros 160 pro Felipe por 2000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Bros 160",
+      "totalValue": 2000,
+      "cashIn": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_006",
+    "category": "venda_a_vista",
+    "input": "Vendi o Celta 2010 pro Rafael por 2250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Celta 2010",
+      "totalValue": 2250,
+      "cashIn": 2250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_007",
+    "category": "venda_a_vista",
+    "input": "Vendi o Palio Fire pro Matheus por 2500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Palio Fire",
+      "totalValue": 2500,
+      "cashIn": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_008",
+    "category": "venda_a_vista",
+    "input": "Vendi o Gol G5 pro Bruno por 2750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Gol G5",
+      "totalValue": 2750,
+      "cashIn": 2750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_009",
+    "category": "venda_a_vista",
+    "input": "Vendi o Notebook Dell pro Carlos por 3000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Notebook Dell",
+      "totalValue": 3000,
+      "cashIn": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_010",
+    "category": "venda_a_vista",
+    "input": "Vendi o PlayStation 5 pro Marcos por 3250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "PlayStation 5",
+      "totalValue": 3250,
+      "cashIn": 3250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_011",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 13 pro João por 3500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "iPhone 13",
+      "totalValue": 3500,
+      "cashIn": 3500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_012",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 14 pro Lucas por 3750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "iPhone 14",
+      "totalValue": 3750,
+      "cashIn": 3750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_013",
+    "category": "venda_a_vista",
+    "input": "Vendi o Titan 160 pro Felipe por 4000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Titan 160",
+      "totalValue": 4000,
+      "cashIn": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_014",
+    "category": "venda_a_vista",
+    "input": "Vendi o Fan 160 pro Rafael por 4250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Fan 160",
+      "totalValue": 4250,
+      "cashIn": 4250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_015",
+    "category": "venda_a_vista",
+    "input": "Vendi o Bros 160 pro Matheus por 4500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Bros 160",
+      "totalValue": 4500,
+      "cashIn": 4500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_016",
+    "category": "venda_a_vista",
+    "input": "Vendi o Celta 2010 pro Bruno por 4750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Celta 2010",
+      "totalValue": 4750,
+      "cashIn": 4750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_017",
+    "category": "venda_a_vista",
+    "input": "Vendi o Palio Fire pro Carlos por 5000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Palio Fire",
+      "totalValue": 5000,
+      "cashIn": 5000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_018",
+    "category": "venda_a_vista",
+    "input": "Vendi o Gol G5 pro Marcos por 5250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Gol G5",
+      "totalValue": 5250,
+      "cashIn": 5250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_019",
+    "category": "venda_a_vista",
+    "input": "Vendi o Notebook Dell pro João por 5500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Notebook Dell",
+      "totalValue": 5500,
+      "cashIn": 5500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_020",
+    "category": "venda_a_vista",
+    "input": "Vendi o PlayStation 5 pro Lucas por 5750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "PlayStation 5",
+      "totalValue": 5750,
+      "cashIn": 5750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_021",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 13 pro Felipe por 6000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "iPhone 13",
+      "totalValue": 6000,
+      "cashIn": 6000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_022",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 14 pro Rafael por 6250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "iPhone 14",
+      "totalValue": 6250,
+      "cashIn": 6250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_023",
+    "category": "venda_a_vista",
+    "input": "Vendi o Titan 160 pro Matheus por 6500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Titan 160",
+      "totalValue": 6500,
+      "cashIn": 6500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_024",
+    "category": "venda_a_vista",
+    "input": "Vendi o Fan 160 pro Bruno por 6750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Fan 160",
+      "totalValue": 6750,
+      "cashIn": 6750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_025",
+    "category": "venda_a_vista",
+    "input": "Vendi o Bros 160 pro Carlos por 7000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Bros 160",
+      "totalValue": 7000,
+      "cashIn": 7000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_026",
+    "category": "venda_a_vista",
+    "input": "Vendi o Celta 2010 pro Marcos por 7250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Celta 2010",
+      "totalValue": 7250,
+      "cashIn": 7250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_027",
+    "category": "venda_a_vista",
+    "input": "Vendi o Palio Fire pro João por 7500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Palio Fire",
+      "totalValue": 7500,
+      "cashIn": 7500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_028",
+    "category": "venda_a_vista",
+    "input": "Vendi o Gol G5 pro Lucas por 7750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Gol G5",
+      "totalValue": 7750,
+      "cashIn": 7750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_029",
+    "category": "venda_a_vista",
+    "input": "Vendi o Notebook Dell pro Felipe por 8000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Notebook Dell",
+      "totalValue": 8000,
+      "cashIn": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_030",
+    "category": "venda_a_vista",
+    "input": "Vendi o PlayStation 5 pro Rafael por 8250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "PlayStation 5",
+      "totalValue": 8250,
+      "cashIn": 8250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_031",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 13 pro Matheus por 8500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "iPhone 13",
+      "totalValue": 8500,
+      "cashIn": 8500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_032",
+    "category": "venda_a_vista",
+    "input": "Vendi o iPhone 14 pro Bruno por 8750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "iPhone 14",
+      "totalValue": 8750,
+      "cashIn": 8750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_033",
+    "category": "venda_a_vista",
+    "input": "Vendi o Titan 160 pro Carlos por 9000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Titan 160",
+      "totalValue": 9000,
+      "cashIn": 9000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_034",
+    "category": "venda_a_vista",
+    "input": "Vendi o Fan 160 pro Marcos por 9250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Fan 160",
+      "totalValue": 9250,
+      "cashIn": 9250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_035",
+    "category": "venda_a_vista",
+    "input": "Vendi o Bros 160 pro João por 9500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Bros 160",
+      "totalValue": 9500,
+      "cashIn": 9500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_036",
+    "category": "venda_a_vista",
+    "input": "Vendi o Celta 2010 pro Lucas por 9750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Celta 2010",
+      "totalValue": 9750,
+      "cashIn": 9750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_037",
+    "category": "venda_a_vista",
+    "input": "Vendi o Palio Fire pro Felipe por 10000 no Pix.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Palio Fire",
+      "totalValue": 10000,
+      "cashIn": 10000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_038",
+    "category": "venda_a_vista",
+    "input": "Vendi o Gol G5 pro Rafael por 10250 no dinheiro.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Gol G5",
+      "totalValue": 10250,
+      "cashIn": 10250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_039",
+    "category": "venda_a_vista",
+    "input": "Vendi o Notebook Dell pro Matheus por 10500 em dinheiro vivo.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Notebook Dell",
+      "totalValue": 10500,
+      "cashIn": 10500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VV_040",
+    "category": "venda_a_vista",
+    "input": "Vendi o PlayStation 5 pro Bruno por 10750 na transferência.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "PlayStation 5",
+      "totalValue": 10750,
+      "cashIn": 10750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_041",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 13 pro Carlos por 900. Ele deu 500 de entrada e o resto ficou em 2 vezes de 200.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "iPhone 13",
+      "totalValue": 900,
+      "cashIn": 500,
+      "receivable": 400,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_042",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 14 pro Marcos por 1210. Ele deu 550 de entrada e o resto ficou em 3 vezes de 220.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "iPhone 14",
+      "totalValue": 1210,
+      "cashIn": 550,
+      "receivable": 660,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_043",
+    "category": "venda_parcelada",
+    "input": "Passei o Titan 160 pro João por 1560. Ele deu 600 de entrada e o resto ficou em 4 vezes de 240.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Titan 160",
+      "totalValue": 1560,
+      "cashIn": 600,
+      "receivable": 960,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_044",
+    "category": "venda_parcelada",
+    "input": "Passei o Fan 160 pro Lucas por 1950. Ele deu 650 de entrada e o resto ficou em 5 vezes de 260.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Fan 160",
+      "totalValue": 1950,
+      "cashIn": 650,
+      "receivable": 1300,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_045",
+    "category": "venda_parcelada",
+    "input": "Passei o Bros 160 pro Felipe por 2380. Ele deu 700 de entrada e o resto ficou em 6 vezes de 280.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Bros 160",
+      "totalValue": 2380,
+      "cashIn": 700,
+      "receivable": 1680,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_046",
+    "category": "venda_parcelada",
+    "input": "Passei o Celta 2010 pro Rafael por 2850. Ele deu 750 de entrada e o resto ficou em 7 vezes de 300.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Celta 2010",
+      "totalValue": 2850,
+      "cashIn": 750,
+      "receivable": 2100,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_047",
+    "category": "venda_parcelada",
+    "input": "Passei o Palio Fire pro Matheus por 1440. Ele deu 800 de entrada e o resto ficou em 2 vezes de 320.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Palio Fire",
+      "totalValue": 1440,
+      "cashIn": 800,
+      "receivable": 640,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_048",
+    "category": "venda_parcelada",
+    "input": "Passei o Gol G5 pro Bruno por 1870. Ele deu 850 de entrada e o resto ficou em 3 vezes de 340.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Gol G5",
+      "totalValue": 1870,
+      "cashIn": 850,
+      "receivable": 1020,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_049",
+    "category": "venda_parcelada",
+    "input": "Passei o Notebook Dell pro Carlos por 2340. Ele deu 900 de entrada e o resto ficou em 4 vezes de 360.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Notebook Dell",
+      "totalValue": 2340,
+      "cashIn": 900,
+      "receivable": 1440,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_050",
+    "category": "venda_parcelada",
+    "input": "Passei o PlayStation 5 pro Marcos por 2850. Ele deu 950 de entrada e o resto ficou em 5 vezes de 380.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "PlayStation 5",
+      "totalValue": 2850,
+      "cashIn": 950,
+      "receivable": 1900,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_051",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 13 pro João por 3400. Ele deu 1000 de entrada e o resto ficou em 6 vezes de 400.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "iPhone 13",
+      "totalValue": 3400,
+      "cashIn": 1000,
+      "receivable": 2400,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_052",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 14 pro Lucas por 3990. Ele deu 1050 de entrada e o resto ficou em 7 vezes de 420.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "iPhone 14",
+      "totalValue": 3990,
+      "cashIn": 1050,
+      "receivable": 2940,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_053",
+    "category": "venda_parcelada",
+    "input": "Passei o Titan 160 pro Felipe por 1980. Ele deu 1100 de entrada e o resto ficou em 2 vezes de 440.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Titan 160",
+      "totalValue": 1980,
+      "cashIn": 1100,
+      "receivable": 880,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_054",
+    "category": "venda_parcelada",
+    "input": "Passei o Fan 160 pro Rafael por 2530. Ele deu 1150 de entrada e o resto ficou em 3 vezes de 460.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Fan 160",
+      "totalValue": 2530,
+      "cashIn": 1150,
+      "receivable": 1380,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_055",
+    "category": "venda_parcelada",
+    "input": "Passei o Bros 160 pro Matheus por 3120. Ele deu 1200 de entrada e o resto ficou em 4 vezes de 480.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Bros 160",
+      "totalValue": 3120,
+      "cashIn": 1200,
+      "receivable": 1920,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_056",
+    "category": "venda_parcelada",
+    "input": "Passei o Celta 2010 pro Bruno por 3750. Ele deu 1250 de entrada e o resto ficou em 5 vezes de 500.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Celta 2010",
+      "totalValue": 3750,
+      "cashIn": 1250,
+      "receivable": 2500,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_057",
+    "category": "venda_parcelada",
+    "input": "Passei o Palio Fire pro Carlos por 4420. Ele deu 1300 de entrada e o resto ficou em 6 vezes de 520.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Palio Fire",
+      "totalValue": 4420,
+      "cashIn": 1300,
+      "receivable": 3120,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_058",
+    "category": "venda_parcelada",
+    "input": "Passei o Gol G5 pro Marcos por 5130. Ele deu 1350 de entrada e o resto ficou em 7 vezes de 540.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Gol G5",
+      "totalValue": 5130,
+      "cashIn": 1350,
+      "receivable": 3780,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_059",
+    "category": "venda_parcelada",
+    "input": "Passei o Notebook Dell pro João por 2520. Ele deu 1400 de entrada e o resto ficou em 2 vezes de 560.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Notebook Dell",
+      "totalValue": 2520,
+      "cashIn": 1400,
+      "receivable": 1120,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_060",
+    "category": "venda_parcelada",
+    "input": "Passei o PlayStation 5 pro Lucas por 3190. Ele deu 1450 de entrada e o resto ficou em 3 vezes de 580.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "PlayStation 5",
+      "totalValue": 3190,
+      "cashIn": 1450,
+      "receivable": 1740,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_061",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 13 pro Felipe por 3900. Ele deu 1500 de entrada e o resto ficou em 4 vezes de 600.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "iPhone 13",
+      "totalValue": 3900,
+      "cashIn": 1500,
+      "receivable": 2400,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_062",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 14 pro Rafael por 4650. Ele deu 1550 de entrada e o resto ficou em 5 vezes de 620.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "iPhone 14",
+      "totalValue": 4650,
+      "cashIn": 1550,
+      "receivable": 3100,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_063",
+    "category": "venda_parcelada",
+    "input": "Passei o Titan 160 pro Matheus por 5440. Ele deu 1600 de entrada e o resto ficou em 6 vezes de 640.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Titan 160",
+      "totalValue": 5440,
+      "cashIn": 1600,
+      "receivable": 3840,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_064",
+    "category": "venda_parcelada",
+    "input": "Passei o Fan 160 pro Bruno por 6270. Ele deu 1650 de entrada e o resto ficou em 7 vezes de 660.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Fan 160",
+      "totalValue": 6270,
+      "cashIn": 1650,
+      "receivable": 4620,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_065",
+    "category": "venda_parcelada",
+    "input": "Passei o Bros 160 pro Carlos por 3060. Ele deu 1700 de entrada e o resto ficou em 2 vezes de 680.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Bros 160",
+      "totalValue": 3060,
+      "cashIn": 1700,
+      "receivable": 1360,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_066",
+    "category": "venda_parcelada",
+    "input": "Passei o Celta 2010 pro Marcos por 3850. Ele deu 1750 de entrada e o resto ficou em 3 vezes de 700.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Celta 2010",
+      "totalValue": 3850,
+      "cashIn": 1750,
+      "receivable": 2100,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_067",
+    "category": "venda_parcelada",
+    "input": "Passei o Palio Fire pro João por 4680. Ele deu 1800 de entrada e o resto ficou em 4 vezes de 720.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Palio Fire",
+      "totalValue": 4680,
+      "cashIn": 1800,
+      "receivable": 2880,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_068",
+    "category": "venda_parcelada",
+    "input": "Passei o Gol G5 pro Lucas por 5550. Ele deu 1850 de entrada e o resto ficou em 5 vezes de 740.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Gol G5",
+      "totalValue": 5550,
+      "cashIn": 1850,
+      "receivable": 3700,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_069",
+    "category": "venda_parcelada",
+    "input": "Passei o Notebook Dell pro Felipe por 6460. Ele deu 1900 de entrada e o resto ficou em 6 vezes de 760.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Notebook Dell",
+      "totalValue": 6460,
+      "cashIn": 1900,
+      "receivable": 4560,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_070",
+    "category": "venda_parcelada",
+    "input": "Passei o PlayStation 5 pro Rafael por 7410. Ele deu 1950 de entrada e o resto ficou em 7 vezes de 780.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "PlayStation 5",
+      "totalValue": 7410,
+      "cashIn": 1950,
+      "receivable": 5460,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_071",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 13 pro Matheus por 3600. Ele deu 2000 de entrada e o resto ficou em 2 vezes de 800.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "iPhone 13",
+      "totalValue": 3600,
+      "cashIn": 2000,
+      "receivable": 1600,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_072",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 14 pro Bruno por 4510. Ele deu 2050 de entrada e o resto ficou em 3 vezes de 820.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "iPhone 14",
+      "totalValue": 4510,
+      "cashIn": 2050,
+      "receivable": 2460,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_073",
+    "category": "venda_parcelada",
+    "input": "Passei o Titan 160 pro Carlos por 5460. Ele deu 2100 de entrada e o resto ficou em 4 vezes de 840.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Titan 160",
+      "totalValue": 5460,
+      "cashIn": 2100,
+      "receivable": 3360,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_074",
+    "category": "venda_parcelada",
+    "input": "Passei o Fan 160 pro Marcos por 6450. Ele deu 2150 de entrada e o resto ficou em 5 vezes de 860.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "Fan 160",
+      "totalValue": 6450,
+      "cashIn": 2150,
+      "receivable": 4300,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_075",
+    "category": "venda_parcelada",
+    "input": "Passei o Bros 160 pro João por 7480. Ele deu 2200 de entrada e o resto ficou em 6 vezes de 880.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Bros 160",
+      "totalValue": 7480,
+      "cashIn": 2200,
+      "receivable": 5280,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_076",
+    "category": "venda_parcelada",
+    "input": "Passei o Celta 2010 pro Lucas por 8550. Ele deu 2250 de entrada e o resto ficou em 7 vezes de 900.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Celta 2010",
+      "totalValue": 8550,
+      "cashIn": 2250,
+      "receivable": 6300,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_077",
+    "category": "venda_parcelada",
+    "input": "Passei o Palio Fire pro Felipe por 4140. Ele deu 2300 de entrada e o resto ficou em 2 vezes de 920.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Palio Fire",
+      "totalValue": 4140,
+      "cashIn": 2300,
+      "receivable": 1840,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_078",
+    "category": "venda_parcelada",
+    "input": "Passei o Gol G5 pro Rafael por 5170. Ele deu 2350 de entrada e o resto ficou em 3 vezes de 940.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Gol G5",
+      "totalValue": 5170,
+      "cashIn": 2350,
+      "receivable": 2820,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_079",
+    "category": "venda_parcelada",
+    "input": "Passei o Notebook Dell pro Matheus por 6240. Ele deu 2400 de entrada e o resto ficou em 4 vezes de 960.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Notebook Dell",
+      "totalValue": 6240,
+      "cashIn": 2400,
+      "receivable": 3840,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_080",
+    "category": "venda_parcelada",
+    "input": "Passei o PlayStation 5 pro Bruno por 7350. Ele deu 2450 de entrada e o resto ficou em 5 vezes de 980.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "PlayStation 5",
+      "totalValue": 7350,
+      "cashIn": 2450,
+      "receivable": 4900,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_081",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 13 pro Carlos por 8500. Ele deu 2500 de entrada e o resto ficou em 6 vezes de 1000.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "iPhone 13",
+      "totalValue": 8500,
+      "cashIn": 2500,
+      "receivable": 6000,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_082",
+    "category": "venda_parcelada",
+    "input": "Passei o iPhone 14 pro Marcos por 9690. Ele deu 2550 de entrada e o resto ficou em 7 vezes de 1020.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "iPhone 14",
+      "totalValue": 9690,
+      "cashIn": 2550,
+      "receivable": 7140,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_083",
+    "category": "venda_parcelada",
+    "input": "Passei o Titan 160 pro João por 4680. Ele deu 2600 de entrada e o resto ficou em 2 vezes de 1040.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "João",
+      "item": "Titan 160",
+      "totalValue": 4680,
+      "cashIn": 2600,
+      "receivable": 2080,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_084",
+    "category": "venda_parcelada",
+    "input": "Passei o Fan 160 pro Lucas por 5830. Ele deu 2650 de entrada e o resto ficou em 3 vezes de 1060.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Lucas",
+      "item": "Fan 160",
+      "totalValue": 5830,
+      "cashIn": 2650,
+      "receivable": 3180,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_085",
+    "category": "venda_parcelada",
+    "input": "Passei o Bros 160 pro Felipe por 7020. Ele deu 2700 de entrada e o resto ficou em 4 vezes de 1080.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Felipe",
+      "item": "Bros 160",
+      "totalValue": 7020,
+      "cashIn": 2700,
+      "receivable": 4320,
+      "installmentsCount": 4,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_086",
+    "category": "venda_parcelada",
+    "input": "Passei o Celta 2010 pro Rafael por 8250. Ele deu 2750 de entrada e o resto ficou em 5 vezes de 1100.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Rafael",
+      "item": "Celta 2010",
+      "totalValue": 8250,
+      "cashIn": 2750,
+      "receivable": 5500,
+      "installmentsCount": 5,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_087",
+    "category": "venda_parcelada",
+    "input": "Passei o Palio Fire pro Matheus por 9520. Ele deu 2800 de entrada e o resto ficou em 6 vezes de 1120.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Matheus",
+      "item": "Palio Fire",
+      "totalValue": 9520,
+      "cashIn": 2800,
+      "receivable": 6720,
+      "installmentsCount": 6,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_088",
+    "category": "venda_parcelada",
+    "input": "Passei o Gol G5 pro Bruno por 10830. Ele deu 2850 de entrada e o resto ficou em 7 vezes de 1140.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Bruno",
+      "item": "Gol G5",
+      "totalValue": 10830,
+      "cashIn": 2850,
+      "receivable": 7980,
+      "installmentsCount": 7,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_089",
+    "category": "venda_parcelada",
+    "input": "Passei o Notebook Dell pro Carlos por 5220. Ele deu 2900 de entrada e o resto ficou em 2 vezes de 1160.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Carlos",
+      "item": "Notebook Dell",
+      "totalValue": 5220,
+      "cashIn": 2900,
+      "receivable": 2320,
+      "installmentsCount": 2,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "VP_090",
+    "category": "venda_parcelada",
+    "input": "Passei o PlayStation 5 pro Marcos por 6490. Ele deu 2950 de entrada e o resto ficou em 3 vezes de 1180.",
+    "expected": {
+      "intent": "create_sale",
+      "customer": "Marcos",
+      "item": "PlayStation 5",
+      "totalValue": 6490,
+      "cashIn": 2950,
+      "receivable": 3540,
+      "installmentsCount": 3,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_091",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 100 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_092",
+    "category": "recebimento",
+    "input": "Marcos mandou 150 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 150,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_093",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 200 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_094",
+    "category": "recebimento",
+    "input": "Lucas mandou 250 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_095",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 300 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_096",
+    "category": "recebimento",
+    "input": "Rafael mandou 350 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 350,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_097",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 400 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_098",
+    "category": "recebimento",
+    "input": "Bruno mandou 450 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 450,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_099",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 500 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_100",
+    "category": "recebimento",
+    "input": "Marcos mandou 550 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 550,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_101",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 600 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_102",
+    "category": "recebimento",
+    "input": "Lucas mandou 650 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 650,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_103",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 700 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_104",
+    "category": "recebimento",
+    "input": "Rafael mandou 750 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_105",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 800 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_106",
+    "category": "recebimento",
+    "input": "Bruno mandou 850 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 850,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_107",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 900 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_108",
+    "category": "recebimento",
+    "input": "Marcos mandou 950 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 950,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_109",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 1000 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_110",
+    "category": "recebimento",
+    "input": "Lucas mandou 1050 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 1050,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_111",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 1100 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_112",
+    "category": "recebimento",
+    "input": "Rafael mandou 1150 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 1150,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_113",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 1200 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_114",
+    "category": "recebimento",
+    "input": "Bruno mandou 1250 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 1250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_115",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 1300 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_116",
+    "category": "recebimento",
+    "input": "Marcos mandou 1350 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 1350,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_117",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 1400 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_118",
+    "category": "recebimento",
+    "input": "Lucas mandou 1450 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 1450,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_119",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 1500 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_120",
+    "category": "recebimento",
+    "input": "Rafael mandou 1550 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 1550,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_121",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 1600 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_122",
+    "category": "recebimento",
+    "input": "Bruno mandou 1650 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 1650,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_123",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 1700 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_124",
+    "category": "recebimento",
+    "input": "Marcos mandou 1750 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 1750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_125",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 1800 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_126",
+    "category": "recebimento",
+    "input": "Lucas mandou 1850 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 1850,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_127",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 1900 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_128",
+    "category": "recebimento",
+    "input": "Rafael mandou 1950 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 1950,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_129",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 2000 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_130",
+    "category": "recebimento",
+    "input": "Bruno mandou 2050 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 2050,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_131",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 2100 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_132",
+    "category": "recebimento",
+    "input": "Marcos mandou 2150 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 2150,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_133",
+    "category": "recebimento",
+    "input": "João só conseguiu me pagar 2200 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "João",
+      "amount": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_134",
+    "category": "recebimento",
+    "input": "Lucas mandou 2250 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Lucas",
+      "amount": 2250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_135",
+    "category": "recebimento",
+    "input": "Felipe só conseguiu me pagar 2300 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Felipe",
+      "amount": 2300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_136",
+    "category": "recebimento",
+    "input": "Rafael mandou 2350 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Rafael",
+      "amount": 2350,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_137",
+    "category": "recebimento",
+    "input": "Matheus só conseguiu me pagar 2400 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Matheus",
+      "amount": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_138",
+    "category": "recebimento",
+    "input": "Bruno mandou 2450 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Bruno",
+      "amount": 2450,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_139",
+    "category": "recebimento",
+    "input": "Carlos só conseguiu me pagar 2500 daquela parcela de mil.",
+    "expected": {
+      "intent": "register_partial_payment",
+      "customer": "Carlos",
+      "amount": 2500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "REC_140",
+    "category": "recebimento",
+    "input": "Marcos mandou 2550 no Pix para quitar a parcela.",
+    "expected": {
+      "intent": "register_payment",
+      "customer": "Marcos",
+      "amount": 2550,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_141",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 13 no S23 Ultra do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 13",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_142",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 14 no Moto G84 do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 14",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_143",
+    "category": "troca_seca",
+    "input": "Troquei meu Titan 160 no Titan 150 do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Titan 160",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_144",
+    "category": "troca_seca",
+    "input": "Troquei meu Fan 160 no Biz 125 do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Fan 160",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_145",
+    "category": "troca_seca",
+    "input": "Troquei meu Bros 160 no Uno Mille do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Bros 160",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_146",
+    "category": "troca_seca",
+    "input": "Troquei meu Celta 2010 no Xbox Series X do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Celta 2010",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_147",
+    "category": "troca_seca",
+    "input": "Troquei meu Palio Fire no Betoneira 400L do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Palio Fire",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_148",
+    "category": "troca_seca",
+    "input": "Troquei meu Gol G5 no S23 Ultra do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Gol G5",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_149",
+    "category": "troca_seca",
+    "input": "Troquei meu Notebook Dell no Moto G84 do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Notebook Dell",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_150",
+    "category": "troca_seca",
+    "input": "Troquei meu PlayStation 5 no Titan 150 do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "PlayStation 5",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_151",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 13 no Biz 125 do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 13",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_152",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 14 no Uno Mille do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 14",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_153",
+    "category": "troca_seca",
+    "input": "Troquei meu Titan 160 no Xbox Series X do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Titan 160",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_154",
+    "category": "troca_seca",
+    "input": "Troquei meu Fan 160 no Betoneira 400L do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Fan 160",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_155",
+    "category": "troca_seca",
+    "input": "Troquei meu Bros 160 no S23 Ultra do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Bros 160",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_156",
+    "category": "troca_seca",
+    "input": "Troquei meu Celta 2010 no Moto G84 do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Celta 2010",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_157",
+    "category": "troca_seca",
+    "input": "Troquei meu Palio Fire no Titan 150 do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Palio Fire",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_158",
+    "category": "troca_seca",
+    "input": "Troquei meu Gol G5 no Biz 125 do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Gol G5",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_159",
+    "category": "troca_seca",
+    "input": "Troquei meu Notebook Dell no Uno Mille do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Notebook Dell",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_160",
+    "category": "troca_seca",
+    "input": "Troquei meu PlayStation 5 no Xbox Series X do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "PlayStation 5",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_161",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 13 no Betoneira 400L do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 13",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_162",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 14 no S23 Ultra do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 14",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_163",
+    "category": "troca_seca",
+    "input": "Troquei meu Titan 160 no Moto G84 do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Titan 160",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_164",
+    "category": "troca_seca",
+    "input": "Troquei meu Fan 160 no Titan 150 do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Fan 160",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_165",
+    "category": "troca_seca",
+    "input": "Troquei meu Bros 160 no Biz 125 do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Bros 160",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_166",
+    "category": "troca_seca",
+    "input": "Troquei meu Celta 2010 no Uno Mille do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Celta 2010",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_167",
+    "category": "troca_seca",
+    "input": "Troquei meu Palio Fire no Xbox Series X do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Palio Fire",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_168",
+    "category": "troca_seca",
+    "input": "Troquei meu Gol G5 no Betoneira 400L do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Gol G5",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_169",
+    "category": "troca_seca",
+    "input": "Troquei meu Notebook Dell no S23 Ultra do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Notebook Dell",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_170",
+    "category": "troca_seca",
+    "input": "Troquei meu PlayStation 5 no Moto G84 do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "PlayStation 5",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_171",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 13 no Titan 150 do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 13",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_172",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 14 no Biz 125 do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 14",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_173",
+    "category": "troca_seca",
+    "input": "Troquei meu Titan 160 no Uno Mille do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Titan 160",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_174",
+    "category": "troca_seca",
+    "input": "Troquei meu Fan 160 no Xbox Series X do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Fan 160",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_175",
+    "category": "troca_seca",
+    "input": "Troquei meu Bros 160 no Betoneira 400L do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Bros 160",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_176",
+    "category": "troca_seca",
+    "input": "Troquei meu Celta 2010 no S23 Ultra do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Celta 2010",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_177",
+    "category": "troca_seca",
+    "input": "Troquei meu Palio Fire no Moto G84 do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Palio Fire",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_178",
+    "category": "troca_seca",
+    "input": "Troquei meu Gol G5 no Titan 150 do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Gol G5",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_179",
+    "category": "troca_seca",
+    "input": "Troquei meu Notebook Dell no Biz 125 do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Notebook Dell",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_180",
+    "category": "troca_seca",
+    "input": "Troquei meu PlayStation 5 no Uno Mille do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "PlayStation 5",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_181",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 13 no Xbox Series X do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 13",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_182",
+    "category": "troca_seca",
+    "input": "Troquei meu iPhone 14 no Betoneira 400L do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "iPhone 14",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_183",
+    "category": "troca_seca",
+    "input": "Troquei meu Titan 160 no S23 Ultra do João pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Titan 160",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_184",
+    "category": "troca_seca",
+    "input": "Troquei meu Fan 160 no Moto G84 do Lucas pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Fan 160",
+      "itemIn": "Moto G84",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_185",
+    "category": "troca_seca",
+    "input": "Troquei meu Bros 160 no Titan 150 do Felipe pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Bros 160",
+      "itemIn": "Titan 150",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_186",
+    "category": "troca_seca",
+    "input": "Troquei meu Celta 2010 no Biz 125 do Rafael pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Celta 2010",
+      "itemIn": "Biz 125",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_187",
+    "category": "troca_seca",
+    "input": "Troquei meu Palio Fire no Uno Mille do Matheus pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Palio Fire",
+      "itemIn": "Uno Mille",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_188",
+    "category": "troca_seca",
+    "input": "Troquei meu Gol G5 no Xbox Series X do Bruno pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Gol G5",
+      "itemIn": "Xbox Series X",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_189",
+    "category": "troca_seca",
+    "input": "Troquei meu Notebook Dell no Betoneira 400L do Carlos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "Notebook Dell",
+      "itemIn": "Betoneira 400L",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_SECA_190",
+    "category": "troca_seca",
+    "input": "Troquei meu PlayStation 5 no S23 Ultra do Marcos pau a pau, sem volta.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "even",
+      "itemOut": "PlayStation 5",
+      "itemIn": "S23 Ultra",
+      "tradeBalance": 0,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_191",
+    "category": "troca_com_volta",
+    "input": "Passei minha iPhone 13 na S23 Ultra do Carlos e ele me voltou 1000 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_192",
+    "category": "troca_com_volta",
+    "input": "Peguei a Moto G84 do Marcos, dei minha iPhone 14 e completei 1200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_193",
+    "category": "troca_com_volta",
+    "input": "Passei minha Titan 160 na Titan 150 do João e ele me voltou 1400 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_194",
+    "category": "troca_com_volta",
+    "input": "Peguei a Biz 125 do Lucas, dei minha Fan 160 e completei 1600 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_195",
+    "category": "troca_com_volta",
+    "input": "Passei minha Bros 160 na Uno Mille do Felipe e ele me voltou 1800 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_196",
+    "category": "troca_com_volta",
+    "input": "Peguei a Xbox Series X do Rafael, dei minha Celta 2010 e completei 2000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_197",
+    "category": "troca_com_volta",
+    "input": "Passei minha Palio Fire na Betoneira 400L do Matheus e ele me voltou 2200 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 2200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_198",
+    "category": "troca_com_volta",
+    "input": "Peguei a S23 Ultra do Bruno, dei minha Gol G5 e completei 2400 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 2400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_199",
+    "category": "troca_com_volta",
+    "input": "Passei minha Notebook Dell na Moto G84 do Carlos e ele me voltou 2600 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 2600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_200",
+    "category": "troca_com_volta",
+    "input": "Peguei a Titan 150 do Marcos, dei minha PlayStation 5 e completei 2800 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 2800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_201",
+    "category": "troca_com_volta",
+    "input": "Passei minha iPhone 13 na Biz 125 do João e ele me voltou 3000 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 3000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_202",
+    "category": "troca_com_volta",
+    "input": "Peguei a Uno Mille do Lucas, dei minha iPhone 14 e completei 3200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 3200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_203",
+    "category": "troca_com_volta",
+    "input": "Passei minha Titan 160 na Xbox Series X do Felipe e ele me voltou 3400 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 3400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_204",
+    "category": "troca_com_volta",
+    "input": "Peguei a Betoneira 400L do Rafael, dei minha Fan 160 e completei 3600 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 3600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_205",
+    "category": "troca_com_volta",
+    "input": "Passei minha Bros 160 na S23 Ultra do Matheus e ele me voltou 3800 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 3800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_206",
+    "category": "troca_com_volta",
+    "input": "Peguei a Moto G84 do Bruno, dei minha Celta 2010 e completei 4000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 4000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_207",
+    "category": "troca_com_volta",
+    "input": "Passei minha Palio Fire na Titan 150 do Carlos e ele me voltou 4200 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 4200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_208",
+    "category": "troca_com_volta",
+    "input": "Peguei a Biz 125 do Marcos, dei minha Gol G5 e completei 4400 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 4400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_209",
+    "category": "troca_com_volta",
+    "input": "Passei minha Notebook Dell na Uno Mille do João e ele me voltou 4600 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 4600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_210",
+    "category": "troca_com_volta",
+    "input": "Peguei a Xbox Series X do Lucas, dei minha PlayStation 5 e completei 4800 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 4800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_211",
+    "category": "troca_com_volta",
+    "input": "Passei minha iPhone 13 na Betoneira 400L do Felipe e ele me voltou 5000 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 5000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_212",
+    "category": "troca_com_volta",
+    "input": "Peguei a S23 Ultra do Rafael, dei minha iPhone 14 e completei 5200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 5200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_213",
+    "category": "troca_com_volta",
+    "input": "Passei minha Titan 160 na Moto G84 do Matheus e ele me voltou 5400 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 5400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_214",
+    "category": "troca_com_volta",
+    "input": "Peguei a Titan 150 do Bruno, dei minha Fan 160 e completei 5600 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 5600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_215",
+    "category": "troca_com_volta",
+    "input": "Passei minha Bros 160 na Biz 125 do Carlos e ele me voltou 5800 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 5800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_216",
+    "category": "troca_com_volta",
+    "input": "Peguei a Uno Mille do Marcos, dei minha Celta 2010 e completei 6000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 6000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_217",
+    "category": "troca_com_volta",
+    "input": "Passei minha Palio Fire na Xbox Series X do João e ele me voltou 6200 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 6200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_218",
+    "category": "troca_com_volta",
+    "input": "Peguei a Betoneira 400L do Lucas, dei minha Gol G5 e completei 6400 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 6400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_219",
+    "category": "troca_com_volta",
+    "input": "Passei minha Notebook Dell na S23 Ultra do Felipe e ele me voltou 6600 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 6600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_220",
+    "category": "troca_com_volta",
+    "input": "Peguei a Moto G84 do Rafael, dei minha PlayStation 5 e completei 6800 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 6800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_221",
+    "category": "troca_com_volta",
+    "input": "Passei minha iPhone 13 na Titan 150 do Matheus e ele me voltou 7000 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 7000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_222",
+    "category": "troca_com_volta",
+    "input": "Peguei a Biz 125 do Bruno, dei minha iPhone 14 e completei 7200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 7200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_223",
+    "category": "troca_com_volta",
+    "input": "Passei minha Titan 160 na Uno Mille do Carlos e ele me voltou 7400 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 7400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_224",
+    "category": "troca_com_volta",
+    "input": "Peguei a Xbox Series X do Marcos, dei minha Fan 160 e completei 7600 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 7600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_225",
+    "category": "troca_com_volta",
+    "input": "Passei minha Bros 160 na Betoneira 400L do João e ele me voltou 7800 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 7800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_226",
+    "category": "troca_com_volta",
+    "input": "Peguei a S23 Ultra do Lucas, dei minha Celta 2010 e completei 8000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 8000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_227",
+    "category": "troca_com_volta",
+    "input": "Passei minha Palio Fire na Moto G84 do Felipe e ele me voltou 8200 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 8200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_228",
+    "category": "troca_com_volta",
+    "input": "Peguei a Titan 150 do Rafael, dei minha Gol G5 e completei 8400 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 8400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_229",
+    "category": "troca_com_volta",
+    "input": "Passei minha Notebook Dell na Biz 125 do Matheus e ele me voltou 8600 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 8600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_230",
+    "category": "troca_com_volta",
+    "input": "Peguei a Uno Mille do Bruno, dei minha PlayStation 5 e completei 8800 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 8800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_231",
+    "category": "troca_com_volta",
+    "input": "Passei minha iPhone 13 na Xbox Series X do Carlos e ele me voltou 9000 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 9000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_232",
+    "category": "troca_com_volta",
+    "input": "Peguei a Betoneira 400L do Marcos, dei minha iPhone 14 e completei 9200 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 9200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_233",
+    "category": "troca_com_volta",
+    "input": "Passei minha Titan 160 na S23 Ultra do João e ele me voltou 9400 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 9400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_234",
+    "category": "troca_com_volta",
+    "input": "Peguei a Moto G84 do Lucas, dei minha Fan 160 e completei 9600 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 9600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_235",
+    "category": "troca_com_volta",
+    "input": "Passei minha Bros 160 na Titan 150 do Felipe e ele me voltou 9800 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 9800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_236",
+    "category": "troca_com_volta",
+    "input": "Peguei a Biz 125 do Rafael, dei minha Celta 2010 e completei 10000 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 10000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_237",
+    "category": "troca_com_volta",
+    "input": "Passei minha Palio Fire na Uno Mille do Matheus e ele me voltou 10200 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 10200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_238",
+    "category": "troca_com_volta",
+    "input": "Peguei a Xbox Series X do Bruno, dei minha Gol G5 e completei 10400 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 10400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_239",
+    "category": "troca_com_volta",
+    "input": "Passei minha Notebook Dell na Betoneira 400L do Carlos e ele me voltou 10600 no Pix.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "inflow",
+      "tradeBalance": 10600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "TR_VOLTA_240",
+    "category": "troca_com_volta",
+    "input": "Peguei a S23 Ultra do Marcos, dei minha PlayStation 5 e completei 10800 em dinheiro.",
+    "expected": {
+      "intent": "create_trade",
+      "direction": "outflow",
+      "tradeBalance": 10800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_241",
+    "category": "abatimento",
+    "input": "Carlos me deu um celular de 150 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Carlos",
+      "amount": 150,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_242",
+    "category": "abatimento",
+    "input": "Tira 200 da conta do Marcos porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Marcos",
+      "amount": 200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_243",
+    "category": "abatimento",
+    "input": "João me deu um celular de 250 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "João",
+      "amount": 250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_244",
+    "category": "abatimento",
+    "input": "Tira 300 da conta do Lucas porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lucas",
+      "amount": 300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_245",
+    "category": "abatimento",
+    "input": "Felipe me deu um celular de 350 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Felipe",
+      "amount": 350,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_246",
+    "category": "abatimento",
+    "input": "Tira 400 da conta do Rafael porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rafael",
+      "amount": 400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_247",
+    "category": "abatimento",
+    "input": "Matheus me deu um celular de 450 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Matheus",
+      "amount": 450,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_248",
+    "category": "abatimento",
+    "input": "Tira 500 da conta do Bruno porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Bruno",
+      "amount": 500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_249",
+    "category": "abatimento",
+    "input": "Carlos me deu um celular de 550 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Carlos",
+      "amount": 550,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_250",
+    "category": "abatimento",
+    "input": "Tira 600 da conta do Marcos porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Marcos",
+      "amount": 600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_251",
+    "category": "abatimento",
+    "input": "João me deu um celular de 650 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "João",
+      "amount": 650,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_252",
+    "category": "abatimento",
+    "input": "Tira 700 da conta do Lucas porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lucas",
+      "amount": 700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_253",
+    "category": "abatimento",
+    "input": "Felipe me deu um celular de 750 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Felipe",
+      "amount": 750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_254",
+    "category": "abatimento",
+    "input": "Tira 800 da conta do Rafael porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rafael",
+      "amount": 800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_255",
+    "category": "abatimento",
+    "input": "Matheus me deu um celular de 850 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Matheus",
+      "amount": 850,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_256",
+    "category": "abatimento",
+    "input": "Tira 900 da conta do Bruno porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Bruno",
+      "amount": 900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_257",
+    "category": "abatimento",
+    "input": "Carlos me deu um celular de 950 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Carlos",
+      "amount": 950,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_258",
+    "category": "abatimento",
+    "input": "Tira 1000 da conta do Marcos porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Marcos",
+      "amount": 1000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_259",
+    "category": "abatimento",
+    "input": "João me deu um celular de 1050 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "João",
+      "amount": 1050,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_260",
+    "category": "abatimento",
+    "input": "Tira 1100 da conta do Lucas porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lucas",
+      "amount": 1100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_261",
+    "category": "abatimento",
+    "input": "Felipe me deu um celular de 1150 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Felipe",
+      "amount": 1150,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_262",
+    "category": "abatimento",
+    "input": "Tira 1200 da conta do Rafael porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rafael",
+      "amount": 1200,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_263",
+    "category": "abatimento",
+    "input": "Matheus me deu um celular de 1250 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Matheus",
+      "amount": 1250,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_264",
+    "category": "abatimento",
+    "input": "Tira 1300 da conta do Bruno porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Bruno",
+      "amount": 1300,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_265",
+    "category": "abatimento",
+    "input": "Carlos me deu um celular de 1350 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Carlos",
+      "amount": 1350,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_266",
+    "category": "abatimento",
+    "input": "Tira 1400 da conta do Marcos porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Marcos",
+      "amount": 1400,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_267",
+    "category": "abatimento",
+    "input": "João me deu um celular de 1450 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "João",
+      "amount": 1450,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_268",
+    "category": "abatimento",
+    "input": "Tira 1500 da conta do Lucas porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lucas",
+      "amount": 1500,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_269",
+    "category": "abatimento",
+    "input": "Felipe me deu um celular de 1550 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Felipe",
+      "amount": 1550,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_270",
+    "category": "abatimento",
+    "input": "Tira 1600 da conta do Rafael porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rafael",
+      "amount": 1600,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_271",
+    "category": "abatimento",
+    "input": "Matheus me deu um celular de 1650 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Matheus",
+      "amount": 1650,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_272",
+    "category": "abatimento",
+    "input": "Tira 1700 da conta do Bruno porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Bruno",
+      "amount": 1700,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_273",
+    "category": "abatimento",
+    "input": "Carlos me deu um celular de 1750 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Carlos",
+      "amount": 1750,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_274",
+    "category": "abatimento",
+    "input": "Tira 1800 da conta do Marcos porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Marcos",
+      "amount": 1800,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_275",
+    "category": "abatimento",
+    "input": "João me deu um celular de 1850 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "João",
+      "amount": 1850,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_276",
+    "category": "abatimento",
+    "input": "Tira 1900 da conta do Lucas porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Lucas",
+      "amount": 1900,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_277",
+    "category": "abatimento",
+    "input": "Felipe me deu um celular de 1950 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Felipe",
+      "amount": 1950,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_278",
+    "category": "abatimento",
+    "input": "Tira 2000 da conta do Rafael porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Rafael",
+      "amount": 2000,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_279",
+    "category": "abatimento",
+    "input": "Matheus me deu um celular de 2050 pra abater da dívida dele.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Matheus",
+      "amount": 2050,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "ABAT_280",
+    "category": "abatimento",
+    "input": "Tira 2100 da conta do Bruno porque ele fez a manutenção da minha moto.",
+    "expected": {
+      "intent": "register_adjustment",
+      "customer": "Bruno",
+      "amount": 2100,
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_281",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Carlos que vencia hoje pro dia 10 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Carlos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_282",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Marcos que vencia hoje pro dia 11 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Marcos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_283",
+    "category": "renegociacao",
+    "input": "Joga a parcela do João que vencia hoje pro dia 12 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "João",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_284",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Lucas que vencia hoje pro dia 13 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Lucas",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_285",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Felipe que vencia hoje pro dia 14 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Felipe",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_286",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Rafael que vencia hoje pro dia 15 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Rafael",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_287",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Matheus que vencia hoje pro dia 16 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Matheus",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_288",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Bruno que vencia hoje pro dia 17 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Bruno",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_289",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Carlos que vencia hoje pro dia 18 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Carlos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_290",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Marcos que vencia hoje pro dia 19 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Marcos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_291",
+    "category": "renegociacao",
+    "input": "Joga a parcela do João que vencia hoje pro dia 20 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "João",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_292",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Lucas que vencia hoje pro dia 21 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Lucas",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_293",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Felipe que vencia hoje pro dia 22 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Felipe",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_294",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Rafael que vencia hoje pro dia 23 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Rafael",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_295",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Matheus que vencia hoje pro dia 24 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Matheus",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_296",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Bruno que vencia hoje pro dia 10 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Bruno",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_297",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Carlos que vencia hoje pro dia 11 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Carlos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_298",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Marcos que vencia hoje pro dia 12 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Marcos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_299",
+    "category": "renegociacao",
+    "input": "Joga a parcela do João que vencia hoje pro dia 13 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "João",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_300",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Lucas que vencia hoje pro dia 14 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Lucas",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_301",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Felipe que vencia hoje pro dia 15 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Felipe",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_302",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Rafael que vencia hoje pro dia 16 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Rafael",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_303",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Matheus que vencia hoje pro dia 17 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Matheus",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_304",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Bruno que vencia hoje pro dia 18 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Bruno",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_305",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Carlos que vencia hoje pro dia 19 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Carlos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_306",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Marcos que vencia hoje pro dia 20 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Marcos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_307",
+    "category": "renegociacao",
+    "input": "Joga a parcela do João que vencia hoje pro dia 21 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "João",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_308",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Lucas que vencia hoje pro dia 22 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Lucas",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_309",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Felipe que vencia hoje pro dia 23 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Felipe",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_310",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Rafael que vencia hoje pro dia 24 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Rafael",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_311",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Matheus que vencia hoje pro dia 10 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Matheus",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_312",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Bruno que vencia hoje pro dia 11 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Bruno",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_313",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Carlos que vencia hoje pro dia 12 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Carlos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_314",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Marcos que vencia hoje pro dia 13 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Marcos",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_315",
+    "category": "renegociacao",
+    "input": "Joga a parcela do João que vencia hoje pro dia 14 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "João",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_316",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Lucas que vencia hoje pro dia 15 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Lucas",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_317",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Felipe que vencia hoje pro dia 16 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Felipe",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_318",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Rafael que vencia hoje pro dia 17 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Rafael",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_319",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Matheus que vencia hoje pro dia 18 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Matheus",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "RENEG_320",
+    "category": "renegociacao",
+    "input": "Joga a parcela do Bruno que vencia hoje pro dia 19 do mês que vem.",
+    "expected": {
+      "intent": "update_due_date",
+      "customer": "Bruno",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "AMB_321",
+    "category": "ambiguidade",
+    "input": "Ele me deu dois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_322",
+    "category": "ambiguidade",
+    "input": "Ficou faltando três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_323",
+    "category": "ambiguidade",
+    "input": "Apaga tudo do sistema.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_324",
+    "category": "ambiguidade",
+    "input": "Zera tudo agora.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_325",
+    "category": "ambiguidade",
+    "input": "Exclui todos os dados.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_326",
+    "category": "ambiguidade",
+    "input": "Ele pagou aquela lá.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_327",
+    "category": "ambiguidade",
+    "input": "Ficaram cinco de volta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_328",
+    "category": "ambiguidade",
+    "input": "Troquei e ficou de volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_329",
+    "category": "ambiguidade",
+    "input": "Deixa cinquenta pra depois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_330",
+    "category": "ambiguidade",
+    "input": "Acertou duas vezes.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_331",
+    "category": "ambiguidade",
+    "input": "Ele me deu dois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_332",
+    "category": "ambiguidade",
+    "input": "Ficou faltando três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_333",
+    "category": "ambiguidade",
+    "input": "Apaga tudo do sistema.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_334",
+    "category": "ambiguidade",
+    "input": "Zera tudo agora.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_335",
+    "category": "ambiguidade",
+    "input": "Exclui todos os dados.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_336",
+    "category": "ambiguidade",
+    "input": "Ele pagou aquela lá.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_337",
+    "category": "ambiguidade",
+    "input": "Ficaram cinco de volta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_338",
+    "category": "ambiguidade",
+    "input": "Troquei e ficou de volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_339",
+    "category": "ambiguidade",
+    "input": "Deixa cinquenta pra depois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_340",
+    "category": "ambiguidade",
+    "input": "Acertou duas vezes.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_341",
+    "category": "ambiguidade",
+    "input": "Ele me deu dois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_342",
+    "category": "ambiguidade",
+    "input": "Ficou faltando três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_343",
+    "category": "ambiguidade",
+    "input": "Apaga tudo do sistema.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_344",
+    "category": "ambiguidade",
+    "input": "Zera tudo agora.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_345",
+    "category": "ambiguidade",
+    "input": "Exclui todos os dados.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_346",
+    "category": "ambiguidade",
+    "input": "Ele pagou aquela lá.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_347",
+    "category": "ambiguidade",
+    "input": "Ficaram cinco de volta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_348",
+    "category": "ambiguidade",
+    "input": "Troquei e ficou de volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_349",
+    "category": "ambiguidade",
+    "input": "Deixa cinquenta pra depois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_350",
+    "category": "ambiguidade",
+    "input": "Acertou duas vezes.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_351",
+    "category": "ambiguidade",
+    "input": "Ele me deu dois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_352",
+    "category": "ambiguidade",
+    "input": "Ficou faltando três.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_353",
+    "category": "ambiguidade",
+    "input": "Apaga tudo do sistema.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_354",
+    "category": "ambiguidade",
+    "input": "Zera tudo agora.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_355",
+    "category": "ambiguidade",
+    "input": "Exclui todos os dados.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_356",
+    "category": "ambiguidade",
+    "input": "Ele pagou aquela lá.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_357",
+    "category": "ambiguidade",
+    "input": "Ficaram cinco de volta.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_358",
+    "category": "ambiguidade",
+    "input": "Troquei e ficou de volta aí.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_359",
+    "category": "ambiguidade",
+    "input": "Deixa cinquenta pra depois.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "AMB_360",
+    "category": "ambiguidade",
+    "input": "Acertou duas vezes.",
+    "expected": {
+      "intent": "clarify_ambiguity",
+      "requiresConfirmation": true,
+      "unsafeExecutionForbidden": true
+    }
+  },
+  {
+    "id": "CONS_361",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_362",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_363",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_364",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_365",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_366",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_367",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_368",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_369",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_370",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_371",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_372",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_373",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_374",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_375",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_376",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_377",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_378",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_379",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_380",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_381",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_382",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_383",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_384",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_385",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_386",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_387",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_388",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_389",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_390",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_391",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_392",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_393",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_394",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_395",
+    "category": "consulta",
+    "input": "Quanto de lucro eu tive esse mês?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_396",
+    "category": "consulta",
+    "input": "Quantas motos eu tenho em estoque hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_397",
+    "category": "consulta",
+    "input": "Quanto Carlos me deve no total?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_398",
+    "category": "consulta",
+    "input": "Quem tá com parcela atrasada hoje?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_399",
+    "category": "consulta",
+    "input": "Quanto dinheiro eu tenho na rua?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  },
+  {
+    "id": "CONS_400",
+    "category": "consulta",
+    "input": "Qual é a próxima parcela que eu tenho pra receber?",
+    "expected": {
+      "intent": "query_information",
+      "requiresConfirmation": false
+    }
+  }
+]

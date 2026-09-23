@@ -30,9 +30,13 @@ export async function updateSession(request: NextRequest) {
   });
 
   // Atualiza o token do usuário se estiver expirado
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  let user = null;
+  try {
+    const { data } = await supabase.auth.getUser();
+    user = data?.user ?? null;
+  } catch {
+    // Supabase não configurado ou inacessível no ambiente local
+  }
 
   // Proteção de rotas do painel operacional
   const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/cadastro');
