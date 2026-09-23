@@ -10,7 +10,9 @@
     "test": "node scripts/test_finance_v2.mjs && npx tsx tests/voice-benchmark/runner.ts && npx tsx scripts/test_multiturn_dialogue.mjs",
     "test:finance": "node scripts/test_finance_v2.mjs",
     "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts",
-    "test:multiturn": "npx tsx scripts/test_multiturn_dialogue.mjs"
+    "test:multiturn": "npx tsx scripts/test_multiturn_dialogue.mjs",
+    "test:security": "npx tsx tests/e2e/rpc-security.e2e.ts",
+    "db:audit": "node scripts/security_audit.mjs --strict"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
