@@ -1,10 +1,11 @@
 // tests/voice-benchmark/runner.ts
-// Executor Oficial do Benchmark Automatizado de IA — Fase 35 do FigoCRM
+// Executor Oficial do Benchmark Automatizado de IA — Fase 35 & Fase H do FigoCRM
+// O benchmark NÃO conhece previamente a categoria, intenção ou valores esperados.
+// Ele executa o interpretador puro de produção `interpretVoiceCommand` e afere acurácia real.
 
 import fs from 'fs';
 import path from 'path';
-import { normalizeSpokenText } from '../../src/lib/voice/normalizer';
-import { evaluateIntentConfidenceAndAmbiguity } from '../../src/lib/ai/disambiguation';
+import { interpretVoiceCommand } from '../../src/lib/ai/interpreter';
 import { computeBenchmarkScore, ScenarioEvaluationResult } from './scoring';
 
 const datasetPath = path.resolve(__dirname, 'cases.json');
@@ -29,8 +30,10 @@ const cases: Array<{
     item?: string;
     totalValue?: number;
     amount?: number;
+    cashIn?: number;
+    cashOut?: number;
     tradeBalance?: number;
-    direction?: string;
+    direction?: 'inflow' | 'outflow' | 'even';
     requiresConfirmation?: boolean;
     unsafeExecutionForbidden?: boolean;
   };
@@ -41,49 +44,49 @@ console.log(`Carregados ${cases.length} cenários de teste canônicos.\n`);
 const results: ScenarioEvaluationResult[] = [];
 
 for (const c of cases) {
-  const norm = normalizeSpokenText(c.input);
-  const text = norm.normalizedText.toLowerCase();
+  // Executa o interpretador puro de produção SEM qualquer dica de categoria ou valores
+  const predicted = interpretVoiceCommand(c.input);
 
-  // 1. Verificação de Ambiguidade e Risco Operacional
-  const disambiguation = evaluateIntentConfidenceAndAmbiguity(text, {});
-
-  let predictedIntent = 'create_sale';
-  let predictedDirection = 'even';
-  let requiresConfirmation = disambiguation.requiresConfirmation;
+  // 1. Verificação de Risco de Execução Insegura (Zero Tolerância)
   let unsafeExecution = false;
-
-  if (c.category === 'ambiguidade') {
-    predictedIntent = 'clarify_ambiguity';
-    if (!requiresConfirmation) {
-      // FALHA GRAVE: Ambiguidade ou comando destrutivo não foi bloqueado!
+  if (c.expected.unsafeExecutionForbidden || c.category === 'ambiguidade') {
+    if (!predicted.requiresConfirmation) {
       unsafeExecution = true;
     }
-  } else if (c.category === 'troca_seca' || c.category === 'troca_com_volta') {
-    predictedIntent = 'create_trade';
-    if (text.includes('ele me voltou') || text.includes('recebi')) {
-      predictedDirection = 'inflow';
-    } else if (text.includes('completei') || text.includes('paguei')) {
-      predictedDirection = 'outflow';
-    } else {
-      predictedDirection = 'even';
-    }
-  } else if (c.category === 'recebimento') {
-    predictedIntent = text.includes('só conseguiu') ? 'register_partial_payment' : 'register_payment';
-  } else if (c.category === 'abatimento') {
-    predictedIntent = 'register_adjustment';
-  } else if (c.category === 'renegociacao') {
-    predictedIntent = 'update_due_date';
-  } else if (c.category === 'consulta') {
-    predictedIntent = 'query_information';
   }
 
-  // Comparações de Acurácia
-  const intentMatch = predictedIntent === c.expected.intent;
-  const directionMatch = !c.expected.direction || predictedDirection === c.expected.direction;
-  const ambiguityMatch = c.category === 'ambiguidade' ? requiresConfirmation : !requiresConfirmation;
-  const valueMatch = true;
+  // 2. Aferição de Intenção
+  const intentMatch = predicted.intent === c.expected.intent;
 
-  const passed = intentMatch && directionMatch && ambiguityMatch && !unsafeExecution;
+  // 3. Aferição de Direção (Trocas e Movimentações)
+  let directionMatch = true;
+  if (c.expected.direction) {
+    directionMatch = predicted.direction === c.expected.direction;
+  }
+
+  // 4. Aferição de Valores Numéricos (Validação Real, NÃO hardcoded!)
+  let valueMatch = true;
+  if (c.expected.totalValue !== undefined) {
+    valueMatch = valueMatch && predicted.totalValue === c.expected.totalValue;
+  }
+  if (c.expected.amount !== undefined) {
+    const actAmount = predicted.amount ?? predicted.adjustmentAmount;
+    valueMatch = valueMatch && actAmount === c.expected.amount;
+  }
+  if (c.expected.tradeBalance !== undefined) {
+    valueMatch = valueMatch && predicted.tradeBalance === c.expected.tradeBalance;
+  }
+  if (c.expected.cashIn !== undefined) {
+    valueMatch = valueMatch && predicted.cashIn === c.expected.cashIn;
+  }
+
+  // 5. Aferição de Detecção de Ambiguidade
+  let ambiguityMatch = true;
+  if (c.expected.requiresConfirmation !== undefined) {
+    ambiguityMatch = predicted.requiresConfirmation === c.expected.requiresConfirmation;
+  }
+
+  const passed = intentMatch && directionMatch && valueMatch && ambiguityMatch && !unsafeExecution;
 
   results.push({
     id: c.id,
@@ -95,6 +98,9 @@ for (const c of cases) {
     directionMatch,
     ambiguityMatch,
     unsafeExecution,
+    notes: !passed
+      ? `Falha: intent(${intentMatch}) dir(${directionMatch}) val(${valueMatch}) amb(${ambiguityMatch}) unsafe(${unsafeExecution}) | pred: ${JSON.stringify(predicted.intent)} exp: ${JSON.stringify(c.expected.intent)}`
+      : undefined,
   });
 }
 
@@ -108,7 +114,7 @@ console.log(`Intent Accuracy:               ${metrics.intentAccuracy}%  (Meta: >
 console.log(`Direction Accuracy:            ${metrics.directionAccuracy}% (Meta: >= 99%)`);
 console.log(`Ambiguity Detection Rate:      ${metrics.ambiguityDetectionRate}% (Meta: >= 95%)`);
 console.log(`Unsafe Execution Rate:         \x1b[${metrics.unsafeExecutionRate === 0 ? '32m' : '31m'}${metrics.unsafeExecutionRate}%\x1b[0m  (MANDATÓRIO: 0.0%)`);
-console.log(`Full Scenario Accuracy:        \x1b[32m${metrics.fullScenarioAccuracy}%\x1b[0m (Meta: >= 90%)`);
+console.log(`Full Scenario Accuracy:        \x1b[${metrics.fullScenarioAccuracy >= 90 ? '32m' : '31m'}${metrics.fullScenarioAccuracy}%\x1b[0m (Meta: >= 90%)`);
 console.log('---------------------------------------------------------------\n');
 
 console.log('DESEMPENHO POR CATEGORIA:');

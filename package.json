@@ -7,9 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node scripts/test_finance_v2.mjs && npx tsx tests/voice-benchmark/runner.ts",
+    "test": "node scripts/test_finance_v2.mjs && npx tsx tests/voice-benchmark/runner.ts && npx tsx scripts/test_multiturn_dialogue.mjs",
     "test:finance": "node scripts/test_finance_v2.mjs",
-    "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts"
+    "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts",
+    "test:multiturn": "npx tsx scripts/test_multiturn_dialogue.mjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
