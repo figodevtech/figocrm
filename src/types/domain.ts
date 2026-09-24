@@ -32,6 +32,7 @@ export interface Customer {
   name: string;
   phone?: string;
   document?: string;
+  address?: string;
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -51,6 +52,7 @@ export type ItemCostCategory =
   | 'estetica'
   | 'transporte'
   | 'documentacao'
+  | 'servico'
   | 'outros';
 
 export interface ItemCost {
@@ -74,6 +76,13 @@ export interface Item {
   targetSalePrice?: number;
   status: ItemStatus;
   photoUrl?: string;
+  brand?: string;
+  model?: string;
+  identifier?: string;
+  imei?: string;
+  serialNumber?: string;
+  plate?: string;
+  modelYear?: number;
   acquiredAt: string;
   costs?: ItemCost[];
   totalCMV?: number; // Custo de aquisição + soma de custos agregados
@@ -203,6 +212,28 @@ export interface Payable {
   balance: number;
   status: ObligationStatus;
   installments?: Installment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// --- 6b. Empréstimos com juros (dívida = receivable com loan_contract_id) ---
+export type LoanInterestType = 'percent_total' | 'percent_monthly' | 'fixed_amount';
+export type LoanStatus = 'active' | 'paid' | 'canceled';
+
+export interface LoanContract {
+  id: UUID;
+  userId: UUID;
+  customerId: UUID;
+  principalAmount: number;
+  interestType: LoanInterestType;
+  interestRate?: number;
+  interestAmount: number;
+  totalAmount: number;
+  installmentsCount: number;
+  startDate: string;
+  firstDueDate: string;
+  status: LoanStatus;
+  notes?: string;
   createdAt: string;
   updatedAt: string;
 }
