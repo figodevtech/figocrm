@@ -135,3 +135,22 @@ pagamento maior que o saldo é recusado; estorno é um lançamento negativo liga
 | Editar nome/telefone/segmento | update direto em `profiles` (só essas colunas são editáveis) |
 | Reset de senha | **a criar no front**: `supabase.auth.resetPasswordForEmail` + tela de nova senha (`updateUser`) — fluxo validado em `tests/e2e/auth.e2e.ts` |
 | Excluir conta | **a criar** (exclusão em cascata a partir de `auth.users`) |
+
+## Atualização — ciclo "módulos com atalhos" (23/09/2026)
+
+Itens que estavam "a criar" e agora existem (detalhes em `relatorio_modulos_app_v1.md`):
+
+| Item | Onde |
+| :--- | :--- |
+| Contexto da tela na voz | `POST /api/voice/process` aceita `context: { customerId?, itemId?, loanContractId?, receivableId? }`; `POST /api/voice/transcribe` aceita o campo `context` (JSON) no form. IDs são conferidos contra o usuário antes de usar |
+| Erros do transcribe | todas as respostas de erro trazem `assistant` (antes só `error`) |
+| Empréstimos | `createLoanAction` → RPC `create_loan_contract`; voz: intenção `create_loan`; `operationType: 'loan'` |
+| Detalhe do cliente, dívidas, histórico | leituras server-side em `src/lib/domain/app-data.ts` (`getCustomerDetail`, `listOpenDebts`) |
+| Lista de negócios | `listDeals` (mesmo arquivo) |
+| Receber manual (dívida explícita) | `receivePaymentAction({ receivableId, installmentId?, amount, paymentMethod })` |
+| Desfazer pela tela | `undoSettlementAction(settlementId)` |
+| Renegociar pela tela | `renegotiateDebtAction({ receivableId, installmentIds?, newCount, firstDueDate? })` |
+| Reset de senha | `/esqueci-senha` → e-mail → `/auth/callback` → `/redefinir-senha` |
+| Cliente / mercadoria | `saveCustomerAction`, `createItemFormAction`, `updateItemFormAction`, `addItemCostFormAction`, `removeItemCostAction`, `setItemStatusAction` |
+
+Continuam pendentes: exclusão de conta, desfazer negócio inteiro, checkout de assinatura.
