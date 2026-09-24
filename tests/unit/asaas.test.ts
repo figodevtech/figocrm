@@ -49,6 +49,7 @@ try {
   assert.strictEqual(body.subscription.cycle, 'MONTHLY');
   assert.match(body.subscription.nextDueDate, /^2026-10-01 \d{2}:\d{2}:\d{2}$/);
   assert.strictEqual(body.externalReference, 'user-1');
+  assert.strictEqual(body.customerData, undefined);
   assert.strictEqual(body.minutesToExpire, 60);
   assert.strictEqual((requests[0].init.headers as Record<string, string>).access_token, 'test-key');
   assert.match((requests[0].init.headers as Record<string, string>)['User-Agent'], /^FigoCRM\//);

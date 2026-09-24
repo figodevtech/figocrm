@@ -89,7 +89,6 @@ export class AsaasProvider implements BillingProvider {
       minutesToExpire: 60,
       items: [{ name: PLAN.name, quantity: 1, value: PLAN.priceCents / 100 }],
       subscription: { cycle: 'MONTHLY', nextDueDate: dueDate },
-      customerData: { email: input.email },
       externalReference: input.userId,
       callback: { successUrl: input.successUrl, cancelUrl: input.cancelUrl, expiredUrl: input.cancelUrl },
     }) });

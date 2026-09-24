@@ -256,6 +256,16 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
     const req = (body: object, token = 'mock-token') => new Request('https://figocrm.test/api/webhooks/payment', {
       method: 'POST', headers: { 'asaas-access-token': token }, body: JSON.stringify(body),
     });
+    const orphanEventId = `evt_orphan_cancel_${Date.now()}`;
+    const orphanCanceled = await handleBillingWebhook(req({ id: orphanEventId, event: 'CHECKOUT_CANCELED',
+      checkout: { id: 'checkout-sem-sessao' } }), { provider, admin });
+    assert.strictEqual(orphanCanceled.status, 200);
+    const { data: orphanLog, error: orphanReadError } = await admin.from('billing_events')
+      .select('processed_at, error').eq('event_id', orphanEventId).single();
+    assert.ifError(orphanReadError);
+    assert.ok(orphanLog?.processed_at);
+    assert.strictEqual(orphanLog?.error, null);
+    await admin.from('billing_events').delete().eq('event_id', orphanEventId);
     const other = await createTestUser('asaas-other');
     const mismatched = await handleBillingWebhook(req({ id: `evt_mismatch_${Date.now()}`, event: 'CHECKOUT_PAID',
       checkout: { id: checkoutId, customer: 'cus_asaas_1', externalReference: other.id } }), { provider, admin });

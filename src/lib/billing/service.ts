@@ -158,7 +158,8 @@ export async function applyBillingEvent(admin: SupabaseClient, event: Normalized
   }
 
   if (!sub) {
-    if (event.type === 'subscription.created' || event.type === 'checkout.created') {
+    if (event.type === 'subscription.created' || event.type === 'checkout.created'
+      || event.type === 'checkout.canceled' || event.type === 'checkout.expired') {
       const markError = await markProcessed(admin, logged!.id);
       if (markError) return { applied: false, duplicate: false, error: markError };
       return { applied: false, duplicate: false };

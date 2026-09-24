@@ -11,7 +11,9 @@ if (baseUrl !== 'https://api-sandbox.asaas.com/v3') {
   console.error('Asaas: verificação permitida somente no sandbox.');
   process.exitCode = 1;
 } else if (!apiKey || !apiKey.startsWith('$aact_hmlg_')) {
-  console.error('Asaas: chave de sandbox ausente ou com formato inesperado.');
+  console.error(apiKey?.startsWith('$aact_prod_')
+    ? 'Asaas: a chave configurada é de produção; o sandbox exige uma chave própria ($aact_hmlg_).'
+    : 'Asaas: chave de sandbox ausente ou com formato inesperado.');
   console.log(`Webhook: token ${webhookReady ? 'configurado' : 'ausente ou provisório'}.`);
   process.exitCode = 1;
 } else {
