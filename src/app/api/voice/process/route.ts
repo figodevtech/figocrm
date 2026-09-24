@@ -7,6 +7,7 @@ import { runVoicePipeline, toHttpPayload } from '@/lib/ai/orchestrator';
 import { errorResponse } from '@/lib/api/assistant-response';
 import { guardVoiceRequest } from '@/lib/voice/request-guard';
 import { estimateCostUSD, recordAiTelemetry } from '@/lib/observability/telemetry';
+import { parseScreenContext } from '@/lib/ai/screen-context';
 
 const MAX_TEXT_LENGTH = 2000;
 
@@ -26,7 +27,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ assistant: errorResponse('validation', 'Ficou muito longo. Fala uma operação por vez.') }, { status: 413 });
     }
 
-    const result = await runVoicePipeline(spokenText.trim(), { supabase: guard.supabase, userId: guard.user.id });
+    const result = await runVoicePipeline(spokenText.trim(), {
+      supabase: guard.supabase,
+      userId: guard.user.id,
+      screen: parseScreenContext(body?.context),
+    });
 
     await recordAiTelemetry(guard.supabase, {
       endpoint: 'voice/process',

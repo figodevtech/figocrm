@@ -11,6 +11,7 @@ export const LLM_INTENTS = [
   'create_sale',
   'create_trade',
   'create_purchase',
+  'create_loan',
   'register_payment',
   'register_partial_payment',
   'register_adjustment',
@@ -40,7 +41,10 @@ export const LLM_MISSING_TYPES = [
   'installments_count',
   'installment_due_date',
   'trade_balance_direction',
+  'loan_interest',
 ] as const;
+
+export const LLM_INTEREST_TYPES = ['percent_total', 'percent_monthly', 'fixed_amount', 'none'] as const;
 
 export const LLM_AMBIGUITY_TYPES = ['value', 'customer', 'item', 'direction', 'installment', 'destructive'] as const;
 
@@ -78,6 +82,9 @@ export const LLMInterpretationSchema = z
     renegotiationScope: z.enum(['overdue', 'all_open', 'listed']).nullable(),
     installmentNumbers: z.array(z.number().int().positive().max(360)).max(24),
     queryType: z.enum(LLM_QUERY_TYPES).nullable(),
+    interestType: z.enum(LLM_INTEREST_TYPES).nullable(),
+    interestRate: z.number().nonnegative().max(1000).nullable(),
+    interestAmount: money,
     missingInformation: z
       .array(z.object({ type: z.enum(LLM_MISSING_TYPES), question: z.string().min(1).max(300) }).strict())
       .max(10),
@@ -143,6 +150,9 @@ export const LLM_INTERPRETATION_JSON_SCHEMA: JsonSchema = strictObject({
   renegotiationScope: nullableEnum(['overdue', 'all_open', 'listed']),
   installmentNumbers: { type: 'array', items: { type: 'integer' } },
   queryType: nullableEnum(LLM_QUERY_TYPES),
+  interestType: nullableEnum(LLM_INTEREST_TYPES),
+  interestRate: nullableNumber(),
+  interestAmount: nullableNumber(),
   missingInformation: {
     type: 'array',
     items: strictObject({

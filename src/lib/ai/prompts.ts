@@ -24,9 +24,15 @@ create_trade: troca — só quando o usuário TAMBÉM recebeu uma mercadoria ("t
   totalValue/itemInValue só se o valor do item foi dito; o valor da volta NÃO é o valor do item.
   Se não der para saber quem pagou a volta → ambiguities (type direction).
 create_purchase: comprou mercadoria para o estoque (item, totalValue, cashOut, payable).
+create_loan: o USUÁRIO emprestou dinheiro ao cliente ("emprestei 2 mil pro Carlos"). amount = valor emprestado (não o total com juros).
+  installmentsCount / installmentAmount (valor de cada parcela, se dito) / dueDay / firstDueDate como ditos.
+  Juros: interestType percent_monthly ("10% ao mês") ou percent_total ("com 25% de juros") com interestRate = o percentual (10, 25);
+  fixed_amount ("500 de juros") com interestAmount = o valor; none ("sem juros"). Juros não dito → interestType/interestRate/interestAmount null
+  (se disse quantidade e valor das parcelas, o sistema calcula o juro pela diferença).
+  "Carlos me emprestou" (o usuário recebeu dinheiro) NÃO é create_loan → unrecognized_command.
 register_payment / register_partial_payment: cliente pagou dívida existente. amount = valor pago.
   paymentScope: amount (valor dito) | installment_full ("pagou a parcela", sem valor) | debt_full ("quitou", "quitou o resto", "pagou tudo", sem valor).
-  installmentRef/installmentNumber: "primeira", "próxima", "última", "atrasada", "parcela 3". debtHint: mercadoria citada ("a dívida da moto").
+  installmentRef/installmentNumber: "primeira", "próxima", "última", "atrasada", "parcela 3", "a segunda" (= 2). debtHint: mercadoria citada ("a dívida da moto") ou "empréstimo" quando falar do empréstimo.
   register_payment: pagou a parcela/dívida (inclusive "mandou N para quitar a parcela"). register_partial_payment: disse que foi só parte ("só conseguiu", "daquela parcela de mil", "da primeira").
 register_adjustment: abatimento sem dinheiro. amount = valor abatido. adjustmentType: item_offset (bem/mercadoria), service_offset (serviço), discount (desconto), debt_offset (compensação de dívida).
 update_due_date: mudar vencimento. dueDay = novo dia; dueMonthOffset = 1 se "mês que vem"; firstDueDate só se a data completa foi dita.
@@ -68,6 +74,7 @@ export function buildInterpreterUserPrompt(spokenText: string, context?: Convers
   if (context?.lastCustomer) lines.push(`Cliente em contexto: ${context.lastCustomer.name}`);
   if (context?.lastItem) lines.push(`Mercadoria em contexto: ${context.lastItem.name}`);
   if (context?.lastDealId) lines.push('Há uma negociação recente em contexto.');
+  if (context?.screenLabel) lines.push(`O usuário está na tela: ${context.screenLabel}. "Ele/ela/dele" se refere a essa pessoa.`);
   if (context?.pendingConfirmation?.kind === 'missing_info') {
     lines.push(`Pergunta que o sistema acabou de fazer: "${context.pendingConfirmation.promptAsked}"`);
     lines.push(`Comando anterior incompleto: "${context.pendingConfirmation.originalTranscript}"`);

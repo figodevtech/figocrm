@@ -7,6 +7,8 @@ import { NextResponse } from 'next/server';
 import { runVoicePipeline, toHttpPayload, VoiceProcessResult } from '@/lib/ai/orchestrator';
 import { guardVoiceRequest } from '@/lib/voice/request-guard';
 import { estimateCostUSD, recordAiTelemetry } from '@/lib/observability/telemetry';
+import { parseScreenContext } from '@/lib/ai/screen-context';
+import { errorResponse } from '@/lib/api/assistant-response';
 
 const ALLOWED_MIME_TYPES = [
   'audio/webm',
@@ -106,16 +108,16 @@ export async function POST(request: Request) {
     const autoProcess = formData.get('autoProcess') !== 'false';
 
     if (!audioFile) {
-      return NextResponse.json({ error: 'Nenhum arquivo de áudio foi enviado no formulário (campo: "audio").' }, { status: 400 });
+      return NextResponse.json({ error: 'Nenhum arquivo de áudio foi enviado no formulário (campo: "audio").', assistant: errorResponse('validation', 'Não recebi o áudio. Pode falar de novo?') }, { status: 400 });
     }
     if (audioFile.size > MAX_AUDIO_BYTES) {
-      return NextResponse.json({ error: 'O áudio enviado excede o limite máximo permitido de 15MB.' }, { status: 413 });
+      return NextResponse.json({ error: 'O áudio enviado excede o limite máximo permitido de 15MB.', assistant: errorResponse('validation', 'O áudio ficou muito longo. Fala uma operação por vez.') }, { status: 413 });
     }
 
     const mimeType = (audioFile.type || 'audio/webm').toLowerCase().split(';')[0];
     if (!ALLOWED_MIME_TYPES.includes(mimeType) && mimeType !== 'application/octet-stream') {
       return NextResponse.json(
-        { error: `Formato de áudio '${audioFile.type}' não suportado. Formatos aceitos: webm, m4a, mp4, wav, ogg, mp3.` },
+        { error: `Formato de áudio '${audioFile.type}' não suportado. Formatos aceitos: webm, m4a, mp4, wav, ogg, mp3.`, assistant: errorResponse('validation', 'Esse formato de áudio não funciona aqui. Tenta digitar.') },
         { status: 415 }
       );
     }
@@ -148,6 +150,7 @@ export async function POST(request: Request) {
               ? 'Serviço de transcrição requer OPENAI_API_KEY ou GEMINI_API_KEY configurada no ambiente.'
               : 'Não consegui transcrever o áudio. Tente novamente.',
             transcriptionAvailable: false,
+            assistant: errorResponse(notConfigured ? 'provider_unavailable' : 'internal', 'Não consegui entender o áudio. Tenta de novo ou digita.'),
           },
           { status: notConfigured ? 503 : 502 }
         );
@@ -157,7 +160,7 @@ export async function POST(request: Request) {
     // 5. Pipeline de voz
     let processResult: VoiceProcessResult | null = null;
     if (autoProcess) {
-      processResult = await runVoicePipeline(stt.text, { supabase, userId: user.id });
+      processResult = await runVoicePipeline(stt.text, { supabase, userId: user.id, screen: parseScreenContext(formData.get('context')) });
     }
 
     const totalLatencyMs = Date.now() - requestStart;
@@ -205,6 +208,6 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error('Erro na transcrição de áudio:', error);
-    return NextResponse.json({ error: 'Falha interna ao processar áudio.' }, { status: 500 });
+    return NextResponse.json({ error: 'Falha interna ao processar áudio.', assistant: errorResponse('internal', 'Deu um erro aqui e nada foi gravado. Tenta de novo?') }, { status: 500 });
   }
 }

@@ -43,6 +43,11 @@ import { extractSpokenNumbers } from '@/lib/voice/numbers';
 import { toCents } from '@/lib/finance/money';
 import { confirmationAnswer } from '@/lib/ai/readback';
 import { AssistantErrorCode, AssistantResponse, errorResponse, OperationType } from '@/lib/api/assistant-response';
+import { applyScreenContext, ScreenContext } from '@/lib/ai/screen-context';
+import { resolveCustomerReference } from '@/lib/domain/entity-resolver';
+import { createCustomer } from '@/lib/domain/customers';
+import { createLoanContract, CreateLoanInput, planLoan } from '@/lib/domain/loans';
+import { uniformInstallment } from '@/lib/finance/loans';
 
 export interface VoicePipelineMetrics {
   interpretationSource?: string;
@@ -77,6 +82,8 @@ export interface VoicePipelineDeps {
   userId: string;
   interpret?: (spokenText: string, context: ConversationContext) => Promise<InterpretedVoiceCommand>;
   now?: Date;
+  /** IDs da tela atual (cliente, mercadoria, empréstimo) — conferidos contra o usuário antes de usar. */
+  screen?: ScreenContext;
 }
 
 type Outcome = Omit<VoiceProcessResult, 'metrics' | 'intent' | 'assistant'> & {
@@ -119,6 +126,7 @@ export async function runVoicePipeline(spokenText: string, deps: VoicePipelineDe
   const interpret = deps.interpret ?? ((text, ctx) => interpretVoiceCommandWithLLM(text, ctx, { now: deps.now }));
 
   let context = await loadVoiceContext(supabase, userId);
+  context = await applyScreenContext(supabase, userId, context, deps.screen);
 
   // 1. Resposta a uma pergunta pendente (escolha de candidato ou valor que faltava)
   let interpreted = resumePending(spokenText, context.pendingConfirmation);
@@ -260,6 +268,8 @@ async function execute(
     case 'create_trade':
     case 'create_purchase':
       return executeDeal(cmd, spokenText, context, deps);
+    case 'create_loan':
+      return executeLoan(cmd, spokenText, context, deps);
     case 'register_payment':
     case 'register_partial_payment':
     case 'register_adjustment':
@@ -359,6 +369,93 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
   };
 }
 
+const LOAN_METHODS: Record<string, CreateLoanInput['paymentMethod']> = { pix: 'pix', cash: 'cash', bank_transfer: 'bank_transfer', card: 'credit_card', other: 'other' };
+
+/** "Emprestei 2 mil pro Carlos em 5 de 500": mesmo domínio do formulário (planLoan → create_loan_contract). */
+async function executeLoan(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
+  const principal = cmd.amount;
+  const count = cmd.installmentsCount;
+  if (!principal) return askUser('Quanto você emprestou?', pending('missing_info', spokenText, 'Quanto você emprestou?', cmd, 'amount'));
+  if (!count) return askUser('Em quantas parcelas ele vai te pagar?', pending('missing_info', spokenText, 'Em quantas parcelas ele vai te pagar?', cmd, 'installmentsCount'));
+
+  const base = {
+    principal,
+    installmentsCount: count,
+    dueDay: cmd.dueDay,
+    firstDueDate: cmd.firstDueDate,
+    paymentMethod: cmd.paymentMethod ? LOAN_METHODS[cmd.paymentMethod] : undefined,
+    notes: spokenText.slice(0, 500),
+  };
+  let terms: Omit<CreateLoanInput, 'customerId' | 'source'>;
+  if (cmd.interestType === 'none') terms = { ...base, interestType: 'fixed_amount', interestAmount: 0 };
+  else if (cmd.interestType === 'fixed_amount' && cmd.interestAmount !== undefined) terms = { ...base, interestType: 'fixed_amount', interestAmount: cmd.interestAmount };
+  else if ((cmd.interestType === 'percent_total' || cmd.interestType === 'percent_monthly') && cmd.interestRate !== undefined) {
+    terms = { ...base, interestType: cmd.interestType, interestRate: cmd.interestRate };
+  } else if (cmd.installmentAmount !== undefined) terms = { ...base, interestType: 'fixed_amount', installmentAmount: cmd.installmentAmount };
+  else {
+    const q = 'Vai ter juros? Me diga a porcentagem ou o valor dos juros.';
+    return askUser(q, pending('missing_info', spokenText, q, cmd));
+  }
+
+  const plan = planLoan(terms, deps.now);
+  if (!plan.ok) {
+    const q = `${plan.error} Como fica o empréstimo?`;
+    return askUser(q, pending('missing_info', spokenText, q, cmd));
+  }
+  const each = uniformInstallment(plan.terms.installmentCents);
+  // Juros E valor da parcela ditos: a conta precisa fechar, senão pergunta (nunca escolhe um dos dois)
+  if (cmd.installmentAmount !== undefined && terms.installmentAmount === undefined && each !== toCents(cmd.installmentAmount)) {
+    const shown = (each ?? plan.terms.installmentCents[0]) / 100;
+    const q =
+      `Com esses juros o total fica ${brl(plan.terms.totalCents / 100)}, ${count} de ${brl(shown)}. ` +
+      `Você falou ${count} de ${brl(cmd.installmentAmount)}. Qual está certo?`;
+    return askUser(q, pending('missing_info', spokenText, q, cmd));
+  }
+
+  const custRes = await resolveCustomerReference(deps.supabase, deps.userId, {
+    id: cmd.resolvedRefs?.customerId,
+    name: cmd.counterparty?.name,
+    context: context.lastCustomer,
+  });
+  if (custRes.status === 'ambiguous') {
+    return askUser(custRes.promptQuestion!, pending('entity_choice', spokenText, custRes.promptQuestion!, cmd, 'customer', custRes.candidates), undefined, custRes.candidates);
+  }
+  let customer = custRes.entity ? { id: custRes.entity.id, name: custRes.entity.name } : undefined;
+  if (!customer) {
+    if (!cmd.counterparty?.name || cmd.resolvedRefs?.customerId) {
+      return askUser('Pra quem você emprestou?', pending('missing_info', spokenText, 'Pra quem você emprestou?', cmd, 'customer'));
+    }
+    // Nome novo: cadastra só depois que valores e juros já foram validados
+    const created = await createCustomer(deps.supabase, deps.userId, { name: cmd.counterparty.name }, { allowDuplicate: true });
+    if (!created.ok) return failure(created.error, { pendingConfirmation: null });
+    customer = { id: created.customer.id, name: created.customer.name };
+  }
+
+  const res = await createLoanContract(deps.supabase, { ...terms, customerId: customer.id, source: 'voice' }, deps.now);
+  if (!res.success || !res.plan) return failure(res.error, { pendingConfirmation: null, lastCustomer: { ...customer, type: 'customer' } });
+
+  const t = res.plan.terms;
+  const first = res.plan.schedule[0];
+  const eachCents = uniformInstallment(t.installmentCents);
+  const interestText = t.interestCents > 0 ? ` (${brl(t.interestCents / 100)} de juros)` : ', sem juros';
+  const scheduleText = eachCents !== null ? `x de ${brl(eachCents / 100)}` : ' parcelas';
+  return {
+    success: true,
+    humanResponse:
+      `Pronto. Emprestei ${brl(t.principalCents / 100)} pro ${customer.name}. ` +
+      `Volta ${brl(t.totalCents / 100)}${interestText} em ${t.installmentsCount}${scheduleText}. A primeira vence em ${formatDate(first.dueDate)}.`,
+    requiresConfirmation: false,
+    executionStatus: 'executed',
+    operation: { id: res.loanContractId, type: 'loan', undoAvailable: false },
+    contextPatch: {
+      lastCustomer: { ...customer, type: 'customer' },
+      lastReceivableId: res.receivableId ?? null,
+      lastDealId: null,
+      pendingConfirmation: null,
+    },
+  };
+}
+
 type ResolvedTarget = Extract<Awaited<ReturnType<typeof resolveFinancialTarget>>, { status: 'resolved' }>;
 
 /** Resolve cliente → dívida (→ parcela); devolve Outcome de pergunta quando não resolve. */
@@ -432,7 +529,7 @@ async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string
       humanResponse: `Pronto. A parcela ${inst.number} do ${customer.name} agora vence em ${formatDate(newDueDate)}.`,
       requiresConfirmation: false,
       executionStatus: 'executed',
-      dealId: debt.dealId,
+      dealId: debt.dealId ?? undefined,
       operation: { id: inst.id, type: 'reschedule', undoAvailable: false },
       contextPatch,
     };
@@ -471,7 +568,7 @@ async function executeFinancial(cmd: InterpretedVoiceCommand, spokenText: string
     humanResponse: settlementSummary(isPayment, customer.name, debt, installment, res),
     requiresConfirmation: false,
     executionStatus: 'executed',
-    dealId: debt.dealId,
+    dealId: debt.dealId ?? undefined,
     operation: { id: res.settlementId, type: isPayment ? 'payment' : 'adjustment', undoAvailable: !!res.settlementId },
     contextPatch,
   };
@@ -538,7 +635,7 @@ async function executeRenegotiation(cmd: InterpretedVoiceCommand, spokenText: st
       `A primeira vence em ${first ? formatDate(first.dueDate) : '-'}.`,
     requiresConfirmation: false,
     executionStatus: 'executed',
-    dealId: debt.dealId,
+    dealId: debt.dealId ?? undefined,
     operation: { id: res.renegotiationId, type: 'renegotiation', undoAvailable: false },
     contextPatch,
   };
@@ -698,7 +795,7 @@ const FIELD_MISSING_TYPES: Record<string, string[]> = {
 function fieldForMissing(cmd: InterpretedVoiceCommand): string | undefined {
   const type = cmd.missingInformation[0]?.type;
   if (!type || cmd.ambiguities.length > 0) return undefined;
-  const financial = ['register_payment', 'register_partial_payment', 'register_adjustment'].includes(cmd.intent);
+  const financial = ['register_payment', 'register_partial_payment', 'register_adjustment', 'create_loan'].includes(cmd.intent);
   if ((type === 'deal_total' || type === 'payment_breakdown') && financial) return 'amount';
   if (type === 'deal_total' || type === 'acquisition_cost') return 'totalValue';
   if (type === 'installment_due_date') return 'dueDay';

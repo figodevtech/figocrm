@@ -32,6 +32,15 @@ export function describeForReadback(cmd: InterpretedVoiceCommand): string {
       if (cmd.direction === 'even') parts.push('sem volta');
       break;
     }
+    case 'create_loan': {
+      parts.push(`empréstimo de ${cmd.amount ? brl(cmd.amount) : '?'} para${who}`);
+      if (cmd.installmentsCount && cmd.installmentAmount) parts.push(`volta em ${cmd.installmentsCount}x de ${brl(cmd.installmentAmount)}`);
+      else if (cmd.installmentsCount) parts.push(`em ${cmd.installmentsCount} parcelas`);
+      if (cmd.interestType === 'none') parts.push('sem juros');
+      else if (cmd.interestRate !== undefined) parts.push(`juros de ${cmd.interestRate}%${cmd.interestType === 'percent_monthly' ? ' ao mês' : ''}`);
+      else if (cmd.interestAmount !== undefined) parts.push(`juros de ${brl(cmd.interestAmount)}`);
+      break;
+    }
     case 'create_purchase':
       parts.push(`compra de ${cmd.item ?? 'mercadoria'} com${who}${cmd.totalValue ? ` por ${brl(cmd.totalValue)}` : ''}`);
       break;

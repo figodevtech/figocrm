@@ -24,6 +24,7 @@ const MONETARY_FIELDS = [
   'payable',
   'installmentAmount',
   'amount',
+  'interestAmount',
 ] as const;
 
 // Palavras que costumam abrir frase com maiúscula e não são nomes de pessoa
@@ -69,6 +70,10 @@ export function checkGrounding(
   }
   if (cmd.dueDay !== undefined && !rawNumbers.has(cmd.dueDay)) {
     issues.push({ field: 'dueDay', value: cmd.dueDay });
+  }
+  // Percentual de juros precisa ter sido dito ("10%", "dez por cento")
+  if (cmd.interestRate !== undefined && cmd.interestRate > 0 && !rawNumbers.has(cmd.interestRate)) {
+    issues.push({ field: 'interestRate', value: cmd.interestRate });
   }
 
   const name = cmd.counterparty?.name;
@@ -225,7 +230,7 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
 }
 
 export const WRITE_INTENTS = new Set([
-  'create_sale', 'create_trade', 'create_purchase', 'register_payment', 'register_partial_payment',
+  'create_sale', 'create_trade', 'create_purchase', 'create_loan', 'register_payment', 'register_partial_payment',
   'register_adjustment', 'update_due_date', 'renegotiate_debt', 'reverse_operation',
 ]);
 
@@ -272,6 +277,17 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
     case 'update_due_date':
       if (!cmd.dueDay && !cmd.firstDueDate) add('installment_due_date', 'Para qual dia fica o vencimento?');
       break;
+    case 'create_loan': {
+      if (!cmd.amount) add('deal_total', 'Quanto você emprestou?');
+      if (!cmd.installmentsCount) add('installments_count', 'Em quantas parcelas ele vai te pagar?');
+      const interestKnown =
+        cmd.installmentAmount !== undefined ||
+        cmd.interestType === 'none' ||
+        (cmd.interestType === 'fixed_amount' && cmd.interestAmount !== undefined) ||
+        ((cmd.interestType === 'percent_total' || cmd.interestType === 'percent_monthly') && cmd.interestRate !== undefined);
+      if (!interestKnown) add('loan_interest', 'Vai ter juros? Me diga a porcentagem ou o valor dos juros.');
+      break;
+    }
   }
   return gaps;
 }

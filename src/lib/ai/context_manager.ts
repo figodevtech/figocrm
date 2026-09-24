@@ -36,6 +36,8 @@ export interface ConversationContext {
   lastDealId?: string;
   lastReceivableId?: string;
   pendingConfirmation?: PendingConfirmation;
+  /** Tela em que o usuário está ("cliente Carlos"); transitório, nunca persistido. */
+  screenLabel?: string;
   expiresAt: number;
 }
 

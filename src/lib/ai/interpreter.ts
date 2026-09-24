@@ -6,6 +6,7 @@
 // Função pura (sem banco/rede). Nunca inventa valores: o que não foi dito fica undefined.
 
 import { normalizeSpokenText } from '@/lib/voice/normalizer';
+import { extractSpokenNumbers } from '@/lib/voice/numbers';
 import { evaluateIntentConfidenceAndAmbiguity } from '@/lib/ai/disambiguation';
 import { ConversationContext, resolvePronounsAndAnaphora } from '@/lib/ai/context_manager';
 import { AmbiguityItem, MissingInformationItem, PaymentMethodType } from '@/types/deal-command';
@@ -15,6 +16,7 @@ export type InterpretedIntent =
   | 'create_sale'
   | 'create_trade'
   | 'create_purchase'
+  | 'create_loan'
   | 'create_deal'
   | 'register_payment'
   | 'register_partial_payment'
@@ -79,6 +81,12 @@ export interface InterpretedVoiceCommand {
   /** Renegociação: quais parcelas juntar (atrasadas, todas as abertas ou as citadas). */
   renegotiationScope?: 'overdue' | 'all_open' | 'listed';
   installmentNumbers?: number[];
+  /** Empréstimo: como o juro foi dito ('none' = "sem juros"). amount = valor emprestado. */
+  interestType?: 'percent_total' | 'percent_monthly' | 'fixed_amount' | 'none';
+  /** Percentual dito ("10%" → 10). */
+  interestRate?: number;
+  /** Valor dos juros dito em reais ("500 de juros"). */
+  interestAmount?: number;
   queryType?: string;
   requiresConfirmation: boolean;
   confirmationPrompt?: string;
@@ -201,6 +209,11 @@ export function interpretVoiceCommand(
       rawText: spokenText,
       normalizedText: text,
     };
+  }
+
+  // 3b2. Empréstimo de dinheiro ("emprestei 2 mil pro Carlos em 5 de 500")
+  if (/\b(emprestei|empresto|vou emprestar|fiz um empr[eé]stimo)\b/.test(t)) {
+    return interpretLoan(t, spokenText, text, contextualCustomer);
   }
 
   // 3c. Renegociação com novo parcelamento ("junta as duas atrasadas e faz 4 de 500 todo dia 10")
@@ -468,6 +481,7 @@ export function interpretVoiceCommand(
       installmentAmount: citedInstallment,
       paymentScope,
       installmentRef,
+      debtHint: /empr[eé]stimo/.test(normalizedTextWithNumbers) ? 'empréstimo' : undefined,
       paymentMethod: extractPaymentMethod(normalizedTextWithNumbers),
       requiresConfirmation: !paymentScope || overpaysCited,
       missingInformation: !paymentScope
@@ -503,6 +517,58 @@ export function interpretVoiceCommand(
 // Funções Auxiliares Determinísticas de Extração de Entidades
 // -------------------------------------------------------------
 
+/** Empréstimo pelo parser determinístico (fallback): só o que foi dito; o resto vira pergunta. */
+function interpretLoan(t: string, spokenText: string, normalizedText: string, contextualCustomer?: string): InterpretedVoiceCommand {
+  const verb = t.match(/\b(emprestei|empresto|vou emprestar|fiz um empr[eé]stimo)\b/);
+  const seg = verb ? t.slice((verb.index ?? 0) + verb[0].length) : t;
+  const first = (chunk?: string) => (chunk ? extractSpokenNumbers(chunk).filter((v) => v > 0)[0] : undefined);
+  const last = (chunk?: string) => {
+    const values = chunk ? extractSpokenNumbers(chunk).filter((v) => v > 0) : [];
+    return values[values.length - 1];
+  };
+
+  const amount = first(seg.split(/\b(em|com|de juros|a|por cento)\b|%/)[0]) ?? first(seg);
+  const inParts = seg.match(/\bem\s+([^,.;]+?)\s+(?:vezes\s+|parcelas\s+)?de\s+([^,.;%]+?)(?=\s+(?:todo|toda|com|por|a partir|primeira)\b|[,.;]|$)/);
+  const countOnly = seg.match(/([\p{L}\d]+)\s+(?:vezes|parcelas|x)\b/u);
+  const installmentsCount = inParts ? first(inParts[1]) : countOnly ? first(countOnly[1]) : undefined;
+  const installmentAmount = inParts && !/juros|%|por cento/.test(inParts[2]) ? first(inParts[2]) : undefined;
+
+  const percent = seg.match(/([^,;]*?)\s*(?:%|por cento)/);
+  const interestRate = percent ? last(percent[1]) : undefined;
+  const fixed = !percent ? seg.match(/([^,;]*?)\s+de juros/) : null;
+  const interestAmount = fixed ? last(fixed[1]) : undefined;
+  const noInterest = /\bsem juros\b/.test(seg);
+  const monthly = /\b(ao|por|todo) m[eê]s\b|\bmensa(l|is)\b/.test(seg);
+  const interestType: InterpretedVoiceCommand['interestType'] = noInterest
+    ? 'none'
+    : interestRate !== undefined
+      ? monthly ? 'percent_monthly' : 'percent_total'
+      : interestAmount !== undefined
+        ? 'fixed_amount'
+        : undefined;
+
+  const dayMatch = seg.match(/\bdia\s+([\p{L}\d]+)/u);
+  const dueDay = dayMatch ? first(dayMatch[1]) : undefined;
+  const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+
+  return {
+    intent: 'create_loan',
+    counterparty: cust ? { name: cust } : undefined,
+    amount,
+    installmentsCount,
+    installmentAmount,
+    interestType,
+    interestRate,
+    interestAmount,
+    dueDay: dueDay && dueDay <= 31 ? dueDay : undefined,
+    requiresConfirmation: false,
+    missingInformation: [],
+    ambiguities: [],
+    rawText: spokenText,
+    normalizedText,
+  };
+}
+
 function scaleShorthand(value: number, milSuffix?: string): number {
   // Convenção do setor: "por 26" (sem unidade) em negócio de veículo = 26 mil
   return milSuffix?.toLowerCase() === 'mil' || value < 100 ? value * 1000 : value;
@@ -522,7 +588,11 @@ function extractInstallmentRef(text: string): InstallmentReference | undefined {
   if (/\b(atrasada|vencida)\b/.test(text)) return 'overdue';
   if (/\bpr[oó]xima\b/.test(text)) return 'next';
   const n = text.match(/parcela\s+(\d{1,2})\b/);
-  return n ? parseInt(n[1], 10) : undefined;
+  if (n) return parseInt(n[1], 10);
+  // "pagou a segunda (parcela)", "a terceira do empréstimo" (não confundir com "segunda-feira")
+  const ordinals: Record<string, number> = { segunda: 2, terceira: 3, quarta: 4, quinta: 5, sexta: 6, setima: 7, sétima: 7, oitava: 8, nona: 9, decima: 10, décima: 10 };
+  const ord = text.match(/\b(?:a|da|na)\s+(segunda|terceira|quarta|quinta|sexta|s[eé]tima|oitava|nona|d[eé]cima)(?!\s*-?\s*feira)\b/);
+  return ord ? ordinals[ord[1]] : undefined;
 }
 
 function normalizeWordNumbers(text: string): string {

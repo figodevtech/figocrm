@@ -8,7 +8,7 @@ export interface Candidate {
   detail?: string;
 }
 
-export type OperationType = 'deal' | 'payment' | 'adjustment' | 'reversal' | 'renegotiation' | 'reschedule';
+export type OperationType = 'deal' | 'loan' | 'payment' | 'adjustment' | 'reversal' | 'renegotiation' | 'reschedule';
 
 export type AssistantErrorCode =
   | 'subscription_required'

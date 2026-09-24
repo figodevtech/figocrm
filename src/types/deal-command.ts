@@ -22,7 +22,8 @@ export type MissingInformationType =
   | 'payment_breakdown'
   | 'installments_count'
   | 'installment_due_date'
-  | 'trade_balance_direction';
+  | 'trade_balance_direction'
+  | 'loan_interest';
 
 export interface MissingInformationItem {
   type: MissingInformationType;

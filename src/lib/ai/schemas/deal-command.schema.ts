@@ -31,6 +31,7 @@ export const MissingInformationTypeSchema = z.enum([
   'installments_count',
   'installment_due_date',
   'trade_balance_direction',
+  'loan_interest',
 ]);
 
 export const AmbiguityTypeSchema = z.enum([
