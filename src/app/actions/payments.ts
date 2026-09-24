@@ -9,6 +9,11 @@ import { createClient } from '@/lib/supabase/server';
 import { assertWritePermission } from '@/lib/subscription';
 import { applySettlement, rescheduleInstallment } from '@/lib/domain/financial-operations';
 import { PaymentMethod, AdjustmentType } from '@/types/domain';
+import { actionSession, NOT_AUTHENTICATED } from '@/lib/auth/session';
+import { renegotiateInstallments } from '@/lib/domain/financial-operations';
+import { reverseAndDescribe } from '@/lib/ai/orchestrator';
+import { formatBRL } from '@/lib/format';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 async function authenticatedClient() {
   const supabase = await createClient();
@@ -144,4 +149,97 @@ export async function updateDueDateAction(input: {
   } catch (err: unknown) {
     return { success: false, error: err instanceof Error ? err.message : 'Erro ao alterar vencimento.' };
   }
+}
+
+// ------------------------------------------------------------------ telas do app (formulário)
+
+export interface ReceivePaymentInput {
+  receivableId: string;
+  /** Parcela escolhida; sem ela o valor abate das parcelas mais antigas da MESMA dívida. */
+  installmentId?: string;
+  amount: number;
+  paymentMethod: PaymentMethod;
+}
+
+export type ReceivePaymentResult =
+  | { ok: true; settlementId: string; message: string; debtBalance: number; installmentBalance: number | null }
+  | { ok: false; error: string };
+
+/** "Receber pagamento": sempre sobre UMA dívida escolhida pelo usuário, pela RPC atômica de liquidação. */
+export async function receivePaymentAction(input: ReceivePaymentInput): Promise<ReceivePaymentResult> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  const supabase = session.supabase as unknown as SupabaseClient;
+
+  if (!input.receivableId) return { ok: false, error: 'Escolha qual dívida ele está pagando.' };
+  if (!(input.amount > 0)) return { ok: false, error: 'Informe o valor recebido.' };
+
+  const res = await applySettlement(supabase, {
+    kind: 'payment',
+    receivableId: input.receivableId,
+    installmentId: input.installmentId,
+    amount: input.amount,
+    paymentMethod: input.paymentMethod,
+    reason: 'Recebimento manual',
+    source: 'manual',
+  });
+  if (!res.success || !res.settlementId) {
+    if (res.exceedsBalance) return { ok: false, error: 'O valor passa do que falta pagar. Confira o valor.' };
+    if (res.error?.includes('Assinatura inativa')) return { ok: false, error: 'Seu período de teste acabou. Assine para continuar registrando.' };
+    return { ok: false, error: 'Não consegui registrar o pagamento. Nada foi alterado.' };
+  }
+
+  const single = res.allocations?.length === 1 ? res.allocations[0] : undefined;
+  const debtBalance = res.obligationBalance ?? 0;
+  const installmentBalance = input.installmentId && single ? single.balanceAfter : null;
+  const message =
+    debtBalance <= 0
+      ? `Recebido ${formatBRL(res.amount ?? input.amount)}. Dívida quitada.`
+      : installmentBalance !== null && installmentBalance > 0
+        ? `Recebido ${formatBRL(res.amount ?? input.amount)}. Faltam ${formatBRL(installmentBalance)} nessa parcela.`
+        : `Recebido ${formatBRL(res.amount ?? input.amount)}. Falta ${formatBRL(debtBalance)} no total.`;
+  return { ok: true, settlementId: res.settlementId, message, debtBalance, installmentBalance };
+}
+
+/** Desfazer pagamento/abatimento: estorno por lançamento negativo (nada é apagado). */
+export async function undoSettlementAction(settlementId: string): Promise<{ ok: boolean; message: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, message: NOT_AUTHENTICATED };
+  const outcome = await reverseAndDescribe(session.supabase as unknown as SupabaseClient, settlementId, undefined, 'Desfazer pela tela', 'manual');
+  return { ok: outcome.success, message: outcome.humanResponse };
+}
+
+export interface RenegotiateInput {
+  receivableId: string;
+  /** Parcelas a juntar; vazio = todas as abertas. */
+  installmentIds?: string[];
+  newCount: number;
+  firstDueDate?: string;
+}
+
+/** Renegociar: parcelas antigas ficam como "renegociada" (histórico), nova grade fecha com o saldo. */
+export async function renegotiateDebtAction(input: RenegotiateInput): Promise<{ ok: true; message: string } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  if (!Number.isInteger(input.newCount) || input.newCount < 1 || input.newCount > 120) return { ok: false, error: 'Informe em quantas parcelas fica.' };
+
+  const res = await renegotiateInstallments(session.supabase as unknown as SupabaseClient, {
+    receivableId: input.receivableId,
+    installmentIds: input.installmentIds,
+    newCount: input.newCount,
+    firstDueDate: input.firstDueDate,
+    reason: 'Renegociação pela tela',
+    source: 'manual',
+  });
+  if (!res.success) {
+    if (res.error?.includes('passado')) return { ok: false, error: 'O primeiro vencimento não pode ser no passado.' };
+    if (res.error?.includes('Assinatura inativa')) return { ok: false, error: 'Seu período de teste acabou. Assine para continuar registrando.' };
+    return { ok: false, error: 'Não consegui renegociar. Nada foi alterado.' };
+  }
+  const first = res.newInstallments?.[0];
+  const same = res.newInstallments?.every((i) => i.amount === first?.amount);
+  return {
+    ok: true,
+    message: `Renegociado: ${formatBRL(res.renegotiatedAmount ?? 0)} em ${input.newCount}${same && first ? `x de ${formatBRL(first.amount)}` : ' parcelas'}.`,
+  };
 }

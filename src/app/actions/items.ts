@@ -6,6 +6,17 @@ import { createClient } from '@/lib/supabase/server';
 import { assertWritePermission } from '@/lib/subscription';
 import { Item, ItemStatus, ItemCostCategory } from '@/types/domain';
 import { calculateCMV } from '@/lib/financial_engine';
+import { actionSession, NOT_AUTHENTICATED } from '@/lib/auth/session';
+import {
+  addItemCost,
+  createItem,
+  EditableItemStatus,
+  ItemCostInput,
+  ItemInput,
+  removeItemCost,
+  setItemStatus,
+  updateItem,
+} from '@/lib/domain/items';
 
 export interface CreateItemInput {
   name: string;
@@ -160,4 +171,41 @@ export async function getStockItemsAction(statusFilter?: ItemStatus[]): Promise<
     const message = err instanceof Error ? err.message : 'Erro ao buscar itens de estoque.';
     return { items: [], error: message };
   }
+}
+
+// ------------------------------------------------------------------ telas do app (formulário)
+
+type Result = { ok: true } | { ok: false; error: string };
+
+export async function createItemFormAction(
+  input: ItemInput,
+  costs: ItemCostInput[] = []
+): Promise<{ ok: true; itemId: string; costsSaved: boolean } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return createItem(session.supabase, session.user.id, input, costs);
+}
+
+export async function updateItemFormAction(itemId: string, input: ItemInput, status?: EditableItemStatus): Promise<Result> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return updateItem(session.supabase, session.user.id, itemId, input, status);
+}
+
+export async function setItemStatusAction(itemId: string, status: EditableItemStatus): Promise<Result> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return setItemStatus(session.supabase, session.user.id, itemId, status);
+}
+
+export async function addItemCostFormAction(itemId: string, cost: ItemCostInput): Promise<Result> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return addItemCost(session.supabase, session.user.id, itemId, cost);
+}
+
+export async function removeItemCostAction(costId: string): Promise<Result> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return removeItemCost(session.supabase, session.user.id, costId);
 }

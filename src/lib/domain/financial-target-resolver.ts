@@ -39,7 +39,9 @@ export interface OpenInstallment {
 
 export interface ResolvedDebt {
   id: string;
-  dealId: string;
+  /** Dívida de negócio (venda/troca) ou de empréstimo — exatamente um dos dois. */
+  dealId: string | null;
+  loanContractId: string | null;
   totalAmount: number;
   balance: number;
   label: string;
@@ -69,14 +71,21 @@ export type FinancialTargetResult =
 
 type ReceivableRow = {
   id: string;
-  deal_id: string;
+  deal_id: string | null;
+  loan_contract_id: string | null;
   total_amount: number;
   balance: number;
   created_at: string;
   deals: { deal_date: string; deal_items: Array<{ direction: string; items: { name: string } | null }> } | null;
+  loan_contracts: { principal_amount: number; start_date: string } | null;
 };
 
 function debtLabel(row: ReceivableRow): string {
+  if (row.loan_contract_id) {
+    // "empréstimo" casa com debtHint da fala ("pagou a segunda do empréstimo")
+    const principal = row.loan_contracts ? Number(row.loan_contracts.principal_amount) : 0;
+    return principal > 0 ? `Empréstimo de R$ ${principal.toLocaleString('pt-BR', { maximumFractionDigits: 2 })}` : 'Empréstimo';
+  }
   const outItems = (row.deals?.deal_items || [])
     .filter((di) => di.direction === 'OUT' && di.items?.name)
     .map((di) => di.items!.name);
@@ -132,7 +141,7 @@ export async function resolveFinancialTarget(
   // 2. Dívidas em aberto SOMENTE deste cliente
   const { data, error } = await supabase
     .from('receivables')
-    .select('id, deal_id, total_amount, balance, created_at, deals(deal_date, deal_items(direction, items(name)))')
+    .select('id, deal_id, loan_contract_id, total_amount, balance, created_at, deals(deal_date, deal_items(direction, items(name))), loan_contracts(principal_amount, start_date)')
     .eq('user_id', userId)
     .eq('customer_id', customer.id)
     .in('status', ['pending', 'partially_paid'])
@@ -199,6 +208,7 @@ export async function resolveFinancialTarget(
   const debt: ResolvedDebt = {
     id: chosen.id,
     dealId: chosen.deal_id,
+    loanContractId: chosen.loan_contract_id,
     totalAmount: Number(chosen.total_amount),
     balance: Number(chosen.balance),
     label: debtLabel(chosen),

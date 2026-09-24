@@ -14,6 +14,12 @@ export interface CreateSaleInput {
   paymentMethod?: PaymentMethod;
   /** Valor recebido no ato (entrada ou pagamento à vista). */
   cashInflow?: number;
+  /** "Deu uma mercadoria" como parte do pagamento: entra no estoque pelo valor negociado. */
+  itemIn?: {
+    name: string;
+    evaluatedValue: number;
+    category?: string;
+  };
   receivable?: {
     totalAmount: number;
     installmentsCount: number;
@@ -44,6 +50,7 @@ export interface CreateTradeInput {
     count: number;
     value: number;
     dueDay?: number;
+    firstDueDate?: string;
   };
   notes?: string;
   idempotencyKey?: string;
@@ -86,6 +93,10 @@ export function buildManualSaleCommand(input: CreateSaleInput): ManualBuildResul
 
   const cmd = empty(input.customerId, input.notes, input.idempotencyKey);
   cmd.itemsOut.push({ itemId: input.itemId, negotiatedValue: input.totalValue, direction: 'OUT' });
+  if (input.itemIn) {
+    if (!input.itemIn.name?.trim() || !(input.itemIn.evaluatedValue > 0)) return { ok: false, error: 'Informe a mercadoria recebida e o valor dela.' };
+    cmd.itemsIn.push({ description: input.itemIn.name.trim(), negotiatedValue: input.itemIn.evaluatedValue, direction: 'IN' });
+  }
   if (input.cashInflow && input.cashInflow > 0) {
     cmd.cashIn.push({ amount: input.cashInflow, method: method(input.paymentMethod), direction: 'IN' });
   }
@@ -138,7 +149,7 @@ export function buildManualTradeCommand(input: CreateTradeInput): ManualBuildRes
     }
     const obligation = {
       totalAmount: remaining / 100,
-      installments: { count: inst.count, installmentAmount: inst.value, dueDayOfMonth: inst.dueDay, intervalDays: 30, isPromissory: false },
+      installments: { count: inst.count, installmentAmount: inst.value, dueDayOfMonth: inst.dueDay, firstDueDate: inst.firstDueDate, intervalDays: 30, isPromissory: false },
     };
     if (input.direction === 'received') cmd.receivables.push(obligation);
     else cmd.payables.push(obligation);

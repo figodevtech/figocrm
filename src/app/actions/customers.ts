@@ -5,6 +5,8 @@
 import { createClient } from '@/lib/supabase/server';
 import { assertWritePermission } from '@/lib/subscription';
 import { Customer } from '@/types/domain';
+import { actionSession, NOT_AUTHENTICATED } from '@/lib/auth/session';
+import { createCustomer, CustomerInput, CustomerRecord, updateCustomer } from '@/lib/domain/customers';
 
 export interface CreateCustomerInput {
   name: string;
@@ -96,5 +98,27 @@ export async function getCustomersAction(): Promise<{ customers: Customer[]; err
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro ao buscar clientes.';
     return { customers: [], error: message };
+  }
+}
+
+// ------------------------------------------------------------------ telas do app (formulário)
+
+export type SaveCustomerResult =
+  | { ok: true; customer: CustomerRecord }
+  | { ok: false; error: string; duplicate?: { id: string; name: string } };
+
+/** Cria (ou edita, com customerId) um cliente pelo formulário. Homônimo é perguntado, não reaproveitado. */
+export async function saveCustomerAction(
+  input: CustomerInput,
+  options: { customerId?: string; allowDuplicate?: boolean } = {}
+): Promise<SaveCustomerResult> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  try {
+    return options.customerId
+      ? await updateCustomer(session.supabase, session.user.id, options.customerId, input)
+      : await createCustomer(session.supabase, session.user.id, input, { allowDuplicate: options.allowDuplicate });
+  } catch {
+    return { ok: false, error: 'Não consegui salvar o cliente. Tente de novo.' };
   }
 }
