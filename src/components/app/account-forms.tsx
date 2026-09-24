@@ -7,13 +7,15 @@ import { Alert } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 import { TextField } from '@/components/ui/form';
 
-export function ProfileForm({ fullName, phone, businessName }: { fullName: string; phone: string | null; businessName: string | null }) {
+export function ProfileForm({ fullName, phone, businessName, document, address }: { fullName: string; phone: string | null; businessName: string | null; document: string | null; address: string | null }) {
   const [state, action, pending] = useActionState<AuthState | null, FormData>(updateProfileAction, null);
   return (
     <form action={action} className="space-y-4">
       <TextField label="Nome" name="fullName" required defaultValue={fullName} autoComplete="name" />
       <TextField label="Telefone" name="phone" type="tel" defaultValue={phone ?? ''} autoComplete="tel" />
       <TextField label="Nome do negócio" name="businessName" defaultValue={businessName ?? ''} autoComplete="organization" />
+      <TextField label="CPF/CNPJ do credor" name="document" defaultValue={document ?? ''} inputMode="numeric" hint="Usado apenas nos contratos de empréstimo" />
+      <TextField label="Endereço do credor" name="address" defaultValue={address ?? ''} autoComplete="street-address" />
       {state?.error ? <Alert>{state.error}</Alert> : null}
       {state?.success ? <Alert tone="success">{state.message}</Alert> : null}
       <Button type="submit" variant="secondary" className="w-full" loading={pending}>

@@ -1,5 +1,5 @@
 // src/lib/billing/webhook.ts
-// Entrada única de webhooks de cobrança. Ordem: provedor configurado → assinatura criptográfica sobre
+// Entrada única de webhooks de cobrança. Ordem: provedor configurado → autenticação sobre
 // o corpo bruto → evento normalizado → aplicação idempotente. Sem provedor ou sem service_role, recusa.
 
 import { NextResponse } from 'next/server';
@@ -21,11 +21,17 @@ export async function handleBillingWebhook(
   }
 
   const rawBody = await request.text();
-  if (rawBody.length > MAX_BODY_BYTES) {
+  if (Buffer.byteLength(rawBody, 'utf8') > MAX_BODY_BYTES) {
     return NextResponse.json({ error: 'payload_too_large' }, { status: 413 });
   }
 
-  const event = await provider.verifyWebhook(rawBody, request.headers).catch(() => null);
+  let event;
+  try {
+    event = await provider.verifyWebhook(rawBody, request.headers);
+  } catch (error) {
+    console.error('[billing] falha temporária ao verificar evento:', error instanceof Error ? error.message : 'erro desconhecido');
+    return NextResponse.json({ error: 'provider_unavailable' }, { status: 503 });
+  }
   if (!event) {
     return NextResponse.json({ error: 'invalid_signature' }, { status: 401 });
   }
@@ -39,8 +45,7 @@ export async function handleBillingWebhook(
   const result = await applyBillingEvent(admin, event);
   if (result.error && !result.duplicate) {
     console.error('[billing] falha ao aplicar evento', event.eventId, result.error);
-    // subscription_not_found é definitivo (não adianta o provedor reenviar); o resto é transitório
-    return NextResponse.json({ received: true, applied: false, error: result.error }, { status: result.error === 'subscription_not_found' ? 200 : 500 });
+    return NextResponse.json({ received: true, applied: false, error: result.error }, { status: 500 });
   }
   return NextResponse.json({ received: true, applied: result.applied, duplicate: result.duplicate });
 }

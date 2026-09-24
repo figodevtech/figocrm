@@ -1,10 +1,11 @@
 // src/lib/domain/command-executor.ts
 // Executor seguro de negociações — camada única entre a IA/APIs e o banco.
-// Garante: schema válido, assinatura ativa, ausência de ambiguidade, balanço contábil fechado,
+// Garante: schema válido, entitlement de escrita, ausência de ambiguidade, balanço contábil fechado,
 // resolução de entidades sem escolha silenciosa e execução atômica via RPC `execute_deal_transaction`.
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { assertWritePermission, writeDeniedMessage } from '@/lib/subscription';
+import { trackProductEvent } from '@/lib/analytics/events';
 import { DealCommand } from '@/types/deal-command';
 import { validateDealCommandPayload } from '@/lib/ai/schemas/deal-command.schema';
 import { validateDealBalance } from '@/lib/finance/deal-balance';
@@ -39,7 +40,7 @@ export interface CommandExecutionResult {
   missingInformation?: string[];
   pendingChoice?: PendingEntityChoice;
   error?: string;
-  errorType?: 'validation' | 'subscription' | 'resolution' | 'balance' | 'database';
+  errorType?: 'validation' | 'subscription' | 'plan_customer_limit' | 'resolution' | 'balance' | 'database';
   alreadyExecuted?: boolean;
   resolved?: {
     customer?: { id: string; name: string };
@@ -213,7 +214,11 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
       .select('id, name')
       .single();
     if (custError || !newCust) {
-      return { success: false, humanSummary: 'Não consegui cadastrar o cliente.', error: custError?.message, errorType: 'database' };
+      if (custError?.hint === 'FREE_CUSTOMER_LIMIT') await trackProductEvent(userId, 'free_customer_limit_reached', { source });
+      return { success: false, humanSummary: custError?.hint === 'FREE_CUSTOMER_LIMIT'
+        ? 'Você atingiu o limite de clientes do Free. Posso registrar negócios para clientes existentes, ou você pode assinar o Pro para cadastrar mais.'
+        : 'Não consegui cadastrar o cliente.', error: custError?.message,
+        errorType: custError?.hint === 'FREE_CUSTOMER_LIMIT' ? 'plan_customer_limit' : 'database' };
     }
     customer = newCust;
     provisionalCustomer = newCust;

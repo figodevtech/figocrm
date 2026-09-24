@@ -95,11 +95,13 @@ export function assistantView(res: AssistantResponse | null | undefined): Assist
     case 'error':
       return {
         tone: 'error',
-        title: res.code === 'subscription_required' ? 'Teste encerrado' : 'Não deu certo',
+        title: res.code === 'plan_customer_limit' ? 'Limite do Free'
+          : res.code === 'plan_voice_limit' || res.code === 'voice_monthly_limit' ? 'Cota de voz'
+          : res.code === 'subscription_required' ? 'Acesso indisponível' : 'Não deu certo',
         message: res.message,
         choices: [],
         retry: res.retryable,
-        subscriptionCta: res.code === 'subscription_required',
+        subscriptionCta: res.code === 'subscription_required' || res.code === 'plan_customer_limit' || res.code === 'plan_voice_limit',
         awaitingAnswer: false,
         refresh: false,
       };

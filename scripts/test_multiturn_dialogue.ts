@@ -1,22 +1,23 @@
-// scripts/test_multiturn_dialogue.mjs
+// scripts/test_multiturn_dialogue.ts
 // Teste Automatizado de Conversação Multi-Turn — Fase I do Hardening FigoCRM
 // Valida o fluxo canônico de 4 turnos com anáfora, consistência contábil, abatimento em bem e quitação.
 
 import assert from 'assert';
-import { interpretVoiceCommand } from '../src/lib/ai/interpreter.ts';
-import { resolvePronounsAndAnaphora } from '../src/lib/ai/context_manager.ts';
-import { validateDealBalance } from '../src/lib/finance/deal-balance.ts';
-import { processInstallmentPaymentCents } from '../src/lib/finance/settlements.ts';
-import { applyAdjustmentToBalanceCents } from '../src/lib/finance/adjustments.ts';
-import { generateInstallmentScheduleCents } from '../src/lib/finance/installments.ts';
-import { toCents, formatCurrencyFromCents } from '../src/lib/finance/money.ts';
+import { interpretVoiceCommand } from '../src/lib/ai/interpreter';
+import { resolvePronounsAndAnaphora, type ConversationContext } from '../src/lib/ai/context_manager';
+import { validateDealBalance } from '../src/lib/finance/deal-balance';
+import { processInstallmentPaymentCents } from '../src/lib/finance/settlements';
+import { applyAdjustmentToBalanceCents } from '../src/lib/finance/adjustments';
+import { generateInstallmentScheduleCents } from '../src/lib/finance/installments';
+import { toCents, formatCurrencyFromCents } from '../src/lib/finance/money';
+import type { DealCommand } from '../src/types/deal-command';
 
 console.log('═══════════════════════════════════════════════════════════════');
 console.log('  TESTE DE CONVERSAÇÃO MULTI-TURN CANÔNICA (Fase I)           ');
 console.log('═══════════════════════════════════════════════════════════════\n');
 
 // Estado do contexto conversacional que persiste entre turnos
-let context = {
+const context: ConversationContext = {
   userId: 'user_test_multiturn',
   expiresAt: Date.now() + 30 * 60 * 1000,
 };
@@ -37,7 +38,7 @@ assert.strictEqual(turn1Result.itemIn, 'Bros', 'Item de entrada deve ser Bros');
 assert.strictEqual(turn1Result.requiresConfirmation, false, 'Não deve exigir confirmação se os dados estiverem completos');
 
 // Validação contábil da negociação
-const turn1Command = {
+const turn1Command: DealCommand = {
   intent: 'create_deal',
   counterparty: { name: 'Carlos' },
   itemsOut: [{ reference: 'XRE', negotiatedValue: 26000, direction: 'OUT' }],
@@ -105,7 +106,7 @@ const firstInstallment = {
   paidValueCents: 0,
   balanceCents: schedule[0].originalValueCents,
   dueDate: schedule[0].dueDate,
-  status: 'pending',
+  status: 'pending' as const,
 };
 
 const partialRes = processInstallmentPaymentCents(firstInstallment, toCents(500));
@@ -158,7 +159,7 @@ const finalInstallment = {
   paidValueCents: 0,
   balanceCents: offsetRes.newBalanceCents,
   dueDate: '2026-10-15',
-  status: 'pending',
+  status: 'pending' as const,
 };
 
 const finalSettlement = processInstallmentPaymentCents(finalInstallment, offsetRes.newBalanceCents);

@@ -107,7 +107,7 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-2">
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
-              R$ 24,90/mês após o teste
+              Free permanente · Pro R$ 24,50/mês
             </div>
             <div className="flex items-center gap-2">
               <Smartphone className="w-4 h-4 text-emerald-400" />
@@ -383,7 +383,7 @@ export default function LandingPage() {
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-400">Figo CRM</span> — O CRM Voice-First para quem vive de negócios
           </div>
-          <div>© {new Date().getFullYear()} Todos os direitos reservados. Assinatura R$ 24,90/mês.</div>
+          <div>© {new Date().getFullYear()} Todos os direitos reservados. Free permanente · Pro R$ 24,50/mês.</div>
         </div>
       </footer>
     </div>

@@ -17,6 +17,13 @@ export async function GET() {
   return NextResponse.json({
     status: access.effectiveStatus,
     canWrite: access.canWrite,
+    effectivePlan: access.effectivePlan,
+    customerCount: access.customerCount,
+    customerLimit: access.customerLimit,
+    canCreateCustomer: access.canCreateCustomer,
+    voiceMonthlyLimit: access.voiceMonthlyLimit,
+    voiceUsedThisMonth: access.voiceUsedThisMonth,
+    voiceRemainingThisMonth: access.voiceRemainingThisMonth,
     reason: access.reason,
     message: access.canWrite ? null : writeDeniedMessage(access.reason),
     trialEndsAt: access.trialEndsAt ?? null,

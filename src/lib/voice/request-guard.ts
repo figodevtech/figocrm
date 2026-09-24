@@ -1,13 +1,13 @@
 // src/lib/voice/request-guard.ts
-// Guarda comum dos endpoints de voz: autenticação → rate limit distribuído, ANTES de qualquer
-// consumo de STT/LLM. Assinatura não bloqueia aqui: conta com trial vencido ainda CONSULTA por voz;
-// escrita é negada no orquestrador (mensagem amigável) e no banco (trigger fail-closed).
+// Guarda comum dos endpoints de voz: autenticação → cota mensal e rate limit no banco,
+// antes de qualquer consumo de STT/LLM. Trial vencido usa a cota Free.
 
 import { NextResponse } from 'next/server';
 import type { SupabaseClient, User } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { consumeVoiceRateLimit, rateLimitHeaders } from '@/lib/security/rate-limit';
 import { errorResponse } from '@/lib/api/assistant-response';
+import { trackProductEvent } from '@/lib/analytics/events';
 
 export type VoiceGuardResult =
   | { ok: true; supabase: SupabaseClient; user: User }
@@ -29,16 +29,24 @@ export async function guardVoiceRequest(): Promise<VoiceGuardResult> {
 
   const decision = await consumeVoiceRateLimit(supabase, 'voice');
   if (!decision.allowed) {
+    if (decision.reason === 'monthly_limit') await trackProductEvent(user.id, 'voice_monthly_limit_reached', { plan: decision.effectivePlan });
     return {
       ok: false,
       response: NextResponse.json(
         {
-          error: decision.unavailable ? 'rate_limiter_unavailable' : 'rate_limited',
+          error: decision.unavailable ? 'rate_limiter_unavailable' : decision.reason === 'monthly_limit' ? 'voice_monthly_limit' : 'rate_limited',
           assistant: errorResponse(
-            decision.unavailable ? 'internal' : 'rate_limited',
+            decision.unavailable ? 'internal'
+              : decision.reason === 'monthly_limit'
+                ? decision.effectivePlan === 'free' ? 'plan_voice_limit' : 'voice_monthly_limit'
+                : 'rate_limited',
             decision.unavailable
               ? 'A voz está indisponível agora. Tenta de novo em instantes.'
-              : 'Muitos comandos seguidos. Espera um pouquinho e fala de novo.'
+              : decision.reason === 'monthly_limit'
+                ? decision.effectivePlan === 'free'
+                  ? 'Você usou os comandos de voz deste mês no plano grátis. Pode continuar usando o CRM manualmente ou liberar mais voz com o Pro.'
+                  : 'Você usou os comandos de voz deste mês. Pode continuar usando o CRM manualmente.'
+                : 'Muitos comandos seguidos. Espera um pouquinho e fala de novo.'
           ),
           retryAfterSeconds: decision.retryAfterSeconds,
         },

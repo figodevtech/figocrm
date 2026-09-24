@@ -102,6 +102,8 @@ const ROUTES = () => [
   '/app/emprestimos',
   '/app/emprestimos/novo',
   `/app/emprestimos/${ids.loan}`,
+  `/app/emprestimos/${ids.loan}/contrato`,
+  '/app/pendencias',
   `/app/receber?cliente=${ids.carlos}`,
   '/app/negocios',
   '/app/conta',
@@ -243,6 +245,17 @@ test('avulsos na tela: Home avisa; cliente avulso vinculado ao Carlos some; cust
   await page.getByLabel('Valor de compra').fill('180');
   await page.getByRole('button', { name: 'Salvar custo' }).click();
   await page.getByText('Custo salvo. Lucro da venda: R$ 120.').waitFor({ timeout: 15000 });
+  await ctx.close();
+});
+
+test('offline: avisa que ações dependem de conexão', async () => {
+  const ctx = await authedContext(390);
+  const page = await ctx.newPage();
+  await open(page, '/app');
+  await ctx.setOffline(true);
+  await page.getByRole('status').filter({ hasText: 'Você está sem conexão' }).waitFor();
+  assert.match(await page.getByRole('status').filter({ hasText: 'Você está sem conexão' }).innerText(), /Algumas ações precisam de internet para serem registradas/);
+  await ctx.setOffline(false);
   await ctx.close();
 });
 

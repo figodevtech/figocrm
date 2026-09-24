@@ -239,6 +239,10 @@ test('AssistantResponse: executed com desfazer, answered, needs_input com candid
   assert.deepStrictEqual(confirm.choices.map((c) => c.say), ['sim', 'não']);
   const sub = assistantView({ status: 'error', message: 'Seu teste acabou.', retryable: false, code: 'subscription_required' });
   assert.ok(sub.subscriptionCta && !sub.retry);
+  const free = assistantView({ status: 'error', message: 'Limite de clientes do Free.', retryable: false, code: 'plan_customer_limit' });
+  assert.deepStrictEqual([free.title, free.subscriptionCta, free.retry], ['Limite do Free', true, false]);
+  const voiceFree = assistantView({ status: 'error', message: 'Cota de voz do Free.', retryable: false, code: 'plan_voice_limit' });
+  assert.deepStrictEqual([voiceFree.subscriptionCta, voiceFree.retry], [true, false]);
   assert.ok(assistantView({ status: 'error', message: 'x', retryable: true, code: 'rate_limited' }).retry);
   assert.strictEqual(assistantView(undefined).tone, 'error');
   for (const v of [done, who, confirm, sub]) assert.ok(!/STT|LLM|RPC|Structured/i.test(`${v.title} ${v.message}`));

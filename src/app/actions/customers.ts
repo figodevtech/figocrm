@@ -42,33 +42,9 @@ export async function createCustomerAction(input: CreateCustomerInput): Promise<
       return { customer: existing as Customer };
     }
 
-    const { data, error } = await supabase
-      .from('customers')
-      .insert({
-        user_id: user.id,
-        name: input.name.trim(),
-        phone: input.phone?.trim() || null,
-        document: input.document?.trim() || null,
-        notes: input.notes?.trim() || null,
-      })
-      .select('*')
-      .single();
-
-    if (error) {
-      return { error: error.message };
-    }
-
-    // Registrar no log de auditoria
-    await supabase.from('audit_log').insert({
-      user_id: user.id,
-      entity_name: 'customers',
-      entity_id: data.id,
-      action_type: 'CREATE_CUSTOMER',
-      source: 'MANUAL_WEB',
-      payload_after: data,
-    });
-
-    return { customer: data as Customer };
+    const result = await createCustomer(supabase, user.id, input, { allowDuplicate: true });
+    if (!result.ok) return { error: result.error };
+    return { customer: result.customer as Customer };
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : 'Erro ao cadastrar cliente.';
     return { error: message };

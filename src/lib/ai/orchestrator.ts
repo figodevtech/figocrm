@@ -354,7 +354,9 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
       executionStatus: 'error',
       error: res.error,
       errorType: res.errorType,
-      errorCode: res.errorType === 'subscription' ? 'subscription_required' : res.errorType === 'resolution' ? 'not_found' : 'internal',
+      errorCode: res.errorType === 'subscription' ? 'subscription_required'
+        : res.errorType === 'plan_customer_limit' ? 'plan_customer_limit'
+        : res.errorType === 'resolution' ? 'not_found' : 'internal',
       contextPatch: { pendingConfirmation: null },
     };
   }

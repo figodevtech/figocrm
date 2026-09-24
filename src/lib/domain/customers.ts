@@ -5,6 +5,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { getSubscriptionAccess, writeDeniedMessage } from '@/lib/subscription';
 import { normalizeName } from '@/lib/domain/entity-resolver';
+import { trackProductEvent } from '@/lib/analytics/events';
 
 export interface CustomerInput {
   name: string;
@@ -63,8 +64,12 @@ export async function createCustomer(
   const valid = validateCustomerInput(input);
   if (!valid.ok) return valid;
 
-  const denied = await writeGuard(supabase);
-  if (denied) return { ok: false, error: denied };
+  const access = await getSubscriptionAccess(supabase);
+  if (!access.canWrite) return { ok: false, error: writeDeniedMessage(access.reason) };
+  if (!access.canCreateCustomer) {
+    await trackProductEvent(userId, 'free_customer_limit_reached');
+    return { ok: false, error: `Você atingiu o limite de ${access.customerLimit} clientes do Free. Assine o Pro para cadastrar mais.` };
+  }
 
   if (!options.allowDuplicate) {
     const { data: same } = await supabase.from('customers').select('id, name').eq('user_id', userId).ilike('name', valid.data.name).limit(5);
@@ -77,6 +82,10 @@ export async function createCustomer(
     .insert({ user_id: userId, ...valid.data, is_provisional: !!options.provisional })
     .select('id, name, phone, document, address, notes')
     .single();
+  if (error?.hint === 'FREE_CUSTOMER_LIMIT') {
+    await trackProductEvent(userId, 'free_customer_limit_reached');
+    return { ok: false, error: `Você atingiu o limite de ${access.customerLimit} clientes do Free. Assine o Pro para cadastrar mais.` };
+  }
   if (error || !data) return { ok: false, error: 'Não consegui salvar o cliente. Tente de novo.' };
 
   await supabase.from('audit_log').insert({

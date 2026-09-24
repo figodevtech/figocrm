@@ -5,7 +5,7 @@
 // A Home continua sendo a central de ações (atalhos grandes); a barra só leva de volta a ela.
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Home, Mic, Package, UserRound, Users } from 'lucide-react';
 import { useVoice, VoiceProvider } from '@/components/voice/voice-provider';
 
@@ -39,6 +39,19 @@ export function AppShell({ children, access }: { children: ReactNode; access: Sh
 function ShellFrame({ children, access }: { children: ReactNode; access: ShellAccess }) {
   const pathname = usePathname();
   const { open } = useVoice();
+  const [offline, setOffline] = useState(false);
+
+  useEffect(() => {
+    const sync = () => setOffline(!navigator.onLine);
+    sync();
+    window.addEventListener('online', sync);
+    window.addEventListener('offline', sync);
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('/sw.js').catch(() => undefined);
+    return () => {
+      window.removeEventListener('online', sync);
+      window.removeEventListener('offline', sync);
+    };
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -84,6 +97,8 @@ function ShellFrame({ children, access }: { children: ReactNode; access: ShellAc
           </div>
         </div>
       </header>
+
+      {offline ? <div role="status" aria-live="polite" className="border-b border-amber-400/30 bg-amber-500/15 px-4 py-3 text-center text-sm text-amber-100">Você está sem conexão. Algumas ações precisam de internet para serem registradas. Confira a confirmação antes de sair da tela.</div> : null}
 
       {!access.canWrite ? (
         <div role="status" className="border-b border-rose-500/30 bg-rose-500/10">

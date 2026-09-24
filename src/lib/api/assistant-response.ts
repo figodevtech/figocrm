@@ -12,6 +12,9 @@ export type OperationType = 'deal' | 'loan' | 'payment' | 'adjustment' | 'revers
 
 export type AssistantErrorCode =
   | 'subscription_required'
+  | 'plan_customer_limit'
+  | 'plan_voice_limit'
+  | 'voice_monthly_limit'
   | 'unauthenticated'
   | 'rate_limited'
   | 'not_found'

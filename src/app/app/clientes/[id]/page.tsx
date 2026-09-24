@@ -20,6 +20,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   if (!detail) notFound();
   const { customer } = detail;
   const candidates = customer.is_provisional ? await listCustomerOptions(supabase, user.id) : [];
+  const summary = customer.is_provisional ? await Promise.all([
+    supabase.from('deals').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('customer_id', id),
+    supabase.from('loan_contracts').select('id', { count: 'exact', head: true }).eq('user_id', user.id).eq('customer_id', id),
+  ]) : null;
 
   return (
     <div>
@@ -48,7 +52,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      {customer.is_provisional ? <ProvisionalCustomerPanel customer={{ id: customer.id, name: customer.name }} candidates={candidates} /> : null}
+      {customer.is_provisional ? <ProvisionalCustomerPanel customer={{ id: customer.id, name: customer.name }} candidates={candidates} summary={{ deals: summary?.[0].count ?? 0, receivable: detail.owes, loans: summary?.[1].count ?? 0 }} /> : null}
 
       <Card className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Stat label="Deve" value={formatBRL(detail.owes)} tone={detail.owes > 0 ? 'amber' : 'neutral'} size="lg" />

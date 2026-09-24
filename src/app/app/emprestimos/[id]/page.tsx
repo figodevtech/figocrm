@@ -52,6 +52,7 @@ export default async function LoanPage({ params, searchParams }: { params: Promi
       <p className="mt-2 text-base text-slate-400">
         Juros: {interestText} · <Link href={`/app/clientes/${loan.customerId}`} className="text-emerald-300 underline underline-offset-4">ver cliente</Link>
       </p>
+      <div className="mt-4"><ButtonLink href={`/app/emprestimos/${loan.id}/contrato`} variant="secondary">Ver contrato · Imprimir · PDF</ButtonLink></div>
 
       {loan.balance > 0 && loan.receivableId ? (
         <div className="mt-4 grid grid-cols-2 gap-2">

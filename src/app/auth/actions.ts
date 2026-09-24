@@ -126,7 +126,12 @@ export async function updateProfileAction(prevState: AuthState | null, formData:
   const fullName = String(formData.get('fullName') || '').trim();
   const phone = String(formData.get('phone') || '').trim();
   const businessName = String(formData.get('businessName') || '').trim();
+  const document = String(formData.get('document') || '').trim();
+  const address = String(formData.get('address') || '').trim();
   if (!fullName) return { error: 'Informe seu nome.' };
+  if (document && (!/^[0-9./-]+$/.test(document) || ![11, 14].includes(document.replace(/\D/g, '').length))) {
+    return { error: 'Informe um CPF com 11 dígitos ou CNPJ com 14 dígitos.' };
+  }
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -135,7 +140,7 @@ export async function updateProfileAction(prevState: AuthState | null, formData:
   // profiles só aceita UPDATE nessas colunas (assinatura vive em subscriptions)
   const { error } = await supabase
     .from('profiles')
-    .update({ full_name: fullName.slice(0, 120), phone: phone.slice(0, 30) || null, business_name: businessName.slice(0, 120) || null })
+    .update({ full_name: fullName.slice(0, 120), phone: phone.slice(0, 30) || null, business_name: businessName.slice(0, 120) || null, document: document || null, address: address.slice(0, 300) || null })
     .eq('id', user.id);
   if (error) return { error: 'Não consegui salvar. Tente de novo.' };
   return { success: true, message: 'Dados salvos.' };

@@ -3,6 +3,10 @@ import { requireSession } from '@/lib/auth/session';
 import { getProfile } from '@/lib/domain/app-data';
 import { getSubscriptionAccess, MONTHLY_SUBSCRIPTION_FEE } from '@/lib/subscription';
 import { formatDate } from '@/lib/format';
+import { getBillingProvider } from '@/lib/billing/registry';
+import { BillingCheckoutButton } from '@/components/app/billing-checkout-button';
+import { BillingCancelButton } from '@/components/app/billing-cancel-button';
+import { BillingReactivateButton } from '@/components/app/billing-reactivate-button';
 import { LogoutButton, PasswordForm, ProfileForm } from '@/components/app/account-forms';
 import { Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
 
@@ -23,10 +27,18 @@ function planLabel(effective: string): { label: string; tone: 'emerald' | 'amber
   }
 }
 
-export default async function AccountPage() {
+export default async function AccountPage({ searchParams }: { searchParams: Promise<{ checkout?: string }> }) {
   const { supabase, user } = await requireSession();
-  const [profile, access] = await Promise.all([getProfile(supabase, user.id, user.email ?? ''), getSubscriptionAccess(supabase)]);
-  const plan = planLabel(access.effectiveStatus);
+  const [{ checkout }, profile, access, { data: billingSub }] = await Promise.all([
+    searchParams,
+    getProfile(supabase, user.id, user.email ?? ''),
+    getSubscriptionAccess(supabase),
+    supabase.from('subscriptions').select('provider, provider_subscription_id').eq('user_id', user.id).maybeSingle(),
+  ]);
+  const plan = access.effectivePlan === 'free' ? { label: 'Free', tone: 'sky' as const } : planLabel(access.effectiveStatus);
+  const provider = getBillingProvider();
+  const checkoutAvailable = provider !== null;
+  const managedSubscription = !!(provider && billingSub?.provider === provider.name && billingSub.provider_subscription_id);
 
   return (
     <div className="mx-auto max-w-xl">
@@ -34,26 +46,36 @@ export default async function AccountPage() {
 
       <SectionTitle>Plano</SectionTitle>
       <Card>
+        {checkout === 'retorno' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Checkout concluído. Aguardando a confirmação financeira do Asaas para atualizar o plano.</p> : null}
         <div className="flex items-center justify-between gap-3">
-          <p className="text-lg font-semibold text-white">FigoCRM · {MONTHLY_SUBSCRIPTION_FEE}</p>
+          <p className="text-lg font-semibold text-white">FigoCRM {access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
           <Badge tone={plan.tone}>{plan.label}</Badge>
         </div>
         {access.effectiveStatus === 'trialing' ? (
           <Row label="Dias restantes" value={`${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'dia' : 'dias'}`} strong tone="sky" />
         ) : null}
         {access.trialEndsAt && access.effectiveStatus === 'trialing' ? <Row label="Teste termina em" value={formatDate(access.trialEndsAt)} /> : null}
-        {access.currentPeriodEnd && access.effectiveStatus !== 'trialing' ? <Row label="Período atual até" value={formatDate(access.currentPeriodEnd)} /> : null}
+        {access.effectiveStatus === 'trialing' ? <p className="mt-3 text-sm text-slate-300">Depois do teste você continua no Free se não assinar.</p> : null}
+        {access.currentPeriodEnd && access.effectiveStatus !== 'trialing' ? <Row label={access.effectiveStatus === 'active' ? 'Próxima renovação' : 'Período pago até'} value={formatDate(access.currentPeriodEnd)} /> : null}
+        <Row label="Clientes" value={access.customerLimit === null ? `${access.customerCount} · ilimitados` : `${access.customerCount} / ${access.customerLimit}`} />
+        <Row label="Comandos de voz neste mês" value={access.effectivePlan === 'free' ? `${access.voiceUsedThisMonth} / ${access.voiceMonthlyLimit}` : `${access.voiceUsedThisMonth}`} />
+        {access.effectivePlan === 'free' ? <p className="mt-3 text-sm text-slate-300">O Free continua sem prazo: até {access.customerLimit} clientes e {access.voiceMonthlyLimit} comandos de voz por mês. O Pro custa {MONTHLY_SUBSCRIPTION_FEE}, com clientes ilimitados.</p> : null}
+        {access.cancelAtPeriodEnd ? <p className="mt-3 text-sm text-amber-200">A renovação foi cancelada. O Pro fica disponível até o fim do período pago; depois você continua no Free.</p> : null}
         {!access.canWrite ? (
           <p className="mt-2 text-base text-rose-200">Novos registros estão bloqueados. Seus dados continuam disponíveis para consulta.</p>
         ) : null}
-        <p className="mt-2 text-sm text-slate-500">A assinatura on-line estará disponível em breve.</p>
+        {checkoutAvailable && access.effectiveStatus !== 'active' && access.effectivePlan !== 'pro' ? <BillingCheckoutButton /> : null}
+        {checkoutAvailable && access.effectiveStatus === 'trialing' ? <BillingCheckoutButton /> : null}
+        {managedSubscription && access.effectiveStatus === 'active' && !access.cancelAtPeriodEnd ? <BillingCancelButton /> : null}
+        {managedSubscription && access.effectiveStatus === 'canceled' && access.currentPeriodEnd ? <BillingReactivateButton /> : null}
+        {!checkoutAvailable ? <p className="mt-2 text-sm text-slate-400">A assinatura online está sendo preparada. O Free continua disponível.</p> : null}
       </Card>
 
       <SectionTitle>Seus dados</SectionTitle>
       <Card>
         <Row label="E-mail" value={profile.email} />
         <div className="mt-3">
-          <ProfileForm fullName={profile.fullName} phone={profile.phone} businessName={profile.businessName} />
+          <ProfileForm fullName={profile.fullName} phone={profile.phone} businessName={profile.businessName} document={profile.document} address={profile.address} />
         </div>
       </Card>
 

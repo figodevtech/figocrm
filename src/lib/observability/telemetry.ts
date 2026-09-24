@@ -20,7 +20,7 @@ const LLM_PRICES_PER_1M: Record<string, { input: number; output: number }> = {
 };
 const DEFAULT_LLM_PRICE = { input: 0.15, output: 0.6 };
 
-// Cota mensal máxima para manter sustentabilidade do plano de R$ 24,90/mês
+// Guarda de uso mensal para manter sustentabilidade do plano Pro.
 export const MONTHLY_AUDIO_SECONDS_QUOTA = 3600;
 export const MONTHLY_OPERATIONS_QUOTA = 1500;
 

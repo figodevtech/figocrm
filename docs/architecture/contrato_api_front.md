@@ -124,8 +124,8 @@ pagamento maior que o saldo é recusado; estorno é um lançamento negativo liga
 
 - `canWrite: false` → mostrar `message` + CTA. Dados continuam visíveis.
 - `checkoutAvailable: false` enquanto nenhum gateway estiver configurado (`BILLING_PROVIDER`).
-- **A criar quando o gateway for escolhido**: `POST /api/billing/checkout` (usa `BillingProvider.createCheckout`),
-  cancelamento/reativação. A ativação só acontece pelo webhook assinado — nunca pelo redirect de sucesso.
+- `POST /api/billing/checkout` exige sessão, usa `BillingProvider.createCheckout` e responde 503 enquanto não houver provider configurado.
+  Cancelamento/reativação dependem do adapter real. A ativação só acontece por webhook autenticado — nunca pelo redirect de sucesso.
 
 ## Account
 

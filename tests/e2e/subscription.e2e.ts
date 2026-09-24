@@ -10,6 +10,7 @@ import { interpretVoiceCommandWithLLM } from '../../src/lib/ai/interpret';
 import { getSubscriptionAccess } from '../../src/lib/subscription';
 import { handleBillingWebhook } from '../../src/lib/billing/webhook';
 import type { BillingProvider, NormalizedBillingEvent } from '../../src/lib/billing/types';
+import { AsaasProvider } from '../../src/lib/billing/asaas';
 
 let user: TestUser;
 let customerId: string;
@@ -43,48 +44,45 @@ test('brecha fechada: usuário não altera o próprio status/trial nem a tabela 
   assert.strictEqual(row.status, 'trialing');
 });
 
-test('trial vencido: escrita negada no banco (REST e RPC), leitura liberada', async () => {
+test('trial vencido: passa ao Free e mantém escrita e leitura', async () => {
   await setSub(`status = 'trialing', trial_ends_at = NOW() - INTERVAL '1 day'`);
   const a = await access();
-  assert.deepStrictEqual([a.canWrite, a.reason, a.effectiveStatus], [false, 'trial_expired', 'expired']);
+  assert.deepStrictEqual([a.canWrite, a.reason, a.effectiveStatus, a.effectivePlan], [true, 'trial_expired', 'expired', 'free']);
 
-  const direct = await user.client.from('customers').insert({ user_id: user.id, name: 'Não deve gravar' });
-  assert.strictEqual(direct.error?.hint, 'SUBSCRIPTION_INACTIVE');
+  const direct = await user.client.from('customers').insert({ user_id: user.id, name: 'Cliente Free' });
+  assert.ifError(direct.error);
 
   const item = await sql<{ id: string }>(`INSERT INTO items (user_id, name, acquisition_cost) VALUES ($1, 'Moto X', 100) RETURNING id`, [user.id]);
   const rpc = await user.client.rpc('execute_deal_transaction', {
     p_payload: { customer_id: customerId, deal_type: 'venda', total_value: 500, items_out: [{ item_id: item[0].id, evaluated_value: 500 }], cash_movements: [{ direction: 'IN', amount: 500 }] },
   });
-  assert.strictEqual(rpc.error?.hint, 'SUBSCRIPTION_INACTIVE');
+  assert.ifError(rpc.error);
   const [{ n }] = await sql<{ n: number }>('SELECT count(*)::int AS n FROM deals WHERE user_id = $1', [user.id]);
-  assert.strictEqual(n, 0);
+  assert.strictEqual(n, 1);
 
   const read = await user.client.from('customers').select('id');
   assert.ifError(read.error);
   assert.ok((read.data ?? []).length >= 1, 'dados continuam acessíveis');
 });
 
-test('trial vencido: voz de consulta responde; voz de escrita recusa com mensagem de assinatura', async () => {
+test('trial vencido: voz de consulta e escrita seguem disponíveis no Free', async () => {
   const deps = { supabase: user.client, userId: user.id, interpret: (t: string, c: Parameters<typeof interpretVoiceCommandWithLLM>[1]) => interpretVoiceCommandWithLLM(t, c, { mode: 'rules_only' }) };
   const query = await runVoicePipeline('Quanto dinheiro eu tenho na rua?', deps);
   assert.strictEqual(query.assistant.status, 'answered');
 
-  const write = await runVoicePipeline('Vendi o Moto X pro Cliente Base por 500 no Pix.', deps);
-  assert.strictEqual(write.assistant.status, 'error');
-  assert.strictEqual(write.assistant.status === 'error' && write.assistant.code, 'subscription_required');
-  assert.match(write.assistant.message, /teste grátis de 7 dias acabou/);
+  assert.strictEqual((await access()).canWrite, true);
 });
 
-test('past_due: escreve dentro da carência de 3 dias, bloqueia depois', async () => {
+test('past_due: Pro durante carência, Free depois', async () => {
   await setSub(`status = 'past_due', past_due_at = NOW() - INTERVAL '1 day'`);
   assert.strictEqual((await access()).reason, 'past_due_grace');
   assert.strictEqual(await canInsert(), true);
   await setSub(`past_due_at = NOW() - INTERVAL '4 days'`);
-  assert.strictEqual((await access()).canWrite, false);
-  assert.strictEqual(await canInsert(), false);
+  assert.strictEqual((await access()).effectivePlan, 'free');
+  assert.strictEqual(await canInsert(), true);
 });
 
-test('active: escreve até o fim do período + carência; renovação atrasada além disso bloqueia', async () => {
+test('active: Pro até o fim do período + carência; depois Free', async () => {
   await setSub(`status = 'active', current_period_end = NOW() + INTERVAL '20 days', past_due_at = NULL`);
   assert.strictEqual(await canInsert(), true);
   await setSub(`current_period_end = NOW() - INTERVAL '1 day'`);
@@ -92,23 +90,89 @@ test('active: escreve até o fim do período + carência; renovação atrasada a
   assert.strictEqual(await canInsert(), true);
   await setSub(`current_period_end = NOW() - INTERVAL '5 days'`);
   assert.strictEqual((await access()).reason, 'renewal_overdue');
-  assert.strictEqual(await canInsert(), false);
+  assert.strictEqual((await access()).effectivePlan, 'free');
+  assert.strictEqual(await canInsert(), true);
 });
 
-test('canceled: escreve até o fim do período pago; expired, blocked e assinatura ausente bloqueiam', async () => {
+test('canceled e expired viram Free; blocked e assinatura ausente negam escrita', async () => {
   await setSub(`status = 'canceled', current_period_end = NOW() + INTERVAL '5 days'`);
   assert.strictEqual(await canInsert(), true);
   await setSub(`current_period_end = NOW() - INTERVAL '1 hour'`);
+  assert.strictEqual((await access()).effectivePlan, 'free');
+  assert.strictEqual(await canInsert(), true);
+  await setSub(`status = 'expired'`);
+  assert.strictEqual(await canInsert(), true);
+  await setSub(`status = 'blocked'`);
   assert.strictEqual(await canInsert(), false);
-  for (const status of ['expired', 'blocked']) {
-    await setSub(`status = '${status}'`);
-    assert.strictEqual(await canInsert(), false, status);
-  }
   await sql('DELETE FROM subscriptions WHERE user_id = $1', [user.id]);
   const a = await access();
   assert.deepStrictEqual([a.canWrite, a.reason], [false, 'subscription_missing']);
   assert.strictEqual(await canInsert(), false);
   await sql(`INSERT INTO subscriptions (user_id, status, trial_started_at, trial_ends_at) VALUES ($1, 'expired', NOW() - INTERVAL '8 days', NOW() - INTERVAL '1 day')`, [user.id]);
+});
+
+test('Free conta clientes avulsos e bloqueia o 11º no banco; edição continua', async () => {
+  const limited = await createTestUser('free-limit');
+  await sql(`UPDATE subscriptions SET status = 'expired', trial_ends_at = NOW() - INTERVAL '1 day' WHERE user_id = $1`, [limited.id]);
+  for (let i = 0; i < 10; i++) {
+    const { error } = await limited.client.from('customers').insert({
+      user_id: limited.id, name: `Cliente ${i}`, is_provisional: i === 9,
+    });
+    assert.ifError(error);
+  }
+  const a = await getSubscriptionAccess(limited.client);
+  assert.deepStrictEqual([a.customerCount, a.customerLimit, a.canCreateCustomer], [10, 10, false]);
+  const extra = await limited.client.from('customers').insert({ user_id: limited.id, name: 'Cliente 11' });
+  assert.strictEqual(extra.error?.hint, 'FREE_CUSTOMER_LIMIT');
+  const { data: first } = await limited.client.from('customers').select('id').eq('name', 'Cliente 0').single();
+  const edited = await limited.client.from('customers').update({ notes: 'Editado' }).eq('id', first!.id);
+  assert.ifError(edited.error);
+});
+
+test('Pro aceita mais de 10 clientes; downgrade preserva dados e impede nova criação', async () => {
+  const pro = await createTestUser('pro-downgrade');
+  await sql(`UPDATE subscriptions SET status = 'active', current_period_end = NOW() + INTERVAL '30 days' WHERE user_id = $1`, [pro.id]);
+  for (let i = 0; i < 11; i++) {
+    const { error } = await pro.client.from('customers').insert({ user_id: pro.id, name: `Pro ${i}` });
+    assert.ifError(error);
+  }
+  await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [pro.id]);
+  const a = await getSubscriptionAccess(pro.client);
+  assert.deepStrictEqual([a.effectivePlan, a.customerCount, a.canCreateCustomer], ['free', 11, false]);
+  const read = await pro.client.from('customers').select('id');
+  assert.ifError(read.error);
+  assert.strictEqual(read.data?.length, 11);
+  const extra = await pro.client.from('customers').insert({ user_id: pro.id, name: 'Pro 12' });
+  assert.strictEqual(extra.error?.hint, 'FREE_CUSTOMER_LIMIT');
+});
+
+test('Free permite 20 comandos de voz no mês e recusa o 21º', async () => {
+  const voice = await createTestUser('voice-quota');
+  await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [voice.id]);
+  for (let i = 0; i < 20; i++) {
+    const { data, error } = await voice.client.rpc('consume_voice_rate_limit', {
+      p_bucket: 'voice', p_limit_per_minute: 100, p_limit_per_hour: 100,
+    });
+    assert.ifError(error);
+    assert.strictEqual(data.allowed, true);
+  }
+  const { data: denied, error } = await voice.client.rpc('consume_voice_rate_limit', {
+    p_bucket: 'voice', p_limit_per_minute: 100, p_limit_per_hour: 100,
+  });
+  assert.ifError(error);
+  assert.deepStrictEqual([denied.allowed, denied.reason, denied.monthly_limit], [false, 'monthly_limit', 20]);
+  assert.strictEqual((await getSubscriptionAccess(voice.client)).voiceRemainingThisMonth, 0);
+});
+
+test('dois inserts simultâneos com 9 clientes só permitem chegar a 10', async () => {
+  const concurrent = await createTestUser('free-concurrent');
+  await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [concurrent.id]);
+  for (let i = 0; i < 9; i++) await seedCustomer(concurrent, `Antes ${i}`);
+  const results = await Promise.all(['A', 'B'].map((name) => concurrent.client.from('customers')
+    .insert({ user_id: concurrent.id, name: `Concorrente ${name}` })));
+  assert.strictEqual(results.filter((r) => !r.error).length, 1);
+  assert.strictEqual(results.filter((r) => r.error?.hint === 'FREE_CUSTOMER_LIMIT').length, 1);
+  assert.strictEqual((await getSubscriptionAccess(concurrent.client)).customerCount, 10);
 });
 
 // ------------------------------------------------------------------ billing webhook
@@ -169,6 +233,53 @@ test('webhook válido ativa a assinatura uma única vez (idempotente por event_i
   assert.strictEqual(await canInsert(), true, 'assinatura ativa libera escrita');
   await seedItem(user, 'Item pós-assinatura', 10);
   await sql('DELETE FROM billing_events WHERE provider = $1 AND user_id = $2', ['test', user.id]);
+});
+
+test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token inválido recusa', async () => {
+  const billed = await createTestUser('asaas-billing');
+  await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [billed.id]);
+  const checkoutId = `co_${Date.now()}`;
+  const admin = adminClient();
+  const { error: checkoutError } = await admin.from('billing_checkout_sessions').insert({
+    user_id: billed.id, provider: 'asaas', provider_checkout_id: checkoutId,
+    external_reference: billed.id, checkout_url: `https://sandbox.asaas.com/checkoutSession/show?id=${checkoutId}`,
+  });
+  assert.ifError(checkoutError);
+  const provider = new AsaasProvider({ apiKey: 'mock-key', webhookToken: 'mock-token', baseUrl: 'https://api-sandbox.asaas.com/v3' });
+  const originalFetch = globalThis.fetch;
+  globalThis.fetch = async (url, init) => String(url).includes('api-sandbox.asaas.com')
+    ? Response.json({ id: 'sub_asaas_1', customer: 'cus_asaas_1', status: 'ACTIVE',
+      cycle: 'MONTHLY', billingType: 'CREDIT_CARD', value: 24.5,
+      nextDueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10), externalReference: billed.id })
+    : originalFetch(url, init);
+  try {
+    const req = (body: object, token = 'mock-token') => new Request('https://figocrm.test/api/webhooks/payment', {
+      method: 'POST', headers: { 'asaas-access-token': token }, body: JSON.stringify(body),
+    });
+    const other = await createTestUser('asaas-other');
+    const mismatched = await handleBillingWebhook(req({ id: `evt_mismatch_${Date.now()}`, event: 'CHECKOUT_PAID',
+      checkout: { id: checkoutId, customer: 'cus_asaas_1', externalReference: other.id } }), { provider, admin });
+    assert.strictEqual(mismatched.status, 500);
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    const checkoutEvent = { id: `evt_checkout_${Date.now()}`, event: 'CHECKOUT_PAID',
+      checkout: { id: checkoutId, customer: 'cus_asaas_1' } };
+    const paid = await handleBillingWebhook(req(checkoutEvent), { provider, admin });
+    assert.strictEqual(paid.status, 200);
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    const paymentEvent = { id: `evt_payment_${Date.now()}`, event: 'PAYMENT_CONFIRMED',
+      payment: { id: 'pay_asaas_1', customer: 'cus_asaas_1', subscription: 'sub_asaas_1',
+        dueDate: new Date().toISOString().slice(0, 10) } };
+    const badToken = await handleBillingWebhook(req(paymentEvent, 'wrong'), { provider, admin });
+    assert.strictEqual(badToken.status, 401);
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    const confirmed = await handleBillingWebhook(req(paymentEvent), { provider, admin });
+    assert.strictEqual(confirmed.status, 200);
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'pro');
+    const replay = await handleBillingWebhook(req(paymentEvent), { provider, admin });
+    assert.strictEqual((await replay.json()).duplicate, true);
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
 });
 
 run('E2E: ASSINATURA FAIL-CLOSED E BILLING');

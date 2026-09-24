@@ -11,7 +11,16 @@ export type ProductEvent =
   | 'primeiro_item_troca'
   | 'assinatura_iniciada'
   | 'assinatura_cancelada'
-  | 'comando_desfazer_acionado';
+  | 'comando_desfazer_acionado'
+  | 'free_customer_limit_reached'
+  | 'voice_monthly_limit_reached'
+  | 'checkout_started'
+  | 'checkout_completed'
+  | 'checkout_canceled'
+  | 'checkout_expired'
+  | 'subscription_activated'
+  | 'payment_failed'
+  | 'subscription_canceled';
 
 export interface EventPayload {
   userId: string;

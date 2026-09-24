@@ -11,9 +11,13 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface RateLimitDecision {
   allowed: boolean;
   unavailable?: boolean;
+  reason?: 'ok' | 'monthly_limit' | 'rate_limited' | 'account_unavailable';
+  effectivePlan?: 'free' | 'pro';
   retryAfterSeconds: number;
   minuteHits?: number;
   hourHits?: number;
+  monthlyHits?: number;
+  monthlyLimit?: number;
   limitPerMinute: number;
   limitPerHour: number;
 }
@@ -43,12 +47,17 @@ export async function consumeVoiceRateLimit(supabase: SupabaseClient, bucket: 'v
     return { allowed: false, unavailable: true, retryAfterSeconds: 30, limitPerMinute: perMinute, limitPerHour: perHour };
   }
 
-  const res = data as { allowed: boolean; retry_after_seconds: number; minute_hits: number; hour_hits: number };
+  const res = data as { allowed: boolean; reason: RateLimitDecision['reason']; plan?: RateLimitDecision['effectivePlan']; retry_after_seconds: number; minute_hits: number; hour_hits: number; monthly_hits: number; monthly_limit: number };
   return {
     allowed: res.allowed,
+    unavailable: res.reason === 'account_unavailable',
+    reason: res.reason,
+    effectivePlan: res.plan,
     retryAfterSeconds: res.retry_after_seconds,
     minuteHits: res.minute_hits,
     hourHits: res.hour_hits,
+    monthlyHits: res.monthly_hits,
+    monthlyLimit: res.monthly_limit,
     limitPerMinute: perMinute,
     limitPerHour: perHour,
   };
@@ -59,6 +68,7 @@ export function rateLimitHeaders(decision: RateLimitDecision): Record<string, st
     'X-RateLimit-Limit-Minute': String(decision.limitPerMinute),
     'X-RateLimit-Limit-Hour': String(decision.limitPerHour),
   };
+  if (decision.monthlyLimit) headers['X-RateLimit-Limit-Month'] = String(decision.monthlyLimit);
   if (!decision.allowed) headers['Retry-After'] = String(Math.max(1, decision.retryAfterSeconds));
   return headers;
 }

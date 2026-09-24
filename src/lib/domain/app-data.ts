@@ -42,12 +42,14 @@ export interface ProfileView {
   phone: string | null;
   businessName: string | null;
   businessSegment: string | null;
+  document: string | null;
+  address: string | null;
 }
 
 export async function getProfile(supabase: SupabaseClient, userId: string, fallbackEmail = ''): Promise<ProfileView> {
   const { data } = await supabase
     .from('profiles')
-    .select('full_name, email, phone, business_name, business_segment')
+    .select('full_name, email, phone, business_name, business_segment, document, address')
     .eq('id', userId)
     .maybeSingle();
   return {
@@ -56,6 +58,8 @@ export async function getProfile(supabase: SupabaseClient, userId: string, fallb
     phone: data?.phone ?? null,
     businessName: data?.business_name ?? null,
     businessSegment: data?.business_segment ?? null,
+    document: data?.document ?? null,
+    address: data?.address ?? null,
   };
 }
 

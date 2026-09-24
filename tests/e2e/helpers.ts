@@ -73,12 +73,15 @@ const CLEANUP_ORDER = [
   'installments',
   'renegotiations',
   'receivables',
+  'loan_contract_documents',
   'loan_contracts',
   'payables',
   'conversation_context',
   'ai_interactions',
   'ai_telemetry',
   'voice_rate_limits',
+  'billing_checkout_sessions',
+  'billing_events',
   'audit_log',
 ];
 

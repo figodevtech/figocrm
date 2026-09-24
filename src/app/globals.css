@@ -101,3 +101,11 @@ body {
   background: #1e293b;
   border-radius: 9999px;
 }
+@media print {
+  body:has(.contract-document) { background: white !important; color: black !important; }
+  body:has(.contract-document) header,
+  body:has(.contract-document) nav,
+  body:has(.contract-document) footer { display: none !important; }
+  body:has(.contract-document) main { padding: 0 !important; max-width: none !important; }
+  .contract-document { margin: 0 !important; padding: 0 !important; box-shadow: none !important; }
+}

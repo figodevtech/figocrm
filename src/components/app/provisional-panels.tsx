@@ -25,7 +25,7 @@ function Frame({ title, text, children }: { title: string; text: string; childre
   );
 }
 
-export function ProvisionalCustomerPanel({ customer, candidates }: { customer: { id: string; name: string }; candidates: CustomerOption[] }) {
+export function ProvisionalCustomerPanel({ customer, candidates, summary }: { customer: { id: string; name: string }; candidates: CustomerOption[]; summary: { deals: number; receivable: number; loans: number } }) {
   const router = useRouter();
   const [linking, setLinking] = useState(false);
   const [target, setTarget] = useState<CustomerOption | null>(null);
@@ -59,6 +59,7 @@ export function ProvisionalCustomerPanel({ customer, candidates }: { customer: {
           <p className="text-base text-white">
             Passar tudo de <strong>{customer.name}</strong> para <strong>{target.name}</strong>? O avulso deixa de existir.
           </p>
+          <p className="text-sm text-amber-100">Este cliente possui {summary.deals} {summary.deals === 1 ? 'negócio' : 'negócios'}, {formatBRL(summary.receivable)} a receber e {summary.loans} {summary.loans === 1 ? 'empréstimo' : 'empréstimos'}.</p>
           {error ? <Alert>{error}</Alert> : null}
           <div className="grid grid-cols-2 gap-2">
             <Button variant="ghost" onClick={() => setTarget(null)}>

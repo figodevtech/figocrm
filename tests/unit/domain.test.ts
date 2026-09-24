@@ -27,7 +27,9 @@ function fakeRpc(result: { data?: unknown; error?: { message: string } } | Error
 }
 
 const row = (over: Record<string, unknown>) => ({
-  status: 'trialing', effective_status: 'trialing', can_write: true, reason: 'trial',
+  status: 'trialing', effective_status: 'trialing', effective_plan: 'pro', can_read: true, can_write: true, reason: 'trial',
+  customer_count: 0, customer_limit: null, can_create_customer: true,
+  voice_monthly_limit: 1000, voice_used_this_month: 0, voice_remaining_this_month: 1000,
   trial_ends_at: new Date(Date.now() + 3 * 86_400_000).toISOString(), current_period_end: null, grace_until: null,
   cancel_at_period_end: false, ...over,
 });
@@ -48,13 +50,10 @@ test('fail-closed: erro do Supabase, exceção, resposta vazia ou malformada neg
   }
 });
 
-test('fail-closed: assinatura/perfil ausente, trial expirado, past_due vencido, blocked negam escrita com mensagem clara', async () => {
+test('fail-closed: assinatura/perfil ausente e blocked negam escrita com mensagem clara', async () => {
   for (const [reason, status] of [
     ['subscription_missing', 'missing'],
-    ['trial_expired', 'expired'],
-    ['past_due', 'past_due'],
     ['blocked', 'blocked'],
-    ['canceled', 'expired'],
   ] as const) {
     const client = fakeRpc({ data: [row({ can_write: false, reason, effective_status: status })] });
     await assert.rejects(assertWritePermission(undefined, client), (err: unknown) => {
@@ -64,6 +63,16 @@ test('fail-closed: assinatura/perfil ausente, trial expirado, past_due vencido, 
       return true;
     });
   }
+});
+
+test('trial encerrado e cobrança vencida preservam escrita no Free com limite de clientes', async () => {
+  const free = row({ status: 'expired', effective_status: 'expired', effective_plan: 'free',
+    reason: 'trial_expired', customer_count: 10, customer_limit: 10, can_create_customer: false,
+    voice_monthly_limit: 20, voice_used_this_month: 7, voice_remaining_this_month: 13 });
+  const access = await assertWritePermission(undefined, fakeRpc({ data: [free] }));
+  assert.strictEqual(access.effectivePlan, 'free');
+  assert.strictEqual(access.canCreateCustomer, false);
+  assert.strictEqual(access.voiceRemainingThisMonth, 13);
 });
 
 test('trialing, active e past_due dentro da carência escrevem; dias de trial calculados', async () => {
@@ -123,6 +132,12 @@ test('billing: ativação, falha, cancelamento e evento atrasado', () => {
 
   const late = subscriptionUpdateFor(event('subscription.renewed', { currentPeriodEnd: '2026-09-30T00:00:00Z' }), { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null }, now);
   assert.strictEqual(late.current_period_end, undefined, 'evento atrasado não volta o período');
+  assert.strictEqual(late.status, undefined, 'evento atrasado não reativa assinatura cancelada');
+  const checkout = subscriptionUpdateFor(event('checkout.paid'), { current_period_end: null, past_due_at: null }, now);
+  assert.deepStrictEqual(checkout, {}, 'checkout pago não libera Pro sem webhook financeiro');
+  const oldFailure = subscriptionUpdateFor(event('payment.failed', { providerSubscriptionId: 'sub-antiga' }),
+    { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null, provider_subscription_id: 'sub-atual' }, now);
+  assert.deepStrictEqual(oldFailure, {}, 'falha de assinatura antiga não derruba a assinatura atual');
 });
 
 // ------------------------------------------------------------------ manual = voz

@@ -3,6 +3,8 @@
 // anon sem acesso, isolamento cross-user por payload e rollback total em caso de erro.
 
 import assert from 'assert';
+import { PDFDocument } from 'pdf-lib';
+import { renderLoanDocumentPdf, type LoanDocument } from '../../src/lib/loan-document';
 import { anonClient, createTestUser, run, seedCustomer, seedItem, test, TestUser } from './helpers';
 
 function dealPayload(customerId: string, itemIds: string[], total: number) {
@@ -48,6 +50,63 @@ test('setup: dois usuários isolados com cliente e estoque próprios', async () 
   itemB = await seedItem(userB, 'Moto do B', 5000);
 });
 
+test('lucro adulterado e custo adulterado no payload são ignorados pelo banco', async () => {
+  const item = await seedItem(userA, 'Item com custo real', 2000);
+  const { data, error } = await userA.client.rpc('execute_deal_transaction', {
+    p_payload: {
+      ...dealPayload(customerA, [item], 3000),
+      recognized_profit: 50000,
+      items_out: [{ item_id: item, evaluated_value: 3000, acquisition_cost: 1 }],
+    },
+  });
+  assert.ifError(error);
+  const dealId = (data as { deal_id: string }).deal_id;
+  const { data: deal } = await userA.client.from('deals').select('recognized_profit, profit_pending').eq('id', dealId).single();
+  assert.deepStrictEqual([Number(deal!.recognized_profit), deal!.profit_pending], [1000, false]);
+
+  const tamper = await userA.client.from('deals').update({ recognized_profit: 50000 }).eq('id', dealId).select('recognized_profit').single();
+  assert.ifError(tamper.error);
+  assert.strictEqual(Number(tamper.data!.recognized_profit), 1000, 'nem UPDATE direto pode adulterar lucro');
+
+  const changedPrice = await userA.client.from('deals').update({ total_value: 90000 }).eq('id', dealId);
+  assert.strictEqual(changedPrice.error?.code, '42501', 'o preço do negócio é imutável por UPDATE direto');
+  const changedItem = await userA.client.from('deal_items').update({ direction: 'IN' }).eq('deal_id', dealId);
+  assert.strictEqual(changedItem.error?.code, '42501', 'o vínculo de saída não pode ser alterado diretamente');
+});
+
+test('CMV soma custos adicionais e múltiplos itens reais', async () => {
+  const first = await seedItem(userA, 'Primeiro item do lote', 1200);
+  const second = await seedItem(userA, 'Segundo item do lote', 700);
+  const cost = await userA.client.from('item_costs').insert({ user_id: userA.id, item_id: first, category: 'reparo', description: 'Conserto', amount: 150 });
+  assert.ifError(cost.error);
+  const { data, error } = await userA.client.rpc('execute_deal_transaction', {
+    p_payload: { ...dealPayload(customerA, [first, second], 3000), recognized_profit: 99999 },
+  });
+  assert.ifError(error);
+  const dealId = (data as { deal_id: string }).deal_id;
+  const { data: deal } = await userA.client.from('deals').select('recognized_profit').eq('id', dealId).single();
+  assert.strictEqual(Number(deal!.recognized_profit), 950); // 3000 - (1200 + 150 + 700)
+});
+
+test('custo pendente zera o lucro até resolver exatamente o item vendido', async () => {
+  const { data, error } = await userA.client.rpc('execute_deal_transaction', {
+    p_payload: {
+      ...dealPayload(customerA, [], 3000),
+      recognized_profit: 50000,
+      items_out: [{ name: 'iPhone avulso', evaluated_value: 3000 }],
+    },
+  });
+  assert.ifError(error);
+  const dealId = (data as { deal_id: string; items_out_ids: string[] }).deal_id;
+  const itemId = (data as { items_out_ids: string[] }).items_out_ids[0];
+  const before = await userA.client.from('deals').select('recognized_profit, profit_pending').eq('id', dealId).single();
+  assert.deepStrictEqual([Number(before.data!.recognized_profit), before.data!.profit_pending], [0, true]);
+  const resolved = await userA.client.rpc('resolve_item_cost', { p_payload: { item_id: itemId, acquisition_cost: 2000 } });
+  assert.ifError(resolved.error);
+  const after = await userA.client.from('deals').select('recognized_profit, profit_pending').eq('id', dealId).single();
+  assert.deepStrictEqual([Number(after.data!.recognized_profit), after.data!.profit_pending], [1000, false]);
+});
+
 test('anon não executa execute_deal_transaction (permission denied)', async () => {
   const { error } = await anonClient().rpc('execute_deal_transaction', { p_payload: dealPayload(customerA, [itemA], 6000) });
   assert.ok(error, 'anon deveria receber erro');
@@ -76,17 +135,19 @@ test('usuário A não vende item do B via payload (erro + rollback total)', asyn
 });
 
 test('item próprio + item do B no mesmo payload: rollback total, item próprio não é baixado', async () => {
+  const before = await countDeals(userA);
   const { error } = await userA.client.rpc('execute_deal_transaction', { p_payload: dealPayload(customerA, [itemA, itemB], 6000) });
   assert.ok(error, 'deveria falhar');
   assert.strictEqual(await itemStatus(userA, itemA), 'disponivel', 'item do A não pode ficar vendido após rollback');
-  assert.strictEqual(await countDeals(userA), 0);
+  assert.strictEqual(await countDeals(userA), before);
 });
 
 test('usuário A não usa customer_id do B', async () => {
+  const before = await countDeals(userA);
   const { error } = await userA.client.rpc('execute_deal_transaction', { p_payload: dealPayload(customerB, [itemA], 6000) });
   assert.ok(error, 'deveria falhar');
   assert.match(error.message, /Cliente .* não encontrado/);
-  assert.strictEqual(await countDeals(userA), 0);
+  assert.strictEqual(await countDeals(userA), before);
   assert.strictEqual(await itemStatus(userA, itemA), 'disponivel');
 });
 
@@ -253,6 +314,35 @@ test('empréstimo: dono não altera nem apaga o contrato direto pela API (status
   assert.ok(del.error || (del.data ?? []).length === 0, 'DELETE direto bloqueado');
   const { data: after } = await userA.client.from('loan_contracts').select('status, total_amount').eq('id', data!.id).single();
   assert.deepStrictEqual([after!.status, Number(after!.total_amount)], ['active', 1200]);
+});
+
+test('documento do empréstimo preserva snapshot, versiona alterações e gera PDF A4', async () => {
+  const own = await userA.client.rpc('create_loan_contract', { p_payload: loanPayload(customerA) });
+  assert.ifError(own.error);
+  const loanId = (own.data as { loan_contract_id: string }).loan_contract_id;
+  assert.ifError((await userA.client.from('profiles').update({ document: '123.456.789-01', address: 'Rua do Credor, 10' }).eq('id', userA.id)).error);
+  assert.ifError((await userA.client.from('customers').update({ document: '987.654.321-00', address: 'Rua do Devedor, 20' }).eq('id', customerA)).error);
+  const first = await userA.client.rpc('issue_loan_document', { p_loan_id: loanId });
+  assert.ifError(first.error);
+  assert.strictEqual(first.data.version, 1);
+  const repeat = await userA.client.rpc('issue_loan_document', { p_loan_id: loanId });
+  assert.ifError(repeat.error);
+  assert.strictEqual(repeat.data.version, 1);
+  assert.strictEqual(repeat.data.already_issued, true);
+
+  assert.ifError((await userA.client.from('customers').update({ address: 'Rua Nova, 30' }).eq('id', customerA)).error);
+  const second = await userA.client.rpc('issue_loan_document', { p_loan_id: loanId });
+  assert.ifError(second.error);
+  assert.strictEqual(second.data.version, 2);
+  const { data: docs, error } = await userA.client.from('loan_contract_documents').select('*').eq('loan_contract_id', loanId).order('version');
+  assert.ifError(error);
+  assert.strictEqual(docs!.length, 2);
+  assert.strictEqual(docs![0].debtor_snapshot.address, 'Rua do Devedor, 20');
+  assert.strictEqual(docs![1].debtor_snapshot.address, 'Rua Nova, 30');
+  const pdf = await renderLoanDocumentPdf(docs![0] as LoanDocument);
+  assert.ok(Buffer.from(pdf).subarray(0, 5).toString() === '%PDF-');
+  const loaded = await PDFDocument.load(pdf);
+  assert.deepStrictEqual(loaded.getPage(0).getSize(), { width: 595.28, height: 841.89 });
 });
 
 // ------------------------------------------------------------------ avulsos (vincular)

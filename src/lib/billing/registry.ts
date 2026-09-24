@@ -1,8 +1,8 @@
 // src/lib/billing/registry.ts
-// Provedor de cobrança ativo (BILLING_PROVIDER). Nenhum implementado ainda: retorna null e todo fluxo
-// de cobrança responde "não configurado" — nunca ativa assinatura por conta própria.
+// Provedor de cobrança ativo (BILLING_PROVIDER). Asaas só fica disponível com chave e token configurados.
 
 import type { BillingProvider } from '@/lib/billing/types';
+import { createAsaasProvider } from '@/lib/billing/asaas';
 
 const providers = new Map<string, BillingProvider>();
 
@@ -14,5 +14,6 @@ export function registerBillingProvider(provider: BillingProvider): void {
 export function getBillingProvider(): BillingProvider | null {
   const name = process.env.BILLING_PROVIDER;
   if (!name) return null;
+  if (name === 'asaas') return createAsaasProvider();
   return providers.get(name) ?? null;
 }
