@@ -3,10 +3,11 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Banknote, HandCoins, Pencil, Phone, ShoppingBag } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
-import { getCustomerDetail } from '@/lib/domain/app-data';
+import { getCustomerDetail, listCustomerOptions } from '@/lib/domain/app-data';
+import { ProvisionalCustomerPanel } from '@/components/app/provisional-panels';
 import { formatBRL, formatPhone, formatShortDate } from '@/lib/format';
 import { DebtCard, Timeline } from '@/components/app/debt-parts';
-import { Card, PageHeader, SectionTitle, Stat } from '@/components/ui/layout';
+import { Badge, Card, PageHeader, SectionTitle, Stat } from '@/components/ui/layout';
 import { ButtonLink } from '@/components/ui/button';
 import { VoiceButton, VoiceScreen } from '@/components/voice/voice-provider';
 
@@ -18,6 +19,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const detail = await getCustomerDetail(supabase, user.id, id);
   if (!detail) notFound();
   const { customer } = detail;
+  const candidates = customer.is_provisional ? await listCustomerOptions(supabase, user.id) : [];
 
   return (
     <div>
@@ -28,10 +30,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         title={customer.name}
         back="/app/clientes"
         subtitle={
-          customer.phone ? (
-            <a href={`tel:${customer.phone.replace(/\D/g, '')}`} className="inline-flex min-h-11 items-center gap-2 text-emerald-300">
-              <Phone className="h-4 w-4" aria-hidden /> {formatPhone(customer.phone)}
-            </a>
+          customer.phone || customer.is_provisional ? (
+            <span className="flex flex-wrap items-center gap-3">
+              {customer.is_provisional ? <Badge tone="amber">Avulso</Badge> : null}
+              {customer.phone ? (
+                <a href={`tel:${customer.phone.replace(/\D/g, '')}`} className="inline-flex min-h-11 items-center gap-2 text-emerald-300">
+                  <Phone className="h-4 w-4" aria-hidden /> {formatPhone(customer.phone)}
+                </a>
+              ) : null}
+            </span>
           ) : null
         }
         action={
@@ -40,6 +47,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           </Link>
         }
       />
+
+      {customer.is_provisional ? <ProvisionalCustomerPanel customer={{ id: customer.id, name: customer.name }} candidates={candidates} /> : null}
 
       <Card className="grid grid-cols-2 gap-4 sm:grid-cols-3">
         <Stat label="Deve" value={formatBRL(detail.owes)} tone={detail.owes > 0 ? 'amber' : 'neutral'} size="lg" />

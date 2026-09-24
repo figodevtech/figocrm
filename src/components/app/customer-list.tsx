@@ -6,17 +6,24 @@ import { ChevronRight, Search } from 'lucide-react';
 import type { CustomerListItem } from '@/lib/domain/app-data';
 import { formatBRL, formatPhone, matchesSearch } from '@/lib/format';
 
-type Filter = 'todos' | 'devendo' | 'atrasados';
+type Filter = 'todos' | 'devendo' | 'atrasados' | 'avulsos';
 
 export function CustomerList({ customers, initialFilter = 'todos' }: { customers: CustomerListItem[]; initialFilter?: Filter }) {
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Filter>(initialFilter);
 
   const visible = customers
-    .filter((c) => (filter === 'devendo' ? c.owes > 0 : filter === 'atrasados' ? c.overdue > 0 : true))
+    .filter((c) => (filter === 'devendo' ? c.owes > 0 : filter === 'atrasados' ? c.overdue > 0 : filter === 'avulsos' ? c.isProvisional : true))
     .filter((c) => matchesSearch(query, c.name, c.phone, c.document));
 
-  const counts = { todos: customers.length, devendo: customers.filter((c) => c.owes > 0).length, atrasados: customers.filter((c) => c.overdue > 0).length };
+  const counts = {
+    todos: customers.length,
+    devendo: customers.filter((c) => c.owes > 0).length,
+    atrasados: customers.filter((c) => c.overdue > 0).length,
+    avulsos: customers.filter((c) => c.isProvisional).length,
+  };
+  const filters: Filter[] = ['todos', 'devendo', 'atrasados', ...(counts.avulsos > 0 || filter === 'avulsos' ? (['avulsos'] as Filter[]) : [])];
+  const labels: Record<Filter, string> = { todos: 'Todos', devendo: 'Devendo', atrasados: 'Atrasados', avulsos: 'Avulsos' };
 
   return (
     <div className="space-y-4">
@@ -36,7 +43,7 @@ export function CustomerList({ customers, initialFilter = 'todos' }: { customers
       </div>
 
       <div role="tablist" aria-label="Filtro" className="flex gap-2 overflow-x-auto pb-1">
-        {(['todos', 'devendo', 'atrasados'] as Filter[]).map((f) => (
+        {filters.map((f) => (
           <button
             key={f}
             type="button"
@@ -45,7 +52,7 @@ export function CustomerList({ customers, initialFilter = 'todos' }: { customers
             onClick={() => setFilter(f)}
             className={`min-h-10 shrink-0 rounded-full px-4 text-sm font-semibold capitalize ${filter === f ? 'bg-white text-slate-900' : 'bg-white/6 text-slate-300 hover:bg-white/10'}`}
           >
-            {f === 'todos' ? 'Todos' : f === 'devendo' ? 'Devendo' : 'Atrasados'} ({counts[f]})
+            {labels[f]} ({counts[f]})
           </button>
         ))}
       </div>
@@ -59,7 +66,10 @@ export function CustomerList({ customers, initialFilter = 'todos' }: { customers
               <Link href={`/app/clientes/${c.id}`} className="block rounded-2xl border border-white/10 bg-slate-900/70 p-4 transition-colors hover:border-white/25">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="truncate text-lg font-semibold text-white">{c.name}</p>
+                    <p className="truncate text-lg font-semibold text-white">
+                      {c.name}
+                      {c.isProvisional ? <span className="ml-2 rounded-full bg-amber-500/15 px-2 py-0.5 align-middle text-sm font-medium text-amber-200">Avulso</span> : null}
+                    </p>
                     {c.phone ? <p className="text-base text-slate-400">{formatPhone(c.phone)}</p> : null}
                   </div>
                   <ChevronRight className="mt-1 h-5 w-5 shrink-0 text-slate-500" aria-hidden />

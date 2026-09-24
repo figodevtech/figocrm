@@ -66,7 +66,8 @@ export function TradeWizard({ customers, items, today, initialCustomerId }: { cu
     setError(null);
     const res = await createTradeAction({
       customerId: customer.id,
-      itemOutId: itemOut.id,
+      itemOutId: itemOut.isNew ? undefined : itemOut.id,
+      itemOutNew: itemOut.isNew ? { name: itemOut.name, acquisitionCost: itemOut.knownCost } : undefined,
       itemIn: { name: inName.trim(), evaluatedValue: inCents / 100, category: inCategory },
       tradeBalance: diff.balanceCents / 100,
       direction,
@@ -115,6 +116,7 @@ export function TradeWizard({ customers, items, today, initialCustomerId }: { cu
       <WizardStep step={2} total={TOTAL_STEPS} title="O que você entregou?" onBack={() => setStep(1)} onNext={() => setStep(3)} nextDisabled={!itemOut || outCents <= 0}>
         <ItemPicker
           items={items}
+          allowUnstocked
           selectedId={itemOut?.id ?? null}
           onSelect={(i) => {
             setItemOut(i);

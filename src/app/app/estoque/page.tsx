@@ -10,9 +10,9 @@ import { VoiceButton } from '@/components/voice/voice-provider';
 
 export const metadata: Metadata = { title: 'Estoque' };
 
-export default async function StockPage() {
+export default async function StockPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
   const { supabase, user } = await requireSession();
-  const items = await listStock(supabase, user.id);
+  const [{ filtro }, items] = await Promise.all([searchParams, listStock(supabase, user.id)]);
   const inStock = items.filter((i) => ['disponivel', 'reservado', 'em_preparacao'].includes(i.status));
   const totalCost = inStock.reduce((acc, i) => acc + i.totalCost, 0);
 
@@ -34,7 +34,7 @@ export default async function StockPage() {
           <VoiceButton />
         </EmptyState>
       ) : (
-        <StockList items={items} />
+        <StockList items={items} initialFilter={filtro === 'revisar' ? 'revisar' : 'disponiveis'} />
       )}
     </div>
   );

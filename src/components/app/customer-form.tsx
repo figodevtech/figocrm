@@ -16,7 +16,7 @@ interface Initial {
   notes?: string | null;
 }
 
-export function CustomerForm({ initial = {}, returnTo }: { initial?: Initial; returnTo?: string }) {
+export function CustomerForm({ initial = {}, returnTo, confirmProvisional }: { initial?: Initial; returnTo?: string; confirmProvisional?: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState({
     name: initial.name ?? '',
@@ -34,7 +34,7 @@ export function CustomerForm({ initial = {}, returnTo }: { initial?: Initial; re
     setSaving(true);
     setError(null);
     setDuplicate(null);
-    const res = await saveCustomerAction(form, { customerId: initial.id, allowDuplicate });
+    const res = await saveCustomerAction(form, { customerId: initial.id, allowDuplicate, confirmProvisional });
     if (!res.ok) {
       setSaving(false);
       setError(res.error);
@@ -77,7 +77,7 @@ export function CustomerForm({ initial = {}, returnTo }: { initial?: Initial; re
       ) : null}
 
       <Button type="submit" size="lg" className="w-full" loading={saving} disabled={!form.name.trim()}>
-        {initial.id ? 'Salvar alterações' : 'Salvar cliente'}
+        {confirmProvisional ? 'Transformar em cliente' : initial.id ? 'Salvar alterações' : 'Salvar cliente'}
       </Button>
     </form>
   );

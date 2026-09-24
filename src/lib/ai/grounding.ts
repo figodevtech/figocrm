@@ -32,7 +32,8 @@ const SENTENCE_STARTERS = new Set(
   (
     'ele ela eles elas o a os as um uma e mas porque pro pra com do da no na me eu hoje ontem agora entao so ' +
     'quitou pagou mandou acertou vendi passei troquei peguei comprei dei fechei recebi abate abati tira desconta ' +
-    'joga muda adia prorroga renegocia quanto quantos quantas quem qual ficou ficaram apaga zera exclui deixa deu'
+    'joga muda adia prorroga renegocia quanto quantos quantas quem qual ficou ficaram apaga zera exclui deixa deu ' +
+    'pix real reais mil'
   ).split(' ')
 );
 
@@ -80,10 +81,13 @@ export function checkGrounding(
   if (name) {
     const inText = referenceMatchesName(name, sourceText);
     // Nome vindo do contexto só vale se a fala não cita outra pessoa ("Joana pagou" nunca vira "Carlos")
+    // Nome do contexto só completa quem NÃO foi nomeado ("ele pagou"). Se a fala diz um nome ("o João pagou"),
+    // o nome inteiro precisa estar na fala: "João" nunca vira o "João Santos" da conversa anterior.
+    // Na tela de um cliente, ele é contexto explícito escolhido pelo usuário.
     const fromContext =
       !!context?.lastCustomer &&
       referenceMatchesName(name, context.lastCustomer.name) &&
-      !mentionsOtherName(spokenText, context.lastCustomer.name);
+      (context.screenCustomerId === context.lastCustomer.id || !mentionsOtherName(spokenText, ''));
     if (!inText && !fromContext) issues.push({ field: 'customer', value: name });
   }
 
@@ -229,6 +233,9 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
   ];
 }
 
+/** Criação (venda, troca, compra, empréstimo): cliente/mercadoria não ditos ou não achados viram avulsos. */
+export const CREATION_INTENTS = new Set(['create_sale', 'create_trade', 'create_purchase', 'create_loan']);
+
 export const WRITE_INTENTS = new Set([
   'create_sale', 'create_trade', 'create_purchase', 'create_loan', 'register_payment', 'register_partial_payment',
   'register_adjustment', 'update_due_date', 'renegotiate_debt', 'reverse_operation',
@@ -241,14 +248,13 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
     if (!cmd.missingInformation.some((m) => m.type === type)) gaps.push({ type, description: promptQuestion, promptQuestion });
   };
 
-  // Toda escrita precisa de uma pessoa: dita na fala ou em contexto (nunca adivinhada)
-  if (WRITE_INTENTS.has(cmd.intent) && !cmd.counterparty?.name && !cmd.resolvedRefs?.customerId && !contextCustomerAvailable) {
+  // Pagamento/abatimento/vencimento precisam de uma pessoa (a dívida é dela). Criação não: sem nome → cliente avulso.
+  if (WRITE_INTENTS.has(cmd.intent) && !CREATION_INTENTS.has(cmd.intent) && !cmd.counterparty?.name && !cmd.resolvedRefs?.customerId && !contextCustomerAvailable) {
     add('customer_reference', 'De qual cliente você está falando?');
   }
 
   switch (cmd.intent) {
     case 'create_sale':
-      if (!cmd.item) add('item_reference', 'Qual mercadoria você vendeu?');
       if (cmd.totalValue === undefined) add('deal_total', `Por quanto você vendeu ${cmd.item || 'a mercadoria'}?`);
       // Venda sem pagamento no ato e sem valor a receber: não sabemos como foi paga
       if (cmd.totalValue !== undefined && !cmd.cashIn && !cmd.receivable && !cmd.installmentsCount) {
@@ -256,11 +262,9 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
       }
       break;
     case 'create_purchase':
-      if (!cmd.item) add('item_reference', 'Qual mercadoria você comprou?');
       if (cmd.totalValue === undefined) add('acquisition_cost', `Quanto você pagou em ${cmd.item || 'na mercadoria'}?`);
       break;
     case 'create_trade':
-      if (!cmd.itemOut || !cmd.itemIn) add('item_reference', 'Quais mercadorias entraram e saíram nessa troca?');
       if (cmd.tradeBalance && cmd.tradeBalance > 0 && !cmd.direction) {
         add('trade_balance_direction', 'Essa volta foi você que recebeu ou você que pagou?');
       }

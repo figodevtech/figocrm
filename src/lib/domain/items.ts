@@ -207,6 +207,28 @@ export async function addItemCost(
   return { ok: true };
 }
 
+/** Informa o custo de mercadoria vendida sem custo e reconhece o lucro dos negócios (RPC resolve_item_cost). */
+export async function resolveItemCost(
+  supabase: SupabaseClient,
+  userId: string,
+  itemId: string,
+  acquisitionCost: number,
+  source: 'manual' | 'voice' = 'manual'
+): Promise<{ ok: true; deals: Array<{ dealId: string; recognizedProfit: number }> } | { ok: false; error: string }> {
+  if (!(acquisitionCost >= 0) || !Number.isFinite(acquisitionCost)) return { ok: false, error: 'Informe quanto você pagou.' };
+  const { data, error } = await supabase.rpc('resolve_item_cost', {
+    p_payload: { item_id: itemId, acquisition_cost: toReais(toCents(acquisitionCost)), source },
+  });
+  if (error) {
+    if (error.hint === 'COST_ALREADY_SET') return { ok: false, error: 'O custo dessa mercadoria já foi informado.' };
+    if (error.message.includes('Assinatura inativa')) return { ok: false, error: 'Assinatura inativa: novos registros estão bloqueados.' };
+    return { ok: false, error: 'Não consegui salvar o custo. Nada foi alterado.' };
+  }
+  void userId;
+  const res = data as { deals: Array<{ deal_id: string; recognized_profit: number }> };
+  return { ok: true, deals: (res.deals ?? []).map((d) => ({ dealId: d.deal_id, recognizedProfit: Number(d.recognized_profit) })) };
+}
+
 export async function removeItemCost(
   supabase: SupabaseClient,
   userId: string,
@@ -222,5 +244,49 @@ export async function removeItemCost(
   const { error } = await supabase.from('item_costs').delete().eq('id', costId).eq('user_id', userId);
   if (error) return { ok: false, error: 'Não consegui remover o custo.' };
   await audit(supabase, userId, 'item_costs', costId, 'REMOVE_ITEM_COST', null, cost);
+  return { ok: true };
+}
+
+/**
+ * Vincula uma mercadoria AVULSA (vendida sem estar no estoque) a uma do estoque: o negócio passa a
+ * apontar para ela, que vira vendida, e o lucro é recalculado com o custo real (RPC merge_provisional_item).
+ */
+export async function mergeProvisionalItem(
+  supabase: SupabaseClient,
+  sourceId: string,
+  targetId: string
+): Promise<{ ok: true; targetId: string } | { ok: false; error: string }> {
+  if (!sourceId || !targetId || sourceId === targetId) return { ok: false, error: 'Escolha a mercadoria do estoque.' };
+  const denied = await writeGuard(supabase);
+  if (denied) return { ok: false, error: denied };
+  const { error } = await supabase.rpc('merge_provisional_item', { p_payload: { source_id: sourceId, target_id: targetId } });
+  if (error) {
+    if (error.hint === 'NOT_PROVISIONAL') return { ok: false, error: 'Só mercadoria avulsa pode ser vinculada.' };
+    if (error.hint === 'TARGET_UNAVAILABLE') return { ok: false, error: 'Escolha uma mercadoria disponível no estoque.' };
+    return { ok: false, error: 'Não consegui vincular. Nada foi alterado.' };
+  }
+  return { ok: true, targetId };
+}
+
+/** Confirma a mercadoria avulsa como cadastro (pode corrigir o nome). O custo, se pendente, vai por resolveItemCost. */
+export async function confirmProvisionalItem(
+  supabase: SupabaseClient,
+  userId: string,
+  itemId: string,
+  name: string
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const clean = name.trim().slice(0, 160);
+  if (!clean) return { ok: false, error: 'Informe o nome da mercadoria.' };
+  const denied = await writeGuard(supabase);
+  if (denied) return { ok: false, error: denied };
+  const { data, error } = await supabase
+    .from('items')
+    .update({ name: clean, is_provisional: false })
+    .eq('id', itemId)
+    .eq('user_id', userId)
+    .eq('is_provisional', true)
+    .select('id');
+  if (error || !data || data.length === 0) return { ok: false, error: 'Não consegui confirmar essa mercadoria.' };
+  await audit(supabase, userId, 'items', itemId, 'CONFIRM_PROVISIONAL_ITEM', { name: clean });
   return { ok: true };
 }

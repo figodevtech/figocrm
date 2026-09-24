@@ -60,6 +60,8 @@ export interface ItemMovement {
   description?: string;
   negotiatedValue?: number;
   acquisitionValue?: number;
+  /** Mercadoria que não está no estoque: nasce já vendida no negócio (custo pendente se não informado). */
+  newItem?: boolean;
   direction: FlowDirection;
 }
 

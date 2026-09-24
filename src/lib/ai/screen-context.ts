@@ -55,6 +55,7 @@ export async function applyScreenContext(
         next.lastDealId = undefined;
       }
       next.lastCustomer = { id: data.id, name: data.name, type: 'customer' };
+      next.screenCustomerId = data.id;
       labels.push(`cliente ${data.name}`);
     }
   }
@@ -69,6 +70,7 @@ export async function applyScreenContext(
     const row = data as unknown as { id: string; customer_id: string; customers: { name: string } | null; receivables: Array<{ id: string }> } | null;
     if (row) {
       next.lastCustomer = { id: row.customer_id, name: row.customers?.name ?? 'cliente', type: 'customer' };
+      next.screenCustomerId = row.customer_id;
       next.lastReceivableId = row.receivables?.[0]?.id;
       next.lastDealId = undefined;
       labels.splice(0, labels.length, `empréstimo de ${row.customers?.name ?? 'cliente'}`);

@@ -70,6 +70,7 @@ export const ItemMovementSchema = z.object({
   description: z.string().optional(),
   negotiatedValue: z.number().nonnegative().optional(),
   acquisitionValue: z.number().nonnegative().optional(),
+  newItem: z.boolean().optional(),
   direction: FlowDirectionSchema,
 });
 

@@ -20,8 +20,8 @@ import {
 import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import { interpretVoiceCommandWithLLM } from '@/lib/ai/interpret';
 import { buildDealCommand } from '@/lib/ai/command-builder';
-import { completenessGaps, WRITE_INTENTS } from '@/lib/ai/grounding';
-import { executeDealCommand } from '@/lib/domain/command-executor';
+import { completenessGaps, CREATION_INTENTS, WRITE_INTENTS } from '@/lib/ai/grounding';
+import { executeDealCommand, UNNAMED_CUSTOMER } from '@/lib/domain/command-executor';
 import { executeVoiceQuery } from '@/lib/domain/queries';
 import { EntityCandidate, matchCandidateAnswer, nameTokens } from '@/lib/domain/entity-resolver';
 import {
@@ -48,6 +48,7 @@ import { resolveCustomerReference } from '@/lib/domain/entity-resolver';
 import { createCustomer } from '@/lib/domain/customers';
 import { createLoanContract, CreateLoanInput, planLoan } from '@/lib/domain/loans';
 import { uniformInstallment } from '@/lib/finance/loans';
+import { resolveItemCost } from '@/lib/domain/items';
 
 export interface VoicePipelineMetrics {
   interpretationSource?: string;
@@ -261,6 +262,11 @@ async function execute(
     return askUser(prompt, keepDraft ? pending('missing_info', spokenText, prompt, cmd, field) : null, cmd.missingInformation.map((m) => m.type));
   }
 
+  // Na tela de um cliente, criar sem dizer o nome é para ESSE cliente (não depende da LLM nem vira avulso)
+  if (CREATION_INTENTS.has(cmd.intent) && context.screenCustomerId && !cmd.counterparty?.name && !cmd.resolvedRefs?.customerId) {
+    cmd = { ...cmd, resolvedRefs: { ...(cmd.resolvedRefs ?? {}), customerId: context.screenCustomerId } };
+  }
+
   switch (cmd.intent) {
     case 'query_information':
       return executeQuery(cmd, spokenText, context, deps);
@@ -283,6 +289,8 @@ async function execute(
           : askUser('Como fica o novo parcelamento? Em quantas parcelas?', pending('missing_info', spokenText, 'Como fica o novo parcelamento? Em quantas parcelas?', cmd, 'installmentsCount'));
     case 'reverse_operation':
       return executeReversal(cmd, spokenText, context, deps);
+    case 'set_item_cost':
+      return executeSetItemCost(cmd, deps);
     default:
       return askUser('Não entendi. Você vendeu, trocou ou recebeu algum valor?', null);
   }
@@ -352,9 +360,37 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
   }
 
   const firstItem = res.resolved?.itemsOut?.[0];
+  // Vendeu algo fora do estoque sem dizer o custo: registra e pergunta (a resposta completa o lucro)
+  const pendingCost = res.pendingCostItems ?? [];
+  let costQuestion: PendingConfirmation | null = null;
+  let humanResponse = `${res.humanSummary}${provisionalNote(res.provisional)}`;
+  if (pendingCost.length === 1) {
+    const item = pendingCost[0];
+    const q = `Quanto você pagou nessa mercadoria (${item.name})? Assim eu calculo o lucro.`;
+    humanResponse = `${humanResponse} ${q}`;
+    costQuestion = pending(
+      'missing_info',
+      spokenText,
+      q,
+      {
+        intent: 'set_item_cost',
+        item: item.name,
+        totalValue: item.negotiatedValue,
+        resolvedRefs: { itemId: item.id },
+        requiresConfirmation: false,
+        missingInformation: [],
+        ambiguities: [],
+        rawText: q,
+        normalizedText: q,
+      },
+      'amount'
+    );
+  } else if (pendingCost.length > 1) {
+    humanResponse = `${humanResponse} Faltou o custo de ${pendingCost.map((i) => i.name).join(' e ')}: informe na tela do estoque para eu calcular o lucro.`;
+  }
   return {
     success: true,
-    humanResponse: res.humanSummary,
+    humanResponse,
     requiresConfirmation: false,
     executionStatus: 'executed',
     dealId: res.dealId,
@@ -364,9 +400,66 @@ async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, con
       lastItem: firstItem ? { ...firstItem, type: 'item' } : undefined,
       lastDealId: res.dealId,
       lastReceivableId: res.resolved?.receivableIds?.[0] ?? null,
-      pendingConfirmation: null,
+      pendingConfirmation: costQuestion,
     },
   };
+}
+
+/** Avisa em uma frase o que entrou como avulso (dá para vincular depois na tela). */
+function provisionalNote(p?: { customer?: { name: string }; items: Array<{ name: string }> }): string {
+  if (!p) return '';
+  const names = [...(p.customer && p.customer.name !== UNNAMED_CUSTOMER ? [p.customer.name] : []), ...p.items.map((i) => i.name)];
+  const unnamed = p.customer?.name === UNNAMED_CUSTOMER ? ' Sem cliente informado: ficou como cliente avulso.' : '';
+  if (names.length === 0) return unnamed;
+  const list = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} e ${names[names.length - 1]}`;
+  return `${unnamed} Não ${names.length === 1 ? 'estava' : 'estavam'} no cadastro: ${list}. Dá pra vincular depois.`;
+}
+
+/** Resposta a "quanto você pagou nele?": grava o custo e reconhece o lucro da venda. */
+async function executeSetItemCost(cmd: InterpretedVoiceCommand, deps: VoicePipelineDeps): Promise<Outcome> {
+  const itemId = cmd.resolvedRefs?.itemId;
+  if (!itemId || cmd.amount === undefined) {
+    const q = `Quanto você pagou nessa mercadoria (${cmd.item ?? 'avulsa'})?`;
+    return askUser(q, pending('missing_info', cmd.rawText, q, cmd, 'amount'));
+  }
+  const res = await resolveItemCost(deps.supabase, deps.userId, itemId, cmd.amount, 'voice');
+  if (!res.ok) return failure(res.error, { pendingConfirmation: null });
+  const profit = res.deals[0]?.recognizedProfit;
+  return {
+    success: true,
+    humanResponse: `Anotado: custo de ${brl(cmd.amount)}${cmd.item ? ` (${cmd.item})` : ''}.${profit !== undefined ? ` Lucro da venda: ${brl(profit)}.` : ''}`,
+    requiresConfirmation: false,
+    executionStatus: 'executed',
+    operation: { id: itemId, type: 'deal', undoAvailable: false },
+    contextPatch: { pendingConfirmation: null },
+  };
+}
+
+// Resposta ao custo: "2 mil", "paguei dois mil nele", "custou 1800". Nunca é uma venda nova.
+const COST_ANSWER_NOISE = /\b(eu|paguei|pago|custou|comprei|foi|dei|nele|nela|por|uns|umas|reais|real|mil|r)\b/g;
+const OTHER_COMMAND = /\b(vend|troq|emprest|receb|quit|abat|desfa|junta|pagou|mandou)/;
+
+function resumeItemCost(spokenText: string, draft: InterpretedVoiceCommand): InterpretedVoiceCommand | null {
+  const t = spokenText.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
+  if (/\b(nao sei|nao lembro|depois|deixa|sem custo|pula)\b/.test(t)) {
+    return {
+      intent: 'unrecognized_command',
+      requiresConfirmation: true,
+      confirmationPrompt: 'Beleza. Dá pra informar o custo depois, na tela da mercadoria.',
+      missingInformation: [],
+      ambiguities: [],
+      interpretation: { source: 'resume' },
+      rawText: spokenText,
+      normalizedText: spokenText,
+    };
+  }
+  if (OTHER_COMMAND.test(t)) return null;
+  const numbers = extractSpokenNumbers(spokenText).filter((n) => n > 0);
+  if (numbers.length !== 1) return null;
+  if (t.replace(COST_ANSWER_NOISE, ' ').replace(/[\d.,$]/g, ' ').replace(/[^a-z ]/g, ' ').trim().split(/\s+/).filter((w) => w && extractSpokenNumbers(w).length === 0).length > 2) return null;
+  let value = numbers[0];
+  if (value < 100 && !/\b(reais|real|mil)\b/.test(t) && (draft.totalValue ?? 0) >= 1000) value *= 1000;
+  return { ...draft, amount: value, interpretation: { source: 'resume' } };
 }
 
 const LOAN_METHODS: Record<string, CreateLoanInput['paymentMethod']> = { pix: 'pix', cash: 'cash', bank_transfer: 'bank_transfer', card: 'credit_card', other: 'other' };
@@ -421,14 +514,17 @@ async function executeLoan(cmd: InterpretedVoiceCommand, spokenText: string, con
     return askUser(custRes.promptQuestion!, pending('entity_choice', spokenText, custRes.promptQuestion!, cmd, 'customer', custRes.candidates), undefined, custRes.candidates);
   }
   let customer = custRes.entity ? { id: custRes.entity.id, name: custRes.entity.name } : undefined;
+  let provisionalCustomer: { name: string } | undefined;
   if (!customer) {
-    if (!cmd.counterparty?.name || cmd.resolvedRefs?.customerId) {
+    if (cmd.resolvedRefs?.customerId) {
       return askUser('Pra quem você emprestou?', pending('missing_info', spokenText, 'Pra quem você emprestou?', cmd, 'customer'));
     }
-    // Nome novo: cadastra só depois que valores e juros já foram validados
-    const created = await createCustomer(deps.supabase, deps.userId, { name: cmd.counterparty.name }, { allowDuplicate: true });
+    // Não achou (ou não disse): cliente avulso, criado só depois que valores e juros já foram validados
+    const name = cmd.counterparty?.name?.trim() || UNNAMED_CUSTOMER;
+    const created = await createCustomer(deps.supabase, deps.userId, { name }, { allowDuplicate: true, provisional: true });
     if (!created.ok) return failure(created.error, { pendingConfirmation: null });
     customer = { id: created.customer.id, name: created.customer.name };
+    provisionalCustomer = customer;
   }
 
   const res = await createLoanContract(deps.supabase, { ...terms, customerId: customer.id, source: 'voice' }, deps.now);
@@ -443,7 +539,8 @@ async function executeLoan(cmd: InterpretedVoiceCommand, spokenText: string, con
     success: true,
     humanResponse:
       `Pronto. Emprestei ${brl(t.principalCents / 100)} pro ${customer.name}. ` +
-      `Volta ${brl(t.totalCents / 100)}${interestText} em ${t.installmentsCount}${scheduleText}. A primeira vence em ${formatDate(first.dueDate)}.`,
+      `Volta ${brl(t.totalCents / 100)}${interestText} em ${t.installmentsCount}${scheduleText}. A primeira vence em ${formatDate(first.dueDate)}.` +
+      provisionalNote(provisionalCustomer ? { customer: provisionalCustomer, items: [] } : undefined),
     requiresConfirmation: false,
     executionStatus: 'executed',
     operation: { id: res.loanContractId, type: 'loan', undoAvailable: false },
@@ -812,6 +909,7 @@ function fieldForMissing(cmd: InterpretedVoiceCommand): string | undefined {
 export function resumePending(spokenText: string, p?: PendingConfirmation): InterpretedVoiceCommand | null {
   if (!p?.draft) return null;
   const draft = p.draft as unknown as InterpretedVoiceCommand;
+  if (draft.intent === 'set_item_cost') return resumeItemCost(spokenText, draft);
   const refs = { ...(draft.resolvedRefs ?? {}) };
 
   if (p.kind === 'confirm_execution') {

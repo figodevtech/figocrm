@@ -7,9 +7,17 @@ import type { PaymentMethod } from '@/types/domain';
 import { validateDealCommandPayload } from '@/lib/ai/schemas/deal-command.schema';
 import { toCents } from '@/lib/finance/money';
 
+/** Mercadoria vendida que não está no estoque (nasce vendida; sem custo → lucro pendente). */
+export interface UnstockedItem {
+  name: string;
+  acquisitionCost?: number;
+}
+
 export interface CreateSaleInput {
   customerId: string;
-  itemId: string;
+  /** Item do estoque; ou use newItem para vender algo que não foi cadastrado. */
+  itemId?: string;
+  newItem?: UnstockedItem;
   totalValue: number;
   paymentMethod?: PaymentMethod;
   /** Valor recebido no ato (entrada ou pagamento à vista). */
@@ -36,7 +44,9 @@ export interface CreateSaleInput {
 
 export interface CreateTradeInput {
   customerId: string;
-  itemOutId: string;
+  itemOutId?: string;
+  /** Mercadoria entregue que não estava no estoque. */
+  itemOutNew?: UnstockedItem;
   itemIn: {
     name: string;
     evaluatedValue: number;
@@ -87,12 +97,21 @@ function validated(cmd: DealCommand): ManualBuildResult {
   return res.success && res.data ? { ok: true, command: res.data as DealCommand } : { ok: false, error: `Dados inválidos: ${res.error}` };
 }
 
+function itemOutMovement(itemId: string | undefined, newItem: UnstockedItem | undefined, value: number): DealCommand['itemsOut'][number] | null {
+  if (itemId) return { itemId, negotiatedValue: value, direction: 'OUT' };
+  const name = newItem?.name?.trim();
+  if (!name) return null;
+  const cost = newItem?.acquisitionCost;
+  return { description: name, newItem: true, negotiatedValue: value, acquisitionValue: cost !== undefined && cost >= 0 ? cost : undefined, direction: 'OUT' };
+}
+
 export function buildManualSaleCommand(input: CreateSaleInput): ManualBuildResult {
-  if (!input.customerId || !input.itemId) return { ok: false, error: 'Informe o cliente e a mercadoria.' };
+  const out = itemOutMovement(input.itemId, input.newItem, input.totalValue);
+  if (!input.customerId || !out) return { ok: false, error: 'Informe o cliente e a mercadoria.' };
   if (!(input.totalValue > 0)) return { ok: false, error: 'Informe o valor da venda.' };
 
   const cmd = empty(input.customerId, input.notes, input.idempotencyKey);
-  cmd.itemsOut.push({ itemId: input.itemId, negotiatedValue: input.totalValue, direction: 'OUT' });
+  cmd.itemsOut.push(out);
   if (input.itemIn) {
     if (!input.itemIn.name?.trim() || !(input.itemIn.evaluatedValue > 0)) return { ok: false, error: 'Informe a mercadoria recebida e o valor dela.' };
     cmd.itemsIn.push({ description: input.itemIn.name.trim(), negotiatedValue: input.itemIn.evaluatedValue, direction: 'IN' });
@@ -121,7 +140,7 @@ export function buildManualSaleCommand(input: CreateSaleInput): ManualBuildResul
 }
 
 export function buildManualTradeCommand(input: CreateTradeInput): ManualBuildResult {
-  if (!input.customerId || !input.itemOutId || !input.itemIn?.name) return { ok: false, error: 'Informe o cliente e as mercadorias da troca.' };
+  if (!input.customerId || (!input.itemOutId && !input.itemOutNew?.name?.trim()) || !input.itemIn?.name) return { ok: false, error: 'Informe o cliente e as mercadorias da troca.' };
   if (!(input.itemIn.evaluatedValue >= 0) || !(input.tradeBalance >= 0)) return { ok: false, error: 'Valores da troca inválidos.' };
 
   const balance = input.direction === 'even' ? 0 : input.tradeBalance;
@@ -130,7 +149,7 @@ export function buildManualTradeCommand(input: CreateTradeInput): ManualBuildRes
   if (outValue < 0) return { ok: false, error: 'A volta paga é maior que o valor do item recebido.' };
 
   const cmd = empty(input.customerId, input.notes, input.idempotencyKey);
-  cmd.itemsOut.push({ itemId: input.itemOutId, negotiatedValue: outValue, direction: 'OUT' });
+  cmd.itemsOut.push(itemOutMovement(input.itemOutId, input.itemOutNew, outValue)!);
   cmd.itemsIn.push({ description: input.itemIn.name, negotiatedValue: input.itemIn.evaluatedValue, direction: 'IN' });
 
   const immediate = Math.min(input.immediateCash ?? 0, balance);

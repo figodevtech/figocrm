@@ -3,7 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { Package, Pencil } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
-import { getItemDetail } from '@/lib/domain/app-data';
+import { getItemDetail, listAvailableItemOptions } from '@/lib/domain/app-data';
+import { CostPendingPanel, ProvisionalItemPanel } from '@/components/app/provisional-panels';
 import { formatBRL, formatDate } from '@/lib/format';
 import { ItemCostsPanel, ItemStatusToggle } from '@/components/app/item-panel';
 import { Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
@@ -20,6 +21,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
   const detail = await getItemDetail(supabase, user.id, id);
   if (!detail) notFound();
   const { item } = detail;
+  const stock = item.isProvisional ? await listAvailableItemOptions(supabase, user.id) : [];
   const inStock = item.status === 'disponivel' || item.status === 'reservado';
   const attrs = [
     ['Marca', item.brand],
@@ -37,7 +39,13 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
       <PageHeader
         title={item.name}
         back="/app/estoque"
-        subtitle={<Badge tone={statusTone[item.statusKey]}>{item.statusLabel}</Badge>}
+        subtitle={
+          <span className="flex flex-wrap gap-2">
+            <Badge tone={statusTone[item.statusKey]}>{item.statusLabel}</Badge>
+            {item.isProvisional ? <Badge tone="amber">Avulsa</Badge> : null}
+            {item.costPending ? <Badge tone="rose">Sem custo</Badge> : null}
+          </span>
+        }
         action={
           inStock ? (
             <Link href={`/app/estoque/${item.id}/editar`} aria-label="Editar mercadoria" className="inline-flex h-11 w-11 items-center justify-center rounded-full text-slate-300 hover:bg-white/5">
@@ -46,6 +54,9 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           ) : null
         }
       />
+
+      {item.costPending ? <CostPendingPanel itemId={item.id} name={item.name} /> : null}
+      {item.isProvisional ? <ProvisionalItemPanel item={{ id: item.id, name: item.name }} stock={stock} /> : null}
 
       <div className="flex gap-4">
         {item.photoUrl ? (
@@ -57,7 +68,7 @@ export default async function ItemPage({ params }: { params: Promise<{ id: strin
           </span>
         )}
         <div className="min-w-0 flex-1 space-y-1">
-          <Row label="Custo total" value={formatBRL(item.totalCost)} strong tone="sky" />
+          <Row label="Custo total" value={item.costPending ? 'Não informado' : formatBRL(item.totalCost)} strong tone="sky" />
           <Row label="Venda sugerida" value={item.targetSalePrice !== null ? formatBRL(item.targetSalePrice) : '—'} tone="emerald" />
           {item.targetSalePrice !== null ? <Row label="Margem" value={formatBRL(item.targetSalePrice - item.totalCost)} /> : null}
         </div>

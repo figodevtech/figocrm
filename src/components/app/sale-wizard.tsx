@@ -76,7 +76,8 @@ export function SaleWizard({
     setError(null);
     const res = await createSaleAction({
       customerId: customer.id,
-      itemId: item.id,
+      itemId: item.isNew ? undefined : item.id,
+      newItem: item.isNew ? { name: item.name, acquisitionCost: item.knownCost } : undefined,
       totalValue: totalCents / 100,
       paymentMethod: method,
       cashInflow: cashCents > 0 ? cashCents / 100 : undefined,
@@ -99,6 +100,7 @@ export function SaleWizard({
     if (cashCents > 0) lines.push(`Recebido agora: ${formatBRL(cashCents / 100)}.`);
     if (itemInCents > 0) lines.push(`${itemInName} entrou no estoque por ${formatBRL(itemInCents / 100)}.`);
     if (useDebt) lines.push(`A receber: ${describeSchedule(planCount!, toCents(planValue!), plan.firstDueDate)}.`);
+    if (item.isNew && item.knownCost === undefined) lines.push('Custo não informado: o lucro entra quando você informar na tela da mercadoria.');
     return (
       <DoneScreen
         title="Venda registrada"
@@ -125,6 +127,7 @@ export function SaleWizard({
       <WizardStep step={2} total={TOTAL_STEPS} title="O que você vendeu?" onBack={() => setStep(1)} onNext={() => setStep(3)} nextDisabled={!item}>
         <ItemPicker
           items={items}
+          allowUnstocked
           selectedId={item?.id ?? null}
           onSelect={(i) => {
             setItem(i);
@@ -142,8 +145,14 @@ export function SaleWizard({
         <MoneyField label={`Por quanto vendeu ${item?.name ?? ''}?`} required value={total} onChange={setTotal} autoFocus />
         {item ? (
           <p className="tabular text-base text-slate-400">
-            Custo da mercadoria: {formatBRL(item.totalCost)}
-            {totalCents > 0 ? ` · lucro previsto ${formatBRL(totalCents / 100 - item.totalCost)}` : ''}
+            {item.isNew && item.knownCost === undefined ? (
+              'Custo não informado: o lucro fica pendente.'
+            ) : (
+              <>
+                Custo da mercadoria: {formatBRL(item.totalCost)}
+                {totalCents > 0 ? ` · lucro previsto ${formatBRL(totalCents / 100 - item.totalCost)}` : ''}
+              </>
+            )}
           </p>
         ) : null}
       </WizardStep>

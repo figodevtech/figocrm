@@ -4,7 +4,7 @@ import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ArrowLeftRight, Banknote, HandCoins, Landmark, Package, PackagePlus, Receipt, ShoppingBag, UserPlus, Users } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
-import { getDashboard, getProfile } from '@/lib/domain/app-data';
+import { getDashboard, getProfile, getReviewCounts } from '@/lib/domain/app-data';
 import { firstName, formatBRL } from '@/lib/format';
 import { HomeVoiceButton } from '@/components/app/home-voice';
 import { Stat } from '@/components/ui/layout';
@@ -13,7 +13,8 @@ export const metadata: Metadata = { title: 'Início' };
 
 export default async function HomePage() {
   const { supabase, user } = await requireSession();
-  const [profile, indicators] = await Promise.all([getProfile(supabase, user.id, user.email ?? ''), getDashboard(supabase, user.id)]);
+  const [profile, indicators, review] = await Promise.all([getProfile(supabase, user.id, user.email ?? ''), getDashboard(supabase, user.id), getReviewCounts(supabase, user.id)]);
+  const reviewItems = review.provisionalItems + review.costPending;
   const name = firstName(profile.fullName);
   const money = (v: number | undefined) => (indicators ? formatBRL(v ?? 0) : '—');
 
@@ -36,6 +37,25 @@ export default async function HomePage() {
         </Link>
       </section>
       {!indicators ? <p className="mt-2 text-sm text-slate-500">Não consegui carregar o resumo agora.</p> : null}
+
+      {review.provisionalCustomers > 0 || reviewItems > 0 ? (
+        <section aria-label="Para completar" className="mt-4 rounded-2xl border border-amber-400/30 bg-amber-500/10 p-4">
+          <p className="text-base font-semibold text-amber-100">Para completar depois</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {review.provisionalCustomers > 0 ? (
+              <Link href="/app/clientes?filtro=avulsos" className="inline-flex min-h-11 items-center rounded-xl bg-white/6 px-3 text-base text-white hover:bg-white/10">
+                {review.provisionalCustomers} {review.provisionalCustomers === 1 ? 'cliente avulso' : 'clientes avulsos'}
+              </Link>
+            ) : null}
+            {reviewItems > 0 ? (
+              <Link href="/app/estoque?filtro=revisar" className="inline-flex min-h-11 items-center rounded-xl bg-white/6 px-3 text-base text-white hover:bg-white/10">
+                {review.costPending > 0 ? `${review.costPending} ${review.costPending === 1 ? 'venda sem custo' : 'vendas sem custo'}` : `${review.provisionalItems} ${review.provisionalItems === 1 ? 'mercadoria avulsa' : 'mercadorias avulsas'}`}
+              </Link>
+            ) : null}
+          </div>
+          {review.costPending > 0 ? <p className="mt-2 text-sm text-amber-100/80">O lucro dessas vendas entra no “Ganhei este mês” quando você informar o custo.</p> : null}
+        </section>
+      ) : null}
 
       <section aria-label="Falar" className="mt-6 rounded-3xl border border-emerald-500/20 bg-emerald-500/4 p-5">
         <HomeVoiceButton />

@@ -9,6 +9,9 @@ import { calculateCMV } from '@/lib/financial_engine';
 import { actionSession, NOT_AUTHENTICATED } from '@/lib/auth/session';
 import {
   addItemCost,
+  confirmProvisionalItem,
+  mergeProvisionalItem,
+  resolveItemCost,
   createItem,
   EditableItemStatus,
   ItemCostInput,
@@ -204,8 +207,38 @@ export async function addItemCostFormAction(itemId: string, cost: ItemCostInput)
   return addItemCost(session.supabase, session.user.id, itemId, cost);
 }
 
+/** "Quanto você pagou nele?" para mercadoria vendida sem custo: recalcula o lucro da venda. */
+export async function resolveItemCostAction(itemId: string, acquisitionCost: number): Promise<{ ok: true; profit?: number } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  const res = await resolveItemCost(session.supabase, session.user.id, itemId, acquisitionCost, 'manual');
+  return res.ok ? { ok: true, profit: res.deals[0]?.recognizedProfit } : res;
+}
+
 export async function removeItemCostAction(costId: string): Promise<Result> {
   const session = await actionSession();
   if (!session) return { ok: false, error: NOT_AUTHENTICATED };
   return removeItemCost(session.supabase, session.user.id, costId);
+}
+
+/** Mercadoria avulsa → mercadoria do estoque (o lucro passa a usar o custo dela). */
+export async function linkProvisionalItemAction(sourceId: string, targetId: string): Promise<{ ok: true; targetId: string } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return mergeProvisionalItem(session.supabase, sourceId, targetId);
+}
+
+/** Mercadoria avulsa vira cadastro: corrige o nome e, se faltava, informa o custo. */
+export async function confirmProvisionalItemAction(
+  itemId: string,
+  name: string,
+  acquisitionCost?: number
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  if (acquisitionCost !== undefined) {
+    const cost = await resolveItemCost(session.supabase, session.user.id, itemId, acquisitionCost, 'manual');
+    if (!cost.ok) return cost;
+  }
+  return confirmProvisionalItem(session.supabase, session.user.id, itemId, name);
 }

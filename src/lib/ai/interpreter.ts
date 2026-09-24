@@ -24,6 +24,7 @@ export type InterpretedIntent =
   | 'update_due_date'
   | 'renegotiate_debt'
   | 'reverse_operation'
+  | 'set_item_cost'
   | 'query_information'
   | 'clarify_ambiguity'
   | 'unrecognized_command';
@@ -98,6 +99,8 @@ export interface InterpretedVoiceCommand {
     itemOutIds?: Record<number, string>;
     receivableId?: string;
     settlementId?: string;
+    /** Mercadoria vendida sem custo, esperando "quanto você pagou nela?". */
+    itemId?: string;
   };
   interpretation?: InterpretationMeta;
   /** Veio do fallback por regras: só executa depois de o usuário confirmar a leitura de volta. */
@@ -120,6 +123,9 @@ export function interpretVoiceCommand(
   // 1. Resolução Anafórica baseada no contexto ("ele", "dela", "aquela moto")
   let contextualCustomer = context?.lastCustomer?.name;
   let contextualItem = context?.lastItem?.name;
+  // Em criação (venda/troca/empréstimo), o cliente do contexto só vale se a fala usou pronome ("vendi pra ele").
+  // Sem pronome e sem nome, o negócio é de outra pessoa: vira cliente avulso, nunca o último cliente citado.
+  const creationCustomer = /\b(ele|ela|dele|dela)\b/i.test(norm.normalizedText) ? context?.lastCustomer?.name : undefined;
 
   if (context) {
     const anaphora = resolvePronounsAndAnaphora(text, context);
@@ -213,7 +219,7 @@ export function interpretVoiceCommand(
 
   // 3b2. Empréstimo de dinheiro ("emprestei 2 mil pro Carlos em 5 de 500")
   if (/\b(emprestei|empresto|vou emprestar|fiz um empr[eé]stimo)\b/.test(t)) {
-    return interpretLoan(t, spokenText, text, contextualCustomer);
+    return interpretLoan(t, spokenText, text, creationCustomer);
   }
 
   // 3c. Renegociação com novo parcelamento ("junta as duas atrasadas e faz 4 de 500 todo dia 10")
@@ -307,7 +313,7 @@ export function interpretVoiceCommand(
     (normalizedTextWithNumbers.includes('passei') && (normalizedTextWithNumbers.includes('peguei') || normalizedTextWithNumbers.includes('na '))) ||
     (normalizedTextWithNumbers.includes('peguei') && normalizedTextWithNumbers.includes('dei'))
   ) {
-    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
+    const cust = withSurname(extractEntityName(t), spokenText) || creationCustomer;
     const structured = extractTradeItemsByStructure(t);
     const items = structured ? [structured.itemOut, structured.itemIn] : extractAllItems(t, cust);
     const itemOut = items[0] || contextualItem;
@@ -380,8 +386,8 @@ export function interpretVoiceCommand(
     normalizedTextWithNumbers.includes('fechei') ||
     (normalizedTextWithNumbers.includes('passei') && !normalizedTextWithNumbers.includes('peguei'))
   ) {
-    const cust = withSurname(extractEntityName(t), spokenText) || contextualCustomer;
-    const item = extractItemReference(t, cust) || contextualItem;
+    const cust = withSurname(extractEntityName(t), spokenText) || creationCustomer;
+    const item = extractItemReference(t, cust) || extractSoldItem(t, spokenText) || contextualItem;
     const values = extractSaleNumbers(normalizedTextWithNumbers);
 
     const isParcelada =
@@ -711,6 +717,20 @@ function extractItemReference(text: string, customer?: string): string | undefin
   return undefined;
 }
 
+/**
+ * Mercadoria fora da lista conhecida: "vendi (o|um) <mercadoria> pro/por ...".
+ * Preserva a grafia falada ("iPhone 15"). Sem nada entre o verbo e "pro/por", devolve undefined.
+ */
+function extractSoldItem(text: string, spokenText: string): string | undefined {
+  const m = text.match(/\b(?:vendi|passei)\s+(?:(?:o|a|os|as|um|uma|meu|minha)\s+)?(.{2,40}?)\s+(?:pro|pra|para|por|no|na)\b/);
+  if (!m) return undefined;
+  const raw = m[1].trim();
+  if (/^(pro|pra|para|por|no|na|ele|ela)\b/.test(raw) || /\d{3,}/.test(raw)) return undefined;
+  const at = spokenText.toLowerCase().indexOf(raw);
+  if (at >= 0) return spokenText.slice(at, at + raw.length);
+  return raw.charAt(0).toUpperCase() + raw.slice(1);
+}
+
 function extractAllItems(text: string, customer?: string): string[] {
   const found: Array<{ item: string; index: number }> = [];
   const items = [
@@ -793,10 +813,12 @@ function extractSaleNumbers(text: string): {
   let dueDay: number | undefined = undefined;
 
   // Valor total (ex: "por 900", "por 1000", "por 26", "por vinte e seis")
-  const totalMatch = text.match(/por\s+(\d+)\s*(mil)?/i);
+  const totalMatch = text.match(/por\s+(\d+)\s*(mil|reais|real|contos?)?/i);
   if (totalMatch) {
     const rawVal = parseInt(totalMatch[1], 10);
-    totalValue = totalMatch[2]?.toLowerCase() === 'mil' || rawVal < 100 ? (rawVal < 100 ? rawVal * 1000 : rawVal) : rawVal;
+    const unit = totalMatch[2]?.toLowerCase();
+    // "por 80 reais" é literal; "por 26" (sem unidade) em negócio de valor alto é milhar
+    totalValue = unit && unit !== 'mil' ? rawVal : unit === 'mil' || rawVal < 100 ? (rawVal < 100 ? rawVal * 1000 : rawVal) : rawVal;
   } else {
     totalValue = extractFirstNumber(text) || undefined;
   }

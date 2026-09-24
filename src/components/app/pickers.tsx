@@ -178,11 +178,14 @@ export function ItemPicker({
   selectedId,
   onSelect,
   allowCreate = true,
+  allowUnstocked = false,
 }: {
   items: ItemOption[];
   selectedId: string | null;
   onSelect: (item: ItemOption) => void;
   allowCreate?: boolean;
+  /** Venda/troca: permite descrever uma mercadoria que não está no estoque (não cadastra antes). */
+  allowUnstocked?: boolean;
 }) {
   const [query, setQuery] = useState('');
   const [creating, setCreating] = useState(false);
@@ -210,7 +213,7 @@ export function ItemPicker({
                   {i.detail ? <span className="block truncate text-sm text-slate-400">{i.detail}</span> : null}
                 </span>
                 <span className="tabular shrink-0 text-right text-sm text-slate-400">
-                  custo {formatBRL(i.totalCost)}
+                  {i.isNew && i.knownCost === undefined ? 'custo depois' : `custo ${formatBRL(i.totalCost)}`}
                   {i.targetSalePrice ? <span className="block text-emerald-300">venda {formatBRL(i.targetSalePrice)}</span> : null}
                 </span>
                 {selectedId === i.id ? <Check className="h-5 w-5 shrink-0 text-emerald-300" aria-hidden /> : null}
@@ -225,6 +228,7 @@ export function ItemPicker({
       {allowCreate ? (
         creating ? (
           <QuickItemForm
+            unstocked={allowUnstocked}
             initialName={query}
             onCancel={() => setCreating(false)}
             onCreated={(item) => {
@@ -236,7 +240,7 @@ export function ItemPicker({
           />
         ) : (
           <Button variant="secondary" className="w-full" onClick={() => setCreating(true)}>
-            <Plus className="h-5 w-5" aria-hidden /> Cadastrar mercadoria
+            <Plus className="h-5 w-5" aria-hidden /> {allowUnstocked ? 'Não está no estoque' : 'Cadastrar mercadoria'}
           </Button>
         )
       ) : null}
@@ -244,13 +248,23 @@ export function ItemPicker({
   );
 }
 
-function QuickItemForm({ initialName, onCreated, onCancel }: { initialName: string; onCreated: (i: ItemOption) => void; onCancel: () => void }) {
+function QuickItemForm({ initialName, onCreated, onCancel, unstocked }: { initialName: string; onCreated: (i: ItemOption) => void; onCancel: () => void; unstocked?: boolean }) {
   const [name, setName] = useState(initialName);
   const [cost, setCost] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
   const save = async () => {
+    // Fora do estoque: nada é gravado agora; a mercadoria nasce junto com o negócio (custo opcional)
+    if (unstocked) {
+      const known = cost.trim() ? parseMoneyInput(cost) : undefined;
+      if (known === null) {
+        setError('Valor inválido.');
+        return;
+      }
+      onCreated({ id: `novo-${Date.now()}`, name: name.trim(), detail: 'Fora do estoque', totalCost: known ?? 0, targetSalePrice: null, isNew: true, knownCost: known });
+      return;
+    }
     const acquisitionCost = parseMoneyInput(cost);
     if (acquisitionCost === null) {
       setError('Informe quanto você pagou na mercadoria.');
@@ -269,9 +283,15 @@ function QuickItemForm({ initialName, onCreated, onCancel }: { initialName: stri
 
   return (
     <div className="space-y-3 rounded-2xl border border-white/10 bg-white/3 p-4">
-      <p className="text-base font-semibold text-white">Cadastrar mercadoria</p>
+      <p className="text-base font-semibold text-white">{unstocked ? 'Mercadoria fora do estoque' : 'Cadastrar mercadoria'}</p>
       <TextField label="Nome / descrição" required value={name} onChange={(e) => setName(e.target.value)} autoFocus autoComplete="off" placeholder="iPhone 13 128GB Preto" />
-      <MoneyField label="Valor de compra" required value={cost} onChange={setCost} />
+      <MoneyField
+        label={unstocked ? 'Quanto você pagou nela' : 'Valor de compra'}
+        required={!unstocked}
+        value={cost}
+        onChange={setCost}
+        hint={unstocked ? 'Se não souber agora, deixe vazio: o lucro entra quando você informar' : undefined}
+      />
       {error ? <Alert>{error}</Alert> : null}
       <div className="grid grid-cols-2 gap-2">
         <Button variant="ghost" onClick={onCancel}>

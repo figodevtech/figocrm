@@ -59,7 +59,9 @@ VALORES
 
 CLIENTE
 - "pro"/"pra" antes de um nome é preposição: "Vendi o iPhone 13 pro Pedro" → item "iPhone 13", cliente "Pedro".
-- customerName = nome como falado. Pronome ("ele", "dele") → use o cliente do CONTEXTO se houver; senão null + missingInformation customer_reference.
+- customerName = nome como falado. Pronome ("ele", "dele") → use o cliente do CONTEXTO se houver; senão null.
+  Em venda, troca, compra ou empréstimo, cliente ou mercadoria não ditos ficam null SEM missingInformation: o sistema registra como avulso.
+  Em pagamento/abatimento sem cliente identificável → null + missingInformation customer_reference.
 - Nunca troque um nome dito por outro do contexto.
 
 EXEMPLO (troca com volta parcelada)
@@ -75,7 +77,10 @@ export function buildInterpreterUserPrompt(spokenText: string, context?: Convers
   if (context?.lastItem) lines.push(`Mercadoria em contexto: ${context.lastItem.name}`);
   if (context?.lastDealId) lines.push('Há uma negociação recente em contexto.');
   if (context?.screenLabel) lines.push(`O usuário está na tela: ${context.screenLabel}. "Ele/ela/dele" se refere a essa pessoa.`);
-  if (context?.pendingConfirmation?.kind === 'missing_info') {
+  const pendingIntent = (context?.pendingConfirmation?.draft as { intent?: string } | undefined)?.intent;
+  if (pendingIntent === 'set_item_cost') {
+    lines.push(`Pergunta que o sistema acabou de fazer: "${context!.pendingConfirmation!.promptAsked}" (a venda JÁ foi registrada; não registre de novo).`);
+  } else if (context?.pendingConfirmation?.kind === 'missing_info') {
     lines.push(`Pergunta que o sistema acabou de fazer: "${context.pendingConfirmation.promptAsked}"`);
     lines.push(`Comando anterior incompleto: "${context.pendingConfirmation.originalTranscript}"`);
     lines.push('Se a fala responder a pergunta, devolva o comando anterior COMPLETO com a resposta incorporada.');

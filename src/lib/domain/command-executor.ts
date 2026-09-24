@@ -20,6 +20,9 @@ import {
   ResolvedItem,
 } from '@/lib/domain/entity-resolver';
 
+/** Nome do cliente avulso quando a fala não disse com quem foi o negócio. */
+export const UNNAMED_CUSTOMER = 'Cliente avulso';
+
 export interface PendingEntityChoice {
   field: 'customer' | 'item';
   /** Índice do item em itemsOut quando field = 'item'. */
@@ -43,6 +46,10 @@ export interface CommandExecutionResult {
     itemsOut?: Array<{ id: string; name: string }>;
     receivableIds?: string[];
   };
+  /** Mercadorias vendidas sem estar no estoque e sem custo informado (lucro pendente). */
+  pendingCostItems?: Array<{ id: string; name: string; negotiatedValue: number }>;
+  /** Cadastros criados como avulsos neste negócio (para a resposta e para vincular depois). */
+  provisional?: { customer?: { id: string; name: string }; items: Array<{ id: string; name: string }> };
 }
 
 export interface ExecutionDeps {
@@ -118,22 +125,16 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
     }
   }
 
-  // 6. Cliente: obrigatório; homônimos geram pergunta; nome novo gera cadastro
-  if (!cmd.counterparty?.id && !cmd.counterparty?.name) {
-    return {
-      success: false,
-      requiresConfirmation: true,
-      confirmationPrompt: 'Com quem você fechou esse negócio?',
-      humanSummary: 'Com quem você fechou esse negócio?',
-      missingInformation: ['customer_reference'],
-    };
-  }
-
-  const customerRes = await resolveCustomerReference(supabase, userId, {
-    id: cmd.counterparty.id,
-    name: cmd.counterparty.name,
-    context: context?.lastCustomer,
-  });
+  // 6. Cliente: homônimos geram pergunta; nome não encontrado (ou não dito) vira CLIENTE AVULSO,
+  //    que o usuário vincula a um cadastro ou confirma depois. O negócio nunca fica refém do cadastro.
+  const counterparty = cmd.counterparty?.id || cmd.counterparty?.name?.trim() ? cmd.counterparty! : { name: UNNAMED_CUSTOMER };
+  const customerRes = counterparty.name === UNNAMED_CUSTOMER && !counterparty.id
+    ? { status: 'not_found' as const }
+    : await resolveCustomerReference(supabase, userId, {
+        id: counterparty.id,
+        name: counterparty.name,
+        context: context?.lastCustomer,
+      });
 
   let customer: { id: string; name: string } | undefined;
   if (customerRes.status === 'resolved' && customerRes.entity) {
@@ -147,17 +148,26 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
       pendingChoice: { field: 'customer', candidates: customerRes.candidates! },
       errorType: 'resolution',
     };
-  } else if (cmd.counterparty.id) {
+  } else if (counterparty.id) {
     return { success: false, humanSummary: 'Não encontrei esse cliente no seu cadastro.', errorType: 'resolution' };
   }
 
-  // 7. Itens de saída: somente do estoque disponível, sem escolha silenciosa
+  // 7. Itens de saída: do estoque (disponível ou reservado), sem escolha silenciosa entre parecidos.
+  //    Não achou no estoque? A venda não fica refém do cadastro: a mercadoria nasce vendida no negócio.
   const resolvedItems: ResolvedItem[] = [];
+  const newItems: Array<{ index: number; name: string; acquisitionCost?: number }> = [];
   for (const [index, itOut] of cmd.itemsOut.entries()) {
+    const spokenName = (itOut.reference || itOut.description || '').trim();
+    if (itOut.newItem && !itOut.itemId) {
+      if (!spokenName) return { success: false, humanSummary: 'Qual mercadoria você vendeu?', errorType: 'validation' };
+      newItems.push({ index, name: spokenName, acquisitionCost: itOut.acquisitionValue });
+      continue;
+    }
     const itemRes = await resolveItemReference(supabase, userId, {
       id: itOut.itemId,
       reference: itOut.reference || itOut.description,
       context: context?.lastItem,
+      statuses: ['disponivel', 'reservado'],
     });
 
     if (itemRes.status === 'ambiguous') {
@@ -169,6 +179,10 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
         pendingChoice: { field: 'item', index, candidates: itemRes.candidates! },
         errorType: 'resolution',
       };
+    }
+    if (itemRes.status === 'not_found' && !itOut.itemId && spokenName) {
+      newItems.push({ index, name: spokenName, acquisitionCost: itOut.acquisitionValue });
+      continue;
     }
     if (itemRes.status !== 'resolved' || !itemRes.entity) {
       return {
@@ -184,15 +198,17 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
     resolvedItems.push(itemRes.entity);
   }
 
-  // Cliente novo só é cadastrado depois que tudo foi resolvido (nenhum efeito colateral em caso de pergunta)
+  // Cliente avulso só é criado depois que tudo foi resolvido (nenhum efeito colateral em caso de pergunta)
+  let provisionalCustomer: { id: string; name: string } | undefined;
   if (!customer) {
     const { data: newCust, error: custError } = await supabase
       .from('customers')
       .insert({
         user_id: userId,
-        name: cmd.counterparty.name!.trim(),
-        phone: cmd.counterparty.phone || null,
-        document: cmd.counterparty.document || null,
+        name: counterparty.name!.trim().slice(0, 120),
+        phone: counterparty.phone || null,
+        document: counterparty.document || null,
+        is_provisional: true,
       })
       .select('id, name')
       .single();
@@ -200,23 +216,35 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
       return { success: false, humanSummary: 'Não consegui cadastrar o cliente.', error: custError?.message, errorType: 'database' };
     }
     customer = newCust;
+    provisionalCustomer = newCust;
   }
 
-  const itemsOutPayload: Array<{ item_id: string; evaluated_value: number }> = [];
+  const itemsOutPayload: Array<Record<string, unknown>> = [];
   const itemsOutCMVCentsList: number[] = [];
+  const resolvedIndexes = cmd.itemsOut.map((_, i) => i).filter((i) => !newItems.some((n) => n.index === i));
 
-  for (const [index, item] of resolvedItems.entries()) {
-    itemsOutPayload.push({ item_id: item.id, evaluated_value: cmd.itemsOut[index].negotiatedValue || 0 });
+  for (const [pos, item] of resolvedItems.entries()) {
+    itemsOutPayload.push({ item_id: item.id, evaluated_value: cmd.itemsOut[resolvedIndexes[pos]].negotiatedValue || 0 });
 
     const { data: costs } = await supabase.from('item_costs').select('amount').eq('item_id', item.id).eq('user_id', userId);
     const costsCents = (costs || []).map((c) => ({ amountCents: toCents(Number(c.amount)) }));
     itemsOutCMVCentsList.push(calculateItemCMVCents(toCents(item.acquisitionCost), costsCents));
   }
+  for (const n of newItems) {
+    itemsOutPayload.push({
+      name: n.name,
+      evaluated_value: cmd.itemsOut[n.index].negotiatedValue || 0,
+      acquisition_cost: n.acquisitionCost ?? null,
+      category: 'mercadoria',
+    });
+    if (n.acquisitionCost !== undefined) itemsOutCMVCentsList.push(toCents(n.acquisitionCost));
+  }
+  const profitPending = newItems.some((n) => n.acquisitionCost === undefined);
 
-  // 8. Valores do deal
+  // 8. Valores do deal (custo desconhecido → lucro pendente, nunca lucro inventado)
   const dealTotalCents = balanceResult.totalOutCents;
   const dealTotalCMVCents = calculateDealTotalCMVCents(itemsOutCMVCentsList);
-  const recognizedProfitCents = calculateProjectedProfitCents(dealTotalCents, dealTotalCMVCents);
+  const recognizedProfitCents = profitPending ? 0 : calculateProjectedProfitCents(dealTotalCents, dealTotalCMVCents);
 
   const dealType =
     cmd.itemsIn.length > 0 && cmd.itemsOut.length > 0
@@ -284,20 +312,30 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
     };
   }
 
-  const rpc = rpcResponse as { deal_id?: string; already_executed?: boolean; receivable_ids?: string[] };
+  const rpc = rpcResponse as { deal_id?: string; already_executed?: boolean; receivable_ids?: string[]; items_out_ids?: string[] };
   if (rpc.already_executed) {
     return { success: true, dealId: rpc.deal_id, alreadyExecuted: true, humanSummary: 'Esta operação já havia sido registrada.' };
   }
 
+  // A RPC devolve os IDs das mercadorias criadas na ordem de newItems
+  const created = newItems.map((n, i) => ({ id: rpc.items_out_ids?.[i] ?? '', name: n.name, known: n.acquisitionCost !== undefined, index: n.index }));
+  const soldNames = [...resolvedItems.map((i) => i.name), ...created.map((c) => c.name)];
   return {
     success: true,
     dealId: rpc.deal_id,
-    humanSummary: summarizeDeal(cmd, dealType, dealTotalCents, customer.name, resolvedItems),
+    humanSummary: summarizeDeal(cmd, dealType, dealTotalCents, customer.name, soldNames),
     resolved: {
       customer,
-      itemsOut: resolvedItems.map((i) => ({ id: i.id, name: i.name })),
+      itemsOut: [...resolvedItems.map((i) => ({ id: i.id, name: i.name })), ...created.map((c) => ({ id: c.id, name: c.name }))],
       receivableIds: rpc.receivable_ids || [],
     },
+    provisional: {
+      customer: provisionalCustomer,
+      items: created.filter((c) => c.id).map((c) => ({ id: c.id, name: c.name })),
+    },
+    pendingCostItems: created
+      .filter((c) => !c.known && c.id)
+      .map((c) => ({ id: c.id, name: c.name, negotiatedValue: cmd.itemsOut[c.index].negotiatedValue || 0 })),
   };
 }
 
@@ -312,19 +350,19 @@ function summarizeDeal(
   dealType: string,
   dealTotalCents: number,
   customerName: string,
-  items: ResolvedItem[]
+  itemNamesList: string[]
 ): string {
-  const itemNames = items.map((i) => i.name).join(' + ') || 'mercadoria';
+  const itemNames = itemNamesList.join(' + ') || 'mercadoria';
   const parts: string[] = [];
 
   if (dealType === 'troca') {
     const itIn = cmd.itemsIn.map((i) => i.description || i.reference).join(' + ');
-    parts.push(`Pronto. Troca com ${customerName}: saiu ${itemNames}, entrou ${itIn}.`);
+    parts.push(`Pronto. Troca${customerName === UNNAMED_CUSTOMER ? '' : ` com ${customerName}`}: saiu ${itemNames}, entrou ${itIn}.`);
   } else if (dealType === 'compra') {
     const itIn = cmd.itemsIn.map((i) => i.description || i.reference).join(' + ');
-    parts.push(`Pronto. Compra de ${itIn} com ${customerName} por ${brlShort(dealTotalCents)}.`);
+    parts.push(`Pronto. Compra de ${itIn}${customerName === UNNAMED_CUSTOMER ? '' : ` com ${customerName}`} por ${brlShort(dealTotalCents)}.`);
   } else {
-    parts.push(`Pronto. Venda de ${itemNames} pro ${customerName} por ${brlShort(dealTotalCents)}.`);
+    parts.push(`Pronto. Venda de ${itemNames}${customerName === UNNAMED_CUSTOMER ? '' : ` pro ${customerName}`} por ${brlShort(dealTotalCents)}.`);
   }
 
   const cashIn = cmd.cashIn.reduce((acc, c) => acc + toCents(c.amount), 0);

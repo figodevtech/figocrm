@@ -19,6 +19,9 @@ function ask(field: string, type: MissingInformationItem['type'], question: stri
   return { status: 'needs_input', question, field, missing: [{ type, description: question, promptQuestion: question }] };
 }
 
+/** Nome usado quando a fala não disse a mercadoria: a venda não fica refém do cadastro. */
+export const UNNAMED_ITEM = 'Mercadoria avulsa';
+
 export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
   const method = cmd.paymentMethod ?? 'other';
   const itemOutIds = cmd.resolvedRefs?.itemOutIds ?? {};
@@ -45,18 +48,21 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
   let receivable = cmd.receivable;
 
   if (cmd.intent === 'create_sale') {
-    if (!cmd.item) return ask('item', 'item_reference', 'Qual mercadoria você vendeu?');
-    if (!cmd.totalValue) return ask('totalValue', 'deal_total', `Por quanto você vendeu ${cmd.item}?`);
-    draft.itemsOut.push({ reference: cmd.item, itemId: itemOutIds[0], negotiatedValue: cmd.totalValue, direction: 'OUT' });
+    if (!cmd.totalValue) return ask('totalValue', 'deal_total', `Por quanto você vendeu ${cmd.item ?? 'a mercadoria'}?`);
+    draft.itemsOut.push(
+      cmd.item
+        ? { reference: cmd.item, itemId: itemOutIds[0], negotiatedValue: cmd.totalValue, direction: 'OUT' }
+        : { description: UNNAMED_ITEM, newItem: true, negotiatedValue: cmd.totalValue, direction: 'OUT' }
+    );
     if (receivable === undefined && cmd.installmentsCount && cmd.installmentAmount) {
       receivable = cmd.installmentsCount * cmd.installmentAmount;
     }
   } else if (cmd.intent === 'create_purchase') {
-    if (!cmd.item) return ask('item', 'item_reference', 'Qual mercadoria você comprou?');
-    if (!cmd.totalValue) return ask('totalValue', 'acquisition_cost', `Quanto você pagou em ${cmd.item}?`);
-    draft.itemsIn.push({ description: cmd.item, negotiatedValue: cmd.totalValue, direction: 'IN' });
+    if (!cmd.totalValue) return ask('totalValue', 'acquisition_cost', `Quanto você pagou em ${cmd.item ?? 'na mercadoria'}?`);
+    draft.itemsIn.push({ description: cmd.item ?? UNNAMED_ITEM, negotiatedValue: cmd.totalValue, direction: 'IN' });
   } else if (cmd.intent === 'create_trade') {
-    if (!cmd.itemOut || !cmd.itemIn) return ask('item', 'item_reference', 'Quais mercadorias entraram e saíram nessa troca?');
+    const itemOutName = cmd.itemOut;
+    const itemInName = cmd.itemIn ?? 'Mercadoria recebida (avulsa)';
 
     const balance = cmd.tradeBalance ?? 0;
     const dir = cmd.direction ?? (balance === 0 ? 'even' : undefined);
@@ -69,12 +75,16 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
     if (outValue === undefined && inValue !== undefined) outValue = inValue + signed;
     if (inValue === undefined && outValue !== undefined) inValue = outValue - signed;
     if (outValue === undefined || inValue === undefined) {
-      return ask('itemInValue', 'acquisition_cost', `Por quanto você avaliou ${cmd.itemIn} nessa troca?`);
+      return ask('itemInValue', 'acquisition_cost', `Por quanto você avaliou ${itemInName} nessa troca?`);
     }
     if (inValue < 0) return { status: 'invalid', errors: ['Valor do item recebido ficaria negativo.'] };
 
-    draft.itemsOut.push({ reference: cmd.itemOut, itemId: itemOutIds[0], negotiatedValue: outValue, direction: 'OUT' });
-    draft.itemsIn.push({ description: cmd.itemIn, negotiatedValue: inValue, direction: 'IN' });
+    draft.itemsOut.push(
+      itemOutName
+        ? { reference: itemOutName, itemId: itemOutIds[0], negotiatedValue: outValue, direction: 'OUT' }
+        : { description: 'Mercadoria entregue (avulsa)', newItem: true, negotiatedValue: outValue, direction: 'OUT' }
+    );
+    draft.itemsIn.push({ description: itemInName, negotiatedValue: inValue, direction: 'IN' });
 
     // Volta sem parcelamento e sem dinheiro explícito: foi paga no ato ("ele me voltou 1000")
     if (dir === 'inflow' && cashIn === undefined && receivable === undefined && balance > 0) {

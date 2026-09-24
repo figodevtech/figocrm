@@ -38,6 +38,8 @@ export interface ConversationContext {
   pendingConfirmation?: PendingConfirmation;
   /** Tela em que o usuário está ("cliente Carlos"); transitório, nunca persistido. */
   screenLabel?: string;
+  /** Cliente da tela atual (conferido contra o usuário); transitório. */
+  screenCustomerId?: string;
   expiresAt: number;
 }
 

@@ -12,7 +12,7 @@ export const metadata: Metadata = { title: 'Clientes' };
 export default async function CustomersPage({ searchParams }: { searchParams: Promise<{ filtro?: string }> }) {
   const { supabase, user } = await requireSession();
   const [{ filtro }, customers] = await Promise.all([searchParams, listCustomers(supabase, user.id)]);
-  const initialFilter = filtro === 'atrasados' ? 'atrasados' : filtro === 'devendo' ? 'devendo' : 'todos';
+  const initialFilter = filtro === 'atrasados' ? 'atrasados' : filtro === 'devendo' ? 'devendo' : filtro === 'avulsos' ? 'avulsos' : 'todos';
 
   return (
     <div>

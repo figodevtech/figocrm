@@ -201,12 +201,14 @@ export interface CustomerListItem {
   document: string | null;
   owes: number;
   overdue: number;
+  /** Criado pela voz sem cadastro: pode ser vinculado a outro cliente ou confirmado. */
+  isProvisional: boolean;
 }
 
 export async function listCustomers(supabase: SupabaseClient, userId: string): Promise<CustomerListItem[]> {
   const today = todayISO();
   const [customersRes, receivablesRes, overdueRes] = await Promise.all([
-    supabase.from('customers').select('id, name, phone, document').eq('user_id', userId).order('name').limit(LIST_LIMIT),
+    supabase.from('customers').select('id, name, phone, document, is_provisional').eq('user_id', userId).order('name').limit(LIST_LIMIT),
     supabase.from('receivables').select('customer_id, balance').eq('user_id', userId).in('status', ['pending', 'partially_paid']).gt('balance', 0),
     supabase
       .from('installments')
@@ -233,11 +235,12 @@ export async function listCustomers(supabase: SupabaseClient, userId: string): P
     document: c.document,
     owes: owes.get(c.id) ?? 0,
     overdue: overdue.get(c.id) ?? 0,
+    isProvisional: !!c.is_provisional,
   }));
 }
 
 export interface CustomerDetail {
-  customer: { id: string; name: string; phone: string | null; document: string | null; address: string | null; notes: string | null };
+  customer: { id: string; name: string; phone: string | null; document: string | null; address: string | null; notes: string | null; is_provisional: boolean };
   owes: number;
   overdue: number;
   next: { dueDate: string; amount: number } | null;
@@ -248,7 +251,7 @@ export interface CustomerDetail {
 export async function getCustomerDetail(supabase: SupabaseClient, userId: string, customerId: string): Promise<CustomerDetail | null> {
   const { data: customer } = await supabase
     .from('customers')
-    .select('id, name, phone, document, address, notes')
+    .select('id, name, phone, document, address, notes, is_provisional')
     .eq('id', customerId)
     .eq('user_id', userId)
     .maybeSingle();
@@ -335,6 +338,10 @@ export interface StockItemView {
   statusKey: ItemStatusKey;
   statusLabel: string;
   receivedInTrade: boolean;
+  /** Vendida sem estar no estoque: pode ser vinculada a uma mercadoria do estoque ou confirmada. */
+  isProvisional: boolean;
+  /** Custo não informado: o lucro da venda ainda não conta. */
+  costPending: boolean;
   photoPath: string | null;
   photoUrl: string | null;
   createdAt: string;
@@ -357,13 +364,15 @@ type ItemRow = {
   status: string;
   photo_url: string | null;
   created_at: string;
+  is_provisional: boolean;
+  cost_pending: boolean;
   item_costs?: Array<{ amount: number }>;
   deal_items?: Array<{ direction: string }>;
 };
 
 const ITEM_SELECT =
   'id, name, category, brand, model, identifier, imei, serial_number, plate, model_year, description, acquisition_cost, ' +
-  'target_sale_price, status, photo_url, created_at, item_costs(amount), deal_items(direction)';
+  'target_sale_price, status, photo_url, created_at, is_provisional, cost_pending, item_costs(amount), deal_items(direction)';
 
 async function signedPhotoUrls(supabase: SupabaseClient, paths: string[]): Promise<Map<string, string>> {
   const map = new Map<string, string>();
@@ -403,6 +412,8 @@ function toStockItem(r: ItemRow, photos: Map<string, string>): StockItemView {
     statusKey: status.key,
     statusLabel: status.label,
     receivedInTrade,
+    isProvisional: !!r.is_provisional,
+    costPending: !!r.cost_pending,
     photoPath: r.photo_url,
     photoUrl: r.photo_url ? photos.get(r.photo_url) ?? null : null,
     createdAt: r.created_at,
@@ -621,11 +632,12 @@ export interface CustomerOption {
   name: string;
   phone: string | null;
   owes: number;
+  isProvisional?: boolean;
 }
 
 export async function listCustomerOptions(supabase: SupabaseClient, userId: string): Promise<CustomerOption[]> {
   const list = await listCustomers(supabase, userId);
-  return list.map((c) => ({ id: c.id, name: c.name, phone: c.phone, owes: c.owes }));
+  return list.map((c) => ({ id: c.id, name: c.name, phone: c.phone, owes: c.owes, isProvisional: c.isProvisional }));
 }
 
 export interface ItemOption {
@@ -634,6 +646,30 @@ export interface ItemOption {
   detail: string;
   totalCost: number;
   targetSalePrice: number | null;
+  /** Mercadoria que não está no estoque (descrita na hora da venda/troca). */
+  isNew?: boolean;
+  /** Custo informado para a mercadoria nova; ausente = custo pendente. */
+  knownCost?: number;
+}
+
+export interface ReviewCounts {
+  provisionalCustomers: number;
+  provisionalItems: number;
+  costPending: number;
+}
+
+/** O que a voz registrou como avulso ou sem custo e o usuário ainda pode completar. */
+export async function getReviewCounts(supabase: SupabaseClient, userId: string): Promise<ReviewCounts> {
+  const count = async (table: 'customers' | 'items', column: 'is_provisional' | 'cost_pending') => {
+    const { count: n } = await supabase.from(table).select('id', { count: 'exact', head: true }).eq('user_id', userId).eq(column, true);
+    return n ?? 0;
+  };
+  const [provisionalCustomers, provisionalItems, costPending] = await Promise.all([
+    count('customers', 'is_provisional'),
+    count('items', 'is_provisional'),
+    count('items', 'cost_pending'),
+  ]);
+  return { provisionalCustomers, provisionalItems, costPending };
 }
 
 export async function listAvailableItemOptions(supabase: SupabaseClient, userId: string): Promise<ItemOption[]> {

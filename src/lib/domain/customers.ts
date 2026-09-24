@@ -58,7 +58,7 @@ export async function createCustomer(
   supabase: SupabaseClient,
   userId: string,
   input: CustomerInput,
-  options: { allowDuplicate?: boolean } = {}
+  options: { allowDuplicate?: boolean; provisional?: boolean } = {}
 ): Promise<CreateCustomerResult> {
   const valid = validateCustomerInput(input);
   if (!valid.ok) return valid;
@@ -74,7 +74,7 @@ export async function createCustomer(
 
   const { data, error } = await supabase
     .from('customers')
-    .insert({ user_id: userId, ...valid.data })
+    .insert({ user_id: userId, ...valid.data, is_provisional: !!options.provisional })
     .select('id, name, phone, document, address, notes')
     .single();
   if (error || !data) return { ok: false, error: 'Não consegui salvar o cliente. Tente de novo.' };
@@ -94,7 +94,8 @@ export async function updateCustomer(
   supabase: SupabaseClient,
   userId: string,
   customerId: string,
-  input: CustomerInput
+  input: CustomerInput,
+  options: { confirmProvisional?: boolean } = {}
 ): Promise<{ ok: true; customer: CustomerRecord } | { ok: false; error: string }> {
   const valid = validateCustomerInput(input);
   if (!valid.ok) return valid;
@@ -112,7 +113,7 @@ export async function updateCustomer(
 
   const { data, error } = await supabase
     .from('customers')
-    .update(valid.data)
+    .update(options.confirmProvisional ? { ...valid.data, is_provisional: false } : valid.data)
     .eq('id', customerId)
     .eq('user_id', userId)
     .select('id, name, phone, document, address, notes')
@@ -123,10 +124,30 @@ export async function updateCustomer(
     user_id: userId,
     entity_name: 'customers',
     entity_id: customerId,
-    action_type: 'UPDATE_CUSTOMER',
+    action_type: options.confirmProvisional ? 'CONFIRM_PROVISIONAL_CUSTOMER' : 'UPDATE_CUSTOMER',
     source: 'MANUAL_WEB',
     payload_before: before,
     payload_after: data,
   });
   return { ok: true, customer: data as CustomerRecord };
+}
+
+/**
+ * Vincula um cliente AVULSO (criado pela voz) a um cadastro existente: negócios, dívidas, empréstimos e
+ * pagamentos passam para o cadastro e o avulso some. Valores não mudam (RPC merge_provisional_customer).
+ */
+export async function mergeProvisionalCustomer(
+  supabase: SupabaseClient,
+  sourceId: string,
+  targetId: string
+): Promise<{ ok: true; targetId: string } | { ok: false; error: string }> {
+  if (!sourceId || !targetId || sourceId === targetId) return { ok: false, error: 'Escolha outro cliente para vincular.' };
+  const denied = await writeGuard(supabase);
+  if (denied) return { ok: false, error: denied };
+  const { error } = await supabase.rpc('merge_provisional_customer', { p_payload: { source_id: sourceId, target_id: targetId } });
+  if (error) {
+    if (error.hint === 'NOT_PROVISIONAL') return { ok: false, error: 'Só cliente avulso pode ser vinculado.' };
+    return { ok: false, error: 'Não consegui vincular. Nada foi alterado.' };
+  }
+  return { ok: true, targetId };
 }

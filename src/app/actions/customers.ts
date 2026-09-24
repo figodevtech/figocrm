@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/server';
 import { assertWritePermission } from '@/lib/subscription';
 import { Customer } from '@/types/domain';
 import { actionSession, NOT_AUTHENTICATED } from '@/lib/auth/session';
-import { createCustomer, CustomerInput, CustomerRecord, updateCustomer } from '@/lib/domain/customers';
+import { createCustomer, CustomerInput, CustomerRecord, mergeProvisionalCustomer, updateCustomer } from '@/lib/domain/customers';
 
 export interface CreateCustomerInput {
   name: string;
@@ -110,15 +110,22 @@ export type SaveCustomerResult =
 /** Cria (ou edita, com customerId) um cliente pelo formulário. Homônimo é perguntado, não reaproveitado. */
 export async function saveCustomerAction(
   input: CustomerInput,
-  options: { customerId?: string; allowDuplicate?: boolean } = {}
+  options: { customerId?: string; allowDuplicate?: boolean; confirmProvisional?: boolean } = {}
 ): Promise<SaveCustomerResult> {
   const session = await actionSession();
   if (!session) return { ok: false, error: NOT_AUTHENTICATED };
   try {
     return options.customerId
-      ? await updateCustomer(session.supabase, session.user.id, options.customerId, input)
+      ? await updateCustomer(session.supabase, session.user.id, options.customerId, input, { confirmProvisional: options.confirmProvisional })
       : await createCustomer(session.supabase, session.user.id, input, { allowDuplicate: options.allowDuplicate });
   } catch {
     return { ok: false, error: 'Não consegui salvar o cliente. Tente de novo.' };
   }
+}
+
+/** Cliente avulso → cadastro existente (tudo dele passa para o cadastro escolhido). */
+export async function linkProvisionalCustomerAction(sourceId: string, targetId: string): Promise<{ ok: true; targetId: string } | { ok: false; error: string }> {
+  const session = await actionSession();
+  if (!session) return { ok: false, error: NOT_AUTHENTICATED };
+  return mergeProvisionalCustomer(session.supabase, sourceId, targetId);
 }

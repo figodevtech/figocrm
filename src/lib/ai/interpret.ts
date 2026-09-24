@@ -23,7 +23,7 @@ import {
   LLMInterpretation,
   LLMInterpretationSchema,
 } from '@/lib/ai/schemas/llm-interpretation.schema';
-import { checkGrounding, completenessGaps, consistencyAmbiguities, correctionAmbiguities, groundingAmbiguities, WRITE_INTENTS } from '@/lib/ai/grounding';
+import { checkGrounding, completenessGaps, consistencyAmbiguities, correctionAmbiguities, CREATION_INTENTS, groundingAmbiguities, WRITE_INTENTS } from '@/lib/ai/grounding';
 import { describeForReadback } from '@/lib/ai/readback';
 
 export type InterpretMode = 'auto' | 'llm_required' | 'rules_only';
@@ -256,7 +256,11 @@ function finalize(
     ...consistencyAmbiguities(cmd, spokenText),
     ...(meta.source === 'guardrail' ? [] : correctionAmbiguities(cmd, spokenText)),
   ];
-  const missingInformation = [...cmd.missingInformation, ...completenessGaps(cmd, !!context?.lastCustomer)];
+  // Em criação, "quem é o cliente" / "qual mercadoria" nunca seguram o registro: viram avulsos
+  const llmMissing = CREATION_INTENTS.has(cmd.intent)
+    ? cmd.missingInformation.filter((m) => m.type !== 'customer_reference' && m.type !== 'item_reference')
+    : cmd.missingInformation;
+  const missingInformation = [...llmMissing, ...completenessGaps({ ...cmd, missingInformation: llmMissing }, !!context?.lastCustomer)];
 
   if (groundingIssues.length > 0) {
     meta.validationErrors = [...(meta.validationErrors ?? []), ...groundingIssues.map((g) => `ungrounded:${g.field}=${g.value}`)];

@@ -7,18 +7,28 @@ import type { StockItemView } from '@/lib/domain/app-data';
 import { formatBRL, matchesSearch } from '@/lib/format';
 import { Badge } from '@/components/ui/layout';
 
-type Filter = 'disponiveis' | 'reservados' | 'vendidos' | 'todos';
+type Filter = 'disponiveis' | 'reservados' | 'vendidos' | 'revisar' | 'todos';
 
 const statusTone = { available: 'emerald', trade_in: 'sky', reserved: 'amber', sold: 'neutral', preparing: 'violet', returned: 'neutral' } as const;
 
-export function StockList({ items }: { items: StockItemView[] }) {
+export function StockList({ items, initialFilter = 'disponiveis' }: { items: StockItemView[]; initialFilter?: Filter }) {
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('disponiveis');
+  const [filter, setFilter] = useState<Filter>(initialFilter);
 
   const byFilter = (i: StockItemView) =>
-    filter === 'disponiveis' ? i.status === 'disponivel' || i.status === 'em_preparacao' : filter === 'reservados' ? i.status === 'reservado' : filter === 'vendidos' ? i.status === 'vendido' : true;
+    filter === 'disponiveis'
+      ? i.status === 'disponivel' || i.status === 'em_preparacao'
+      : filter === 'reservados'
+        ? i.status === 'reservado'
+        : filter === 'vendidos'
+          ? i.status === 'vendido'
+          : filter === 'revisar'
+            ? i.isProvisional || i.costPending
+            : true;
   const visible = items.filter(byFilter).filter((i) => matchesSearch(query, i.name, i.brand, i.model, i.imei, i.plate, i.serialNumber, i.identifier));
-  const label: Record<Filter, string> = { disponiveis: 'Disponíveis', reservados: 'Reservados', vendidos: 'Vendidos', todos: 'Todos' };
+  const label: Record<Filter, string> = { disponiveis: 'Disponíveis', reservados: 'Reservados', vendidos: 'Vendidos', revisar: 'Revisar', todos: 'Todos' };
+  const hasReview = items.some((i) => i.isProvisional || i.costPending);
+  const filters = (Object.keys(label) as Filter[]).filter((f) => f !== 'revisar' || hasReview || filter === 'revisar');
 
   return (
     <div className="space-y-4">
@@ -38,7 +48,7 @@ export function StockList({ items }: { items: StockItemView[] }) {
       </div>
 
       <div role="tablist" aria-label="Filtro do estoque" className="flex gap-2 overflow-x-auto pb-1">
-        {(Object.keys(label) as Filter[]).map((f) => (
+        {filters.map((f) => (
           <button
             key={f}
             type="button"
@@ -69,15 +79,17 @@ export function StockList({ items }: { items: StockItemView[] }) {
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block text-lg font-semibold leading-snug text-white">{i.name}</span>
-                  <span className="mt-1 inline-block">
+                  <span className="mt-1 flex flex-wrap gap-1.5">
                     <Badge tone={statusTone[i.statusKey]}>{i.statusLabel}</Badge>
+                    {i.isProvisional ? <Badge tone="amber">Avulsa</Badge> : null}
+                    {i.costPending ? <Badge tone="rose">Sem custo</Badge> : null}
                   </span>
                 </span>
               </Link>
               <div className="tabular mt-3 grid grid-cols-2 gap-2 text-base">
                 <div>
                   <p className="text-sm text-slate-400">Custo</p>
-                  <p className="font-semibold text-white">{formatBRL(i.totalCost)}</p>
+                  <p className="font-semibold text-white">{i.costPending ? '—' : formatBRL(i.totalCost)}</p>
                 </div>
                 <div>
                   <p className="text-sm text-slate-400">Venda sugerida</p>
