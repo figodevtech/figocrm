@@ -255,4 +255,27 @@ test('empréstimo: dono não altera nem apaga o contrato direto pela API (status
   assert.deepStrictEqual([after!.status, Number(after!.total_amount)], ['active', 1200]);
 });
 
+// ------------------------------------------------------------------ avulsos (vincular)
+
+test('avulsos: anon não vincula; B não vincula cliente/mercadoria do A (nem para um cadastro dele)', async () => {
+  for (const fn of ['merge_provisional_customer', 'merge_provisional_item', 'resolve_item_cost']) {
+    const { error } = await anonClient().rpc(fn, { p_payload: {} });
+    assert.ok(error, `${fn}: anon deveria receber erro`);
+    assert.strictEqual(error.code, '42501', `${fn}: esperado 42501, recebido ${error.code}`);
+  }
+
+  const { data: avulso } = await userA.client.from('customers').insert({ user_id: userA.id, name: 'Avulso do A', is_provisional: true }).select('id').single();
+  const cross = await userB.client.rpc('merge_provisional_customer', { p_payload: { source_id: avulso!.id, target_id: customerB } });
+  assert.ok(cross.error, 'B não vincula avulso do A ao cliente dele');
+  const crossToA = await userB.client.rpc('merge_provisional_customer', { p_payload: { source_id: avulso!.id, target_id: customerA } });
+  assert.ok(crossToA.error, 'B não mexe em dois clientes do A');
+  const { data: still } = await userA.client.from('customers').select('id').eq('id', avulso!.id);
+  assert.strictEqual(still?.length, 1, 'avulso do A intacto');
+
+  const itemMerge = await userB.client.rpc('merge_provisional_item', { p_payload: { source_id: itemA, target_id: itemB } });
+  assert.ok(itemMerge.error, 'B não vincula mercadoria do A');
+  const cost = await userB.client.rpc('resolve_item_cost', { p_payload: { item_id: itemA, acquisition_cost: 1 } });
+  assert.ok(cost.error, 'B não informa custo de mercadoria do A');
+});
+
 run('SEGURANÇA DAS RPCs (Supabase real)');

@@ -20,10 +20,12 @@ import { guardRedirect, isPublicPath, safeNextPath } from '../../src/lib/auth/re
 import { validateCustomerInput } from '../../src/lib/domain/customers';
 import { validateCost, validateItemInput, itemTotalCost } from '../../src/lib/domain/items';
 import { interpretVoiceCommand } from '../../src/lib/ai/interpreter';
-import { completenessGaps } from '../../src/lib/ai/grounding';
+import { checkGrounding, completenessGaps } from '../../src/lib/ai/grounding';
 import { describeForReadback } from '../../src/lib/ai/readback';
 import { fromLLM } from '../../src/lib/ai/interpret';
 import { LLMInterpretationSchema } from '../../src/lib/ai/schemas/llm-interpretation.schema';
+import { buildDealCommand, UNNAMED_ITEM } from '../../src/lib/ai/command-builder';
+import { resumePending } from '../../src/lib/ai/orchestrator';
 
 const tests: Array<[string, () => void | Promise<void>]> = [];
 const test = (name: string, fn: () => void | Promise<void>) => tests.push([name, fn]);
@@ -361,6 +363,71 @@ test('mercadoria: nome e valor de compra obrigatórios; IMEI/ano validados; cust
   assert.strictEqual(validateCost({ category: 'inventada', amount: 200 }).ok, false);
   assert.strictEqual(validateCost({ category: 'transporte', amount: 0 }).ok, false);
   assert.strictEqual(itemTotalCost(2000, [{ amount: 200 }, { amount: 50 }]), 2250);
+});
+
+// ------------------------------------------------------------------ voz não fica refém de cadastro
+
+test('venda por voz sem mercadoria/cliente dito não pergunta cadastro: vira avulso; pagamento sem cliente ainda pergunta', () => {
+  const base = { requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '' };
+  const sale = { ...base, intent: 'create_sale' as const, totalValue: 3000, cashIn: 3000, paymentMethod: 'pix' as const };
+  assert.deepStrictEqual(completenessGaps(sale), [], 'sem cliente e sem mercadoria: nada bloqueia');
+  const built = buildDealCommand(sale);
+  assert.strictEqual(built.status, 'ok');
+  if (built.status === 'ok') {
+    assert.deepStrictEqual(built.command.itemsOut.map((i) => [i.description, i.newItem, i.negotiatedValue]), [[UNNAMED_ITEM, true, 3000]]);
+    assert.strictEqual(built.command.counterparty, undefined, 'executor cria "Cliente avulso"');
+  }
+  const trade = buildDealCommand({ ...base, intent: 'create_trade', itemIn: 'Bros', totalValue: 5000, itemInValue: 5000, direction: 'even', tradeBalance: 0 });
+  assert.ok(trade.status === 'ok' && trade.command.itemsOut[0].newItem === true);
+  assert.deepStrictEqual(completenessGaps({ ...base, intent: 'register_payment', amount: 500, paymentScope: 'amount' }).map((g) => g.type), ['customer_reference']);
+  assert.deepStrictEqual(completenessGaps({ ...base, intent: 'create_sale', item: 'iPhone' }).map((g) => g.type), ['deal_total'], 'valor continua obrigatório');
+});
+
+test('formulário: venda e troca de mercadoria fora do estoque (custo opcional) geram o mesmo DealCommand', () => {
+  const sale = buildManualSaleCommand({ customerId: 'c', newItem: { name: 'iPhone 15' }, totalValue: 3000, cashInflow: 3000, paymentMethod: 'pix' });
+  assert.ok(sale.ok);
+  if (sale.ok) assert.deepStrictEqual(sale.command.itemsOut.map((i) => [i.description, i.newItem, i.acquisitionValue, i.itemId]), [['iPhone 15', true, undefined, undefined]]);
+  const known = buildManualSaleCommand({ customerId: 'c', newItem: { name: 'Fone', acquisitionCost: 80 }, totalValue: 150, cashInflow: 150 });
+  assert.ok(known.ok && known.command.itemsOut[0].acquisitionValue === 80);
+  assert.strictEqual(buildManualSaleCommand({ customerId: 'c', totalValue: 150, cashInflow: 150 }).ok, false, 'precisa de item do estoque ou descrito');
+  const trade = buildManualTradeCommand({ customerId: 'c', itemOutNew: { name: 'Bros' }, itemIn: { name: 'XRE', evaluatedValue: 22000 }, tradeBalance: 5000, direction: 'paid', immediateCash: 5000 });
+  assert.ok(trade.ok && trade.command.itemsOut[0].newItem === true && validateDealBalance(trade.command).isBalanced);
+});
+
+test('"quanto você pagou nele?": número vira custo; "não sei" deixa para depois; comando novo nunca é absorvido', () => {
+  const pending = {
+    kind: 'missing_info' as const,
+    originalTranscript: 'Quanto você pagou no iPhone 15?',
+    promptAsked: 'Quanto você pagou no iPhone 15?',
+    field: 'amount',
+    timestamp: Date.now(),
+    draft: {
+      intent: 'set_item_cost', item: 'iPhone 15', totalValue: 3000, resolvedRefs: { itemId: U1 },
+      requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '',
+    } as unknown as Record<string, unknown>,
+  };
+  assert.deepStrictEqual([resumePending('dois mil', pending)?.intent, resumePending('dois mil', pending)?.amount], ['set_item_cost', 2000]);
+  assert.strictEqual(resumePending('Paguei 1800 nele', pending)?.amount, 1800);
+  assert.strictEqual(resumePending('uns 2 mil e quinhentos', pending)?.amount, 2500);
+  assert.strictEqual(resumePending('dois', pending)?.amount, 2000, 'convenção de milhar quando a venda foi em milhares');
+  const later = resumePending('não sei agora', pending);
+  assert.deepStrictEqual([later?.intent, later?.confirmationPrompt], ['unrecognized_command', 'Beleza. Dá pra informar o custo depois, na tela da mercadoria.']);
+  assert.strictEqual(resumePending('Vendi outro iPhone pro Pedro por 3 mil', pending), null, 'venda nova não vira custo');
+  assert.strictEqual(resumePending('O Carlos pagou 500', pending), null, 'pagamento não vira custo');
+});
+
+test('grounding: "o João pagou" nunca vira o "João Santos" do contexto; pronome e tela do cliente completam', () => {
+  const base = { intent: 'register_payment' as const, amount: 500, paymentScope: 'amount' as const, requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '' };
+  const ctx = { ...emptyContext('u'), lastCustomer: { id: U1, name: 'João Santos' } };
+  const expanded = checkGrounding({ ...base, counterparty: { name: 'João Santos' } }, 'O João pagou 500 no Pix.', ctx);
+  assert.deepStrictEqual(expanded.map((g) => g.field), ['customer'], 'nome parcial dito não é completado pelo contexto');
+  assert.deepStrictEqual(checkGrounding({ ...base, counterparty: { name: 'João Santos' } }, 'Ele pagou 500 no Pix.', ctx), [], 'pronome usa o contexto');
+  const onScreen = { ...ctx, screenCustomerId: U1 };
+  assert.deepStrictEqual(
+    checkGrounding({ ...base, intent: 'create_sale', amount: undefined, totalValue: 100, counterparty: { name: 'João Santos' } }, 'Vendi um fone por 100 no Pix.', onScreen),
+    [],
+    'tela do cliente é contexto explícito'
+  );
 });
 
 (async () => {

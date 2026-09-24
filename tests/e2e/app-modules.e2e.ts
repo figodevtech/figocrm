@@ -5,8 +5,8 @@
 
 import assert from 'assert';
 import { createTestUser, run, sql, test, TestUser } from './helpers';
-import { createCustomer } from '../../src/lib/domain/customers';
-import { createItem } from '../../src/lib/domain/items';
+import { createCustomer, mergeProvisionalCustomer, updateCustomer } from '../../src/lib/domain/customers';
+import { createItem, mergeProvisionalItem } from '../../src/lib/domain/items';
 import { buildManualSaleCommand, buildManualTradeCommand } from '../../src/lib/domain/manual-deal-commands';
 import { executeDealCommand } from '../../src/lib/domain/command-executor';
 import { createLoanContract } from '../../src/lib/domain/loans';
@@ -339,6 +339,110 @@ test('fotos de mercadoria: bucket privado, pasta do próprio usuário, lida por 
   assert.ok(item.ok);
   const listed = (await listStock(user.client, user.id)).find((i) => i.name === 'Notebook com foto');
   assert.ok(listed?.photoUrl?.startsWith('http'), 'lista traz URL assinada');
+});
+
+// ------------------------------------------------------------------ voz não fica refém de cadastro
+
+test(`voz: "Vendi o iPhone 15 pro Marcos por 3 mil no Pix" sem iPhone nem Marcos → venda avulsa + pergunta o custo (${label})`, async () => {
+  const res = await say('Vendi o iPhone 15 pro Marcos por 3 mil no Pix.');
+  assert.strictEqual(res.assistant.status, 'executed', res.humanResponse);
+  assert.match(res.humanResponse, /Não estavam no cadastro: Marcos e iPhone 15/);
+  assert.match(res.humanResponse, /Quanto você pagou/);
+  ids.avulsoDeal = res.dealId!;
+
+  const deal = await one<{ total_value: string; recognized_profit: string; profit_pending: boolean; customer_id: string }>(
+    'SELECT total_value, recognized_profit, profit_pending, customer_id FROM deals WHERE id = $1', [ids.avulsoDeal]);
+  assert.deepStrictEqual([num(deal.total_value), num(deal.recognized_profit), deal.profit_pending], [3000, 0, true], 'lucro não é inventado');
+  const cust = await one<{ name: string; is_provisional: boolean }>('SELECT name, is_provisional FROM customers WHERE id = $1', [deal.customer_id]);
+  assert.deepStrictEqual([cust.name, cust.is_provisional], ['Marcos', true]);
+  ids.marcos = deal.customer_id;
+  const item = await one<{ id: string; name: string; status: string; is_provisional: boolean; cost_pending: boolean }>(
+    `SELECT i.id, i.name, i.status, i.is_provisional, i.cost_pending FROM items i JOIN deal_items di ON di.item_id = i.id WHERE di.deal_id = $1`, [ids.avulsoDeal]);
+  assert.deepStrictEqual([item.status, item.is_provisional, item.cost_pending], ['vendido', true, true]);
+  assert.match(item.name, /iPhone 15/i);
+  ids.avulsoItem = item.id;
+
+  const cost = await say('Paguei dois mil nele.');
+  assert.strictEqual(cost.assistant.status, 'executed', cost.humanResponse);
+  assert.match(cost.humanResponse, /Lucro da venda: R\$ 1\.000/);
+  const after = await one<{ recognized_profit: string; profit_pending: boolean }>('SELECT recognized_profit, profit_pending FROM deals WHERE id = $1', [ids.avulsoDeal]);
+  assert.deepStrictEqual([num(after.recognized_profit), after.profit_pending], [1000, false]);
+  assert.strictEqual((await one<{ n: number }>('SELECT count(*)::int AS n FROM deals WHERE user_id = $1 AND total_value = 3000 AND customer_id = $2', [user.id, ids.marcos])).n, 1, 'a resposta do custo não gerou venda nova');
+});
+
+test(`voz: venda sem dizer o cliente vira "Cliente avulso"; empréstimo para nome desconhecido também (${label})`, async () => {
+  const sale = await say('Vendi um carregador por 80 reais no Pix.');
+  assert.strictEqual(sale.assistant.status, 'executed', sale.humanResponse);
+  const c = await one<{ name: string; is_provisional: boolean }>(
+    'SELECT c.name, c.is_provisional FROM deals d JOIN customers c ON c.id = d.customer_id WHERE d.id = $1', [sale.dealId]);
+  assert.deepStrictEqual([c.name, c.is_provisional], ['Cliente avulso', true]);
+
+  const loan = await say('Emprestei mil pro Jonas em duas de 600.');
+  assert.strictEqual(loan.assistant.status, 'executed', loan.humanResponse);
+  const j = await one<{ id: string; is_provisional: boolean; total: string }>(
+    `SELECT c.id, c.is_provisional, l.total_amount AS total FROM loan_contracts l JOIN customers c ON c.id = l.customer_id
+      WHERE l.user_id = $1 AND c.name = 'Jonas'`, [user.id]);
+  assert.deepStrictEqual([j.is_provisional, num(j.total)], [true, 1200]);
+  ids.jonas = j.id;
+});
+
+test(`voz na tela do Carlos sem dizer o nome: "Vendi um fone por 100 no Pix" é venda para o Carlos, não avulso (${label})`, async () => {
+  const res = await say('Vendi um fone por 100 no Pix.', { customerId: ids.carlos });
+  assert.strictEqual(res.assistant.status, 'executed', res.humanResponse);
+  const deal = await one<{ customer_id: string }>('SELECT customer_id FROM deals WHERE id = $1', [res.dealId]);
+  assert.strictEqual(deal.customer_id, ids.carlos);
+});
+
+test('vincular cliente avulso a um cadastro: dívidas, empréstimos e pagamentos passam; avulso some', async () => {
+  const debts = await listOpenDebts(user.client, user.id, ids.jonas);
+  const pay = await applySettlement(user.client, { kind: 'payment', receivableId: debts[0].receivableId, amount: 600, paymentMethod: 'pix', source: 'manual' });
+  assert.ok(pay.success, pay.error);
+
+  const notProvisional = await mergeProvisionalCustomer(user.client, ids.carlos, ids.paulo);
+  assert.ok(!notProvisional.ok, 'cadastro normal não é "vinculável"');
+
+  const merged = await mergeProvisionalCustomer(user.client, ids.jonas, ids.paulo);
+  assert.ok(merged.ok, !merged.ok ? merged.error : '');
+  assert.strictEqual((await sql('SELECT 1 FROM customers WHERE id = $1', [ids.jonas])).length, 0);
+  for (const table of ['loan_contracts', 'receivables', 'settlements']) {
+    const left = await sql(`SELECT 1 FROM ${table} WHERE customer_id = $1`, [ids.jonas]);
+    assert.strictEqual(left.length, 0, `${table} passou para o cadastro`);
+  }
+  const paulo = await getCustomerDetail(user.client, user.id, ids.paulo);
+  assert.ok(paulo?.timeline.some((e) => e.kind === 'payment' && e.amount === 600), 'pagamento aparece no histórico do cadastro');
+  assert.ok(paulo?.debts.some((d) => d.kind === 'loan'));
+
+  const confirm = await updateCustomer(user.client, user.id, ids.marcos, { name: 'Marcos Lima', phone: '83977776666' }, { confirmProvisional: true });
+  assert.ok(confirm.ok);
+  assert.strictEqual((await one<{ is_provisional: boolean }>('SELECT is_provisional FROM customers WHERE id = $1', [ids.marcos])).is_provisional, false);
+});
+
+test('vincular mercadoria avulsa a uma do estoque recalcula o lucro com o custo dela', async () => {
+  const tv = await createItem(user.client, user.id, { name: 'TV Samsung 50', acquisitionCost: 700 });
+  assert.ok(tv.ok);
+  const sale = await say('Vendi uma televisão pro Paulo por mil no Pix.');
+  assert.strictEqual(sale.assistant.status, 'executed', sale.humanResponse);
+  const avulso = await one<{ id: string; is_provisional: boolean }>(
+    `SELECT i.id, i.is_provisional FROM items i JOIN deal_items di ON di.item_id = i.id WHERE di.deal_id = $1`, [sale.dealId]);
+  assert.strictEqual(avulso.is_provisional, true, '"televisão" não casou com "TV Samsung 50": entrou avulsa');
+
+  const merged = await mergeProvisionalItem(user.client, avulso.id, tv.ok ? tv.itemId : '');
+  assert.ok(merged.ok, !merged.ok ? merged.error : '');
+  const deal = await one<{ recognized_profit: string; profit_pending: boolean }>('SELECT recognized_profit, profit_pending FROM deals WHERE id = $1', [sale.dealId]);
+  assert.deepStrictEqual([num(deal.recognized_profit), deal.profit_pending], [300, false]);
+  const stock = await one<{ status: string }>('SELECT status FROM items WHERE id = $1', [tv.ok ? tv.itemId : '']);
+  assert.strictEqual(stock.status, 'vendido');
+  assert.strictEqual((await sql('SELECT 1 FROM items WHERE id = $1', [avulso.id])).length, 0);
+});
+
+test('formulário: venda de mercadoria fora do estoque com custo informado já reconhece o lucro', async () => {
+  const built = buildManualSaleCommand({ customerId: ids.carlos, newItem: { name: 'Capinha', acquisitionCost: 15 }, totalValue: 50, cashInflow: 50, paymentMethod: 'cash' });
+  assert.ok(built.ok);
+  if (!built.ok) return;
+  const res = await executeDealCommand(built.command, { supabase: user.client, userId: user.id, source: 'MANUAL_WEB' });
+  assert.ok(res.success, res.humanSummary);
+  const deal = await one<{ recognized_profit: string; profit_pending: boolean }>('SELECT recognized_profit, profit_pending FROM deals WHERE id = $1', [res.dealId]);
+  assert.deepStrictEqual([num(deal.recognized_profit), deal.profit_pending], [35, false]);
 });
 
 run('E2E: MÓDULOS DO APP (clientes, estoque, venda, troca, empréstimo, recebimento, voz contextual)');

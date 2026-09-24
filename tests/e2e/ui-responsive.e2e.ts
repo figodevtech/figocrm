@@ -58,6 +58,12 @@ test('setup: usuário com cliente, estoque, venda parcelada e empréstimo', asyn
   const loan = await createLoanContract(user.client, { customerId: ids.carlos, principal: 2000, interestType: 'fixed_amount', interestAmount: 500, installmentsCount: 5, source: 'manual' });
   assert.ok(loan.success);
   ids.loan = loan.loanContractId!;
+  const avulso = await createCustomer(user.client, user.id, { name: 'Zé da Feira' }, { provisional: true });
+  assert.ok(avulso.ok);
+  ids.avulso = avulso.ok ? avulso.customer.id : '';
+  const avulsoSale = buildManualSaleCommand({ customerId: ids.avulso, newItem: { name: 'Caixa de som' }, totalValue: 300, cashInflow: 300, paymentMethod: 'pix' });
+  assert.ok(avulsoSale.ok);
+  if (avulsoSale.ok) assert.ok((await executeDealCommand(avulsoSale.command, { supabase: user.client, userId: user.id, source: 'MANUAL_WEB' })).success);
 
   // Sessão pelo mesmo formato de cookie do app (@supabase/ssr)
   const jar = new Map<string, string>();
@@ -99,6 +105,8 @@ const ROUTES = () => [
   `/app/receber?cliente=${ids.carlos}`,
   '/app/negocios',
   '/app/conta',
+  `/app/clientes/${ids.avulso}`,
+  '/app/estoque?filtro=revisar',
 ];
 
 for (const width of WIDTHS) {
@@ -213,6 +221,28 @@ test('voz na tela do cliente: painel mostra o contexto e responde sobre ele (tex
   assert.ok(!/STT|LLM|RPC|Structured/.test(text), 'sem termos técnicos');
   await page.keyboard.press('Escape');
   assert.strictEqual(await dialog.isVisible(), false);
+  await ctx.close();
+});
+
+test('avulsos na tela: Home avisa; cliente avulso vinculado ao Carlos some; custo pendente é informado', async () => {
+  const ctx = await authedContext(390);
+  const page = await ctx.newPage();
+  await open(page, '/app');
+  assert.ok(await page.getByRole('link', { name: /1 cliente avulso/ }).isVisible(), 'aviso de cliente avulso na Home');
+  assert.ok(await page.getByRole('link', { name: /1 venda sem custo/ }).isVisible(), 'aviso de venda sem custo na Home');
+
+  await open(page, `/app/clientes/${ids.avulso}`);
+  await page.getByRole('button', { name: 'Vincular a um cliente' }).click();
+  await page.getByRole('button', { name: /Carlos Alberto/ }).click();
+  await page.getByRole('button', { name: 'Vincular', exact: true }).click();
+  await page.waitForURL((url) => url.pathname === `/app/clientes/${ids.carlos}`, { timeout: 15000 });
+  await page.getByText('Venda — Caixa de som').waitFor({ timeout: 15000 });
+
+  await open(page, '/app/estoque?filtro=revisar');
+  await page.getByRole('link', { name: /Caixa de som/ }).first().click();
+  await page.getByLabel('Valor de compra').fill('180');
+  await page.getByRole('button', { name: 'Salvar custo' }).click();
+  await page.getByText('Custo salvo. Lucro da venda: R$ 120.').waitFor({ timeout: 15000 });
   await ctx.close();
 });
 
