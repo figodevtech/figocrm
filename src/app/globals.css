@@ -2,23 +2,63 @@
 
 :root {
   --background: #090d16;
-  --foreground: #f8fafc;
+  --foreground: #f1f5f9;
+  --surface: #111827;
+  --surface-2: #172033;
+  --border: rgba(255, 255, 255, 0.09);
+  --accent: #10b981;
+  --accent-strong: #34d399;
   --card-bg: rgba(15, 23, 42, 0.75);
   --card-border: rgba(255, 255, 255, 0.08);
-  --accent-emerald: #10b981;
   --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+  color-scheme: dark;
+}
+
+@theme inline {
+  --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
 body {
   background-color: var(--background);
   color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   overflow-x: hidden;
-  selection-background-color: #10b981;
-  selection-color: #ffffff;
+  -webkit-tap-highlight-color: transparent;
 }
 
-/* Glassmorphism helpers */
+::selection {
+  background: #10b981;
+  color: #04120c;
+}
+
+/* Foco sempre visível para teclado (nunca removido sem substituto) */
+:focus-visible {
+  outline: 3px solid #34d399;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+/* Números alinhados em valores de dinheiro */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Espaço para a barra inferior fixa + área segura do iPhone */
+.pb-safe-nav {
+  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+}
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* Glassmorphism usado pela landing */
 .glass-panel {
   background: var(--card-bg);
   backdrop-filter: blur(16px);
@@ -36,7 +76,20 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-/* Custom scrollbars */
+/* Pulso do microfone gravando (respeita quem prefere menos movimento) */
+@keyframes mic-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.45); }
+  70% { box-shadow: 0 0 0 22px rgba(244, 63, 94, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(244, 63, 94, 0); }
+}
+.mic-recording {
+  animation: mic-pulse 1.4s ease-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .mic-recording { animation: none; }
+  * { scroll-behavior: auto !important; }
+}
+
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -47,7 +100,4 @@ body {
 ::-webkit-scrollbar-thumb {
   background: #1e293b;
   border-radius: 9999px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #334155;
 }

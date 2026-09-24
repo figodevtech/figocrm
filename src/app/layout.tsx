@@ -12,16 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+// Zoom liberado (acessibilidade): campos usam fonte ≥ 16px para o iPhone não ampliar sozinho.
 export const viewport: Viewport = {
   themeColor: "#090d16",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
-  title: "Figo CRM — Você fala. Ele organiza.",
+  title: { default: "Figo CRM — Você fala. Ele organiza.", template: "%s · Figo" },
   description: "O CRM de voz para revendedores autônomos. Controle de compras, vendas, trocas com volta e valores a receber sem complicação.",
   manifest: "/manifest.json",
   appleWebApp: {
