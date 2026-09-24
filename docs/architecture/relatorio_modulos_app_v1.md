@@ -25,7 +25,7 @@ reusa a mesma dívida/parcelas/liquidações/estorno/renegociação.
 | Voz contextual | ✅ | fluxo 6 com LLM real e com parser: "Ele pagou mais 500 do empréstimo." na tela do Carlos |
 | Dashboard simples | ✅ | A receber / Atrasado / Em mercadoria / Ganhei este mês (RPC existente) |
 | Mobile-first validado | ✅ | Chrome real em 360, 390, 430, 768, 1024, 1440 px: sem rolagem horizontal, alvos ≥ 40 px |
-| Build / testes | ✅ | seção 12 |
+| Build / testes | ✅ | seções 10 e 12 |
 | Deploy Vercel | ✅ | seção 13 |
 
 ## 2. Rotas
