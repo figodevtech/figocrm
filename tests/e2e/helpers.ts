@@ -43,7 +43,7 @@ export interface TestUser {
 
 const createdUserIds: string[] = [];
 
-export async function createTestUser(label: string): Promise<TestUser> {
+export async function createTestUser(label: string, metadata: Record<string, unknown> = {}): Promise<TestUser> {
   const email = `e2e-${label}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}@figocrm.test`;
   const password = `E2e-${Math.random().toString(36).slice(2)}-Aa1!`;
   const admin = adminClient();
@@ -52,7 +52,7 @@ export async function createTestUser(label: string): Promise<TestUser> {
     email,
     password,
     email_confirm: true,
-    user_metadata: { full_name: `E2E ${label}` },
+    user_metadata: { full_name: `E2E ${label}`, ...metadata },
   });
   if (error || !data.user) throw new Error(`Falha ao criar usuário de teste: ${error?.message}`);
   createdUserIds.push(data.user.id);
@@ -73,6 +73,7 @@ const CLEANUP_ORDER = [
   'installments',
   'renegotiations',
   'receivables',
+  'loan_contracts',
   'payables',
   'conversation_context',
   'ai_interactions',
@@ -81,8 +82,20 @@ const CLEANUP_ORDER = [
   'audit_log',
 ];
 
+/** Fotos de mercadoria ficam no Storage (pasta = id do usuário), fora do cascade do banco. */
+async function removeUserPhotos(userId: string): Promise<void> {
+  try {
+    const storage = adminClient().storage.from('item-photos');
+    const { data } = await storage.list(userId, { limit: 1000 });
+    if (data && data.length > 0) await storage.remove(data.map((f) => `${userId}/${f.name}`));
+  } catch {
+    // Sem bucket configurado: nada a remover
+  }
+}
+
 export async function cleanupTestUsers(): Promise<void> {
   if (createdUserIds.length === 0) return;
+  for (const userId of createdUserIds) await removeUserPhotos(userId);
   const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
   await db.connect();
   try {

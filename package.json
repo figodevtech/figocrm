@@ -7,20 +7,22 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "node scripts/test_finance_v2.mjs && npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/voice-benchmark/runner.ts && npx tsx scripts/test_multiturn_dialogue.mjs",
+    "test": "node scripts/test_finance_v2.mjs && npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/unit/app-modules.test.ts && npx tsx tests/voice-benchmark/runner.ts && npx tsx scripts/test_multiturn_dialogue.mjs",
     "test:finance": "node scripts/test_finance_v2.mjs",
-    "test:unit": "npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts",
+    "test:unit": "npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/unit/app-modules.test.ts",
     "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts",
     "test:benchmark:rules": "npx tsx tests/voice-benchmark/runner.ts",
     "test:benchmark:llm": "npx tsx tests/voice-benchmark/runner-llm.ts",
     "test:multiturn": "npx tsx scripts/test_multiturn_dialogue.mjs",
-    "test:e2e": "npx tsx tests/e2e/multiturn-db.e2e.ts && npx tsx tests/e2e/finance-ops.e2e.ts && npx tsx tests/e2e/subscription.e2e.ts && npx tsx tests/e2e/auth.e2e.ts && npx tsx tests/e2e/rpc-security.e2e.ts",
+    "test:e2e": "npx tsx tests/e2e/multiturn-db.e2e.ts && npx tsx tests/e2e/finance-ops.e2e.ts && npx tsx tests/e2e/subscription.e2e.ts && npx tsx tests/e2e/auth.e2e.ts && npx tsx tests/e2e/app-modules.e2e.ts && npx tsx tests/e2e/rpc-security.e2e.ts",
     "test:security": "npx tsx tests/e2e/rpc-security.e2e.ts",
     "db:migrate": "node scripts/apply_migrations.mjs",
     "db:audit": "node scripts/security_audit.mjs --strict",
     "test:smoke": "npx tsx tests/e2e/http-smoke.e2e.ts",
     "report:ai-usage": "node scripts/ai_usage_report.mjs",
-    "benchmark:generate-realworld": "node scripts/generate_realworld_cases.mjs"
+    "benchmark:generate-realworld": "node scripts/generate_realworld_cases.mjs",
+    "test:app": "npx tsx tests/e2e/app-modules.e2e.ts",
+    "test:ui": "npx tsx tests/e2e/ui-responsive.e2e.ts"
   },
   "dependencies": {
     "@supabase/ssr": "^0.5.2",
@@ -41,6 +43,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.3.6",
+    "playwright-core": "^1.63.0",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

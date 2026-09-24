@@ -209,4 +209,50 @@ test('RLS: A não enxerga clientes do B por consulta direta', async () => {
   assert.deepStrictEqual(data, []);
 });
 
+// ------------------------------------------------------------------ empréstimos (loan_contracts)
+
+function loanPayload(customerId: string) {
+  const due = new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10);
+  return {
+    customer_id: customerId, principal_amount: 1000, interest_type: 'fixed_amount', interest_rate: null, interest_amount: 200, total_amount: 1200,
+    installments_count: 2,
+    installments: [{ installment_number: 1, original_value: 600, due_date: due }, { installment_number: 2, original_value: 600, due_date: due }],
+  };
+}
+
+test('empréstimo: anon não executa create_loan_contract', async () => {
+  const { error } = await anonClient().rpc('create_loan_contract', { p_payload: loanPayload(customerA) });
+  assert.ok(error);
+  assert.strictEqual(error.code, '42501', `esperado 42501, recebido ${error.code}`);
+});
+
+test('empréstimo: A não cria empréstimo para cliente do B; B não lê nem liquida o empréstimo do A', async () => {
+  const foreign = await userA.client.rpc('create_loan_contract', { p_payload: loanPayload(customerB) });
+  assert.ok(foreign.error, 'cliente de outro usuário deve ser recusado');
+  assert.strictEqual(foreign.error.code, '42501');
+
+  const own = await userA.client.rpc('create_loan_contract', { p_payload: loanPayload(customerA) });
+  assert.ifError(own.error);
+  const { loan_contract_id: loanId, receivable_id: receivableId } = own.data as { loan_contract_id: string; receivable_id: string };
+
+  const peek = await userB.client.from('loan_contracts').select('id').eq('id', loanId);
+  assert.deepStrictEqual(peek.data, [], 'RLS esconde o contrato do A');
+  const pay = await userB.client.rpc('apply_obligation_settlement', {
+    p_payload: { kind: 'payment', receivable_id: receivableId, amount: 100, payment_method: 'pix', source: 'manual' },
+  });
+  assert.ok(pay.error, 'B não liquida dívida de empréstimo do A');
+  const { data: rec } = await userA.client.from('receivables').select('balance').eq('id', receivableId).single();
+  assert.strictEqual(Number(rec!.balance), 1200);
+});
+
+test('empréstimo: dono não altera nem apaga o contrato direto pela API (status só muda pela dívida)', async () => {
+  const { data } = await userA.client.from('loan_contracts').select('id').limit(1).single();
+  const upd = await userA.client.from('loan_contracts').update({ status: 'paid', total_amount: 1 }).eq('id', data!.id).select('id');
+  assert.ok(upd.error || (upd.data ?? []).length === 0, 'UPDATE direto bloqueado');
+  const del = await userA.client.from('loan_contracts').delete().eq('id', data!.id).select('id');
+  assert.ok(del.error || (del.data ?? []).length === 0, 'DELETE direto bloqueado');
+  const { data: after } = await userA.client.from('loan_contracts').select('status, total_amount').eq('id', data!.id).single();
+  assert.deepStrictEqual([after!.status, Number(after!.total_amount)], ['active', 1200]);
+});
+
 run('SEGURANÇA DAS RPCs (Supabase real)');

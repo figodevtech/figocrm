@@ -32,7 +32,7 @@ function llmOutput(partial: Partial<LLMInterpretation>): LLMInterpretation {
     installmentsCount: null, installmentAmount: null, dueDay: null, dueMonthOffset: null, firstDueDate: null,
     amount: null, paymentScope: null, installmentRef: null, installmentNumber: null, debtHint: null,
     adjustmentType: null, operationKind: null, renegotiationScope: null, installmentNumbers: [],
-    queryType: null, missingInformation: [], ambiguities: [],
+    queryType: null, interestType: null, interestRate: null, interestAmount: null, missingInformation: [], ambiguities: [],
     ...partial,
   };
 }
