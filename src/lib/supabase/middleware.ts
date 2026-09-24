@@ -3,6 +3,7 @@
 
 import { createServerClient } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { guardRedirect } from '@/lib/auth/redirects';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -38,21 +39,13 @@ export async function updateSession(request: NextRequest) {
     // Supabase não configurado ou inacessível no ambiente local
   }
 
-  // Proteção de rotas do painel operacional
-  const isAuthRoute = request.nextUrl.pathname.startsWith('/login') || request.nextUrl.pathname.startsWith('/cadastro');
-  const isApiRoute = request.nextUrl.pathname.startsWith('/api/');
-  const isPublicRoute = isAuthRoute || isApiRoute || request.nextUrl.pathname === '/';
-
-  if (!user && !isPublicRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/login';
-    return NextResponse.redirect(url);
-  }
-
-  if (user && isAuthRoute) {
-    const url = request.nextUrl.clone();
-    url.pathname = '/app';
-    return NextResponse.redirect(url);
+  // Proteção de rotas: /app/* exige sessão; /login e /cadastro com sessão vão para /app
+  const target = guardRedirect(request.nextUrl.pathname, request.nextUrl.search, !!user);
+  if (target) {
+    const redirectResponse = NextResponse.redirect(new URL(target, request.url));
+    // Mantém cookies de sessão renovados nesta mesma requisição
+    supabaseResponse.cookies.getAll().forEach((c) => redirectResponse.cookies.set(c));
+    return redirectResponse;
   }
 
   return supabaseResponse;
