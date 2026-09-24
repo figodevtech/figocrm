@@ -154,3 +154,16 @@ Itens que estavam "a criar" e agora existem (detalhes em `relatorio_modulos_app_
 | Cliente / mercadoria | `saveCustomerAction`, `createItemFormAction`, `updateItemFormAction`, `addItemCostFormAction`, `removeItemCostAction`, `setItemStatusAction` |
 
 Continuam pendentes: exclusão de conta, desfazer negócio inteiro, checkout de assinatura.
+
+### Avulsos (voz não fica refém de cadastro)
+
+| Item | Onde |
+| :--- | :--- |
+| Venda/troca/empréstimo com cliente ou mercadoria não cadastrados | executa na hora; resposta `executed` diz o que ficou avulso. Custo desconhecido → a próxima fala responde "quanto você pagou" (sem LLM) |
+| Informar custo pendente | `resolveItemCostAction(itemId, custo)` → RPC `resolve_item_cost` |
+| Vincular cliente avulso | `linkProvisionalCustomerAction(avulsoId, cadastroId)` → RPC `merge_provisional_customer` |
+| Transformar em cliente | `saveCustomerAction(dados, { customerId, confirmProvisional: true })` |
+| Vincular mercadoria avulsa ao estoque | `linkProvisionalItemAction(avulsaId, estoqueId)` → RPC `merge_provisional_item` |
+| Confirmar mercadoria avulsa | `confirmProvisionalItemAction(itemId, nome)` |
+| Venda/troca manual fora do estoque | `createSaleAction({ newItem: { name, acquisitionCost? } })`, `createTradeAction({ itemOutNew })` |
+| Contagens para a Home | `getReviewCounts` (clientes avulsos, mercadorias avulsas, vendas sem custo) |

@@ -1,6 +1,6 @@
 # Relatório — Módulos do app v1 (navegação por atalhos)
 
-Data: 23/09/2026 · Branch: `main` · Commits `d358cff..8798d48` (a partir de `61ef171`) · Deploy Vercel: **Ready (Production, 8798d48)**
+Data: 23/09/2026 · Branch: `main` · Commits `d358cff..ca4c849` (a partir de `61ef171`) · Deploy Vercel: **Ready (Production, ca4c849)**
 
 Base: `Prompt — Finalização dos Módulos do FigoCRM com Navegação por Atalhos.md`, `contrato_api_front.md`,
 `relatorio_pre_front_production_ready.md`. Nenhuma regra financeira foi duplicada no React: toda tela
@@ -99,8 +99,18 @@ Uma migration nova, aplicada no banco real: **`20260923000014_app_modules_loans.
 | `profiles` | `business_name` (editável); `handle_new_user` grava telefone e negócio do cadastro |
 | Storage `item-photos` | bucket privado, 5 MB, jpeg/png/webp; policies por pasta = `auth.uid()`; leitura por URL assinada |
 
-Auditoria (`npm run db:audit`) igual ao baseline anterior: 2 WARN intencionais (`consume_voice_rate_limit`,
-`record_ai_telemetry`) e 3 INFO intencionais. As novas funções/tabelas não geraram achados.
+Mais duas migrations, do ajuste "voz não fica refém de cadastro" (seção 9b), também aplicadas:
+
+| Migration | Conteúdo |
+| :--- | :--- |
+| `000015_sell_without_stock` | `items.cost_pending`, `deals.profit_pending`; `execute_deal_transaction` aceita item de saída **sem** `item_id` (com nome): a mercadoria nasce vendida na mesma transação; custo desconhecido → lucro 0 e `profit_pending`; item **reservado** também pode ser vendido; `resolve_item_cost` (INVOKER) informa o custo e reconhece o lucro dos negócios afetados |
+| `000016_provisional_customers_items` | `customers.is_provisional`, `items.is_provisional` (trigger: item que nasce vendido é avulso); `merge_provisional_customer` (vincula cliente avulso a um cadastro: negócios, dívidas, empréstimos e liquidações mudam de dono; o avulso some); `merge_provisional_item` (INVOKER: a venda passa a apontar para a mercadoria do estoque e o lucro é recalculado com o custo dela) |
+
+Auditoria (`npm run db:audit`): 3 WARN e 3 INFO, todos intencionais. O WARN novo é
+`merge_provisional_customer`, que é SECURITY DEFINER de propósito: `settlements` é só-inclusão para o
+usuário (sem UPDATE), então trocar o dono das liquidações só é possível no DEFINER. A função exige
+`auth.uid()`, confere que os dois clientes são do usuário e que a origem é avulsa, e não mexe em valores.
+O teste de segurança prova que outro usuário não vincula nada (16/16).
 
 ## 7. Ações manuais
 
@@ -143,16 +153,46 @@ disponível que entrou numa troca → **Recebido em troca**. "Vender" só aparec
   parcela que não fecham → pergunta. "Carlos pagou a segunda do empréstimo" → parcela 2 da dívida do empréstimo.
 - `transcribe` agora devolve `assistant` também nos erros.
 
+## 9b. Voz não fica refém de cadastro (avulsos)
+
+Ajuste pedido após o primeiro deploy: "Vendi o iPhone 13 pro Carlos por R$ 3.000" respondia
+"Não encontrei 'iPhone 13' disponível no seu estoque" e não registrava nada.
+
+| Situação na fala | Antes | Agora |
+| :--- | :--- | :--- |
+| Mercadoria não está no estoque | recusava a venda | venda registrada; mercadoria **avulsa** nasce vendida na mesma transação |
+| Custo dessa mercadoria não dito | — | lucro fica **pendente** (não entra no "Ganhei este mês"); a voz pergunta "Quanto você pagou nessa mercadoria?" e a resposta ("paguei dois mil nele") grava o custo e o lucro. "Não sei" deixa para depois |
+| Cliente não encontrado | criava cliente normal | cria **cliente avulso** com o nome dito |
+| Cliente não dito (venda/troca/compra/empréstimo) | perguntava "com quem?" | registra com "Cliente avulso" |
+| Mercadoria não dita na venda | perguntava "qual mercadoria?" | registra "Mercadoria avulsa" |
+| Nome bate com dois cadastros ("João") | perguntava qual | **continua perguntando**: escolher sozinho lançaria a dívida na pessoa errada |
+| Pagamento/abatimento sem cliente | perguntava | continua perguntando (a dívida é de alguém) |
+| Valor da venda não dito | perguntava | continua perguntando (não se inventa valor) |
+
+A resposta avisa em uma frase: "Não estavam no cadastro: Marcos e iPhone 15. Dá pra vincular depois."
+
+**Depois, na tela:**
+- Home mostra "Para completar depois" (clientes avulsos, vendas sem custo).
+- Cliente avulso: selo "Avulso" + **Vincular a um cliente** (tudo dele passa para o cadastro escolhido,
+  inclusive dívidas, empréstimos e pagamentos, e o avulso some) ou **Transformar em cliente** (edita e confirma).
+- Mercadoria avulsa: **É uma do estoque** (a venda passa a ser dessa mercadoria, que vira vendida, e o lucro
+  é recalculado com o custo dela) ou **Confirmar mercadoria**; se faltar custo, "Falta o custo" aparece direto.
+- Filtros "Avulsos" (clientes) e "Revisar" (estoque).
+- Venda e troca manuais também aceitam "Não está no estoque" (nome + custo opcional), pelo mesmo caminho.
+
+A resposta ao custo é tratada sem LLM (número falado) e nunca é reinterpretada como venda nova; o prompt da
+LLM também é avisado de que a venda já foi registrada.
+
 ## 10. Testes
 
 | Suíte | Resultado |
 | :--- | :--- |
 | `npm run lint` | limpo |
-| `npm run test` | financeiro 11/11 · pipeline IA 26/26 · domínio 9/9 · **módulos do app 23/23** (novo) · benchmark de regras aprovado (400/400 núcleo; 0% inseguro no fallback) · diálogo canônico 4/4 |
-| `npm run test:security` | **15/15** (+3: empréstimo anon, cruzado entre usuários, UPDATE/DELETE direto) |
-| `npm run test:e2e` | multi-turno 9/9 · finance-ops 10/10 · assinatura 10/10 · auth 3/3 · **módulos do app 12/12** (novo) · segurança 15/15 |
-| `E2E_INTERPRETER=rules npm run test:app` | 12/12 (fluxos de voz também pelo parser determinístico) |
-| `npm run test:ui` (novo, Chrome real) | **13/13** — todas as 15 telas × 6 larguras, fluxos clicando, voz contextual |
+| `npm run test` | financeiro 11/11 · pipeline IA 26/26 · domínio 9/9 · **módulos do app 27/27** (novo) · benchmark de regras aprovado (400/400 núcleo; 0% inseguro no fallback) · diálogo canônico 4/4 |
+| `npm run test:security` | **16/16** (+4: empréstimo anon, cruzado entre usuários, UPDATE/DELETE direto, vincular/custo de avulso de outro usuário) |
+| `npm run test:e2e` | multi-turno 9/9 · finance-ops 10/10 · assinatura 10/10 · auth 3/3 · **módulos do app 18/18** (novo) · segurança 16/16 |
+| `E2E_INTERPRETER=rules npm run test:app` | 18/18 (fluxos de voz também pelo parser determinístico) |
+| `npm run test:ui` (novo, Chrome real) | **14/14** — 17 telas × 6 larguras, fluxos clicando, voz contextual, vincular avulso e informar custo |
 
 Fluxos obrigatórios (todos no banco real): 1 cadastro → Carlos; 2 iPhone custo 2000 (+200 conserto +50 frete
 = 2250); 3 venda 3200 / 1000 Pix / 4×550 (idempotente); 4 empréstimo 2000 + 500 em 5×500; 5 receber 500 no
@@ -162,6 +202,16 @@ settlement do Carlos, na dívida do empréstimo, R$ 500, saldo 1.500, venda do i
 Observação honesta: numa das execuções completas o multi-turno falhou 3/9 porque a OpenAI demorou mais de
 15 s em um turno. O sistema fez o certo (caiu no parser e pediu confirmação em vez de gravar) e a reexecução
 passou 9/9. É instabilidade externa, não regressão.
+
+Achados do ajuste de avulsos corrigidos no caminho (todos cobertos por teste):
+- Parser de regras (fallback) atribuía venda sem nome ao último cliente da conversa; agora o contexto só
+  vale com pronome ("vendi pra ele") ou na tela do cliente.
+- Grounding: "o João pagou" (três Joãos) podia virar o "João Santos" da conversa se a LLM completasse o nome;
+  agora nome dito precisa estar inteiro na fala, senão pergunta.
+- Parser de regras: "por 80 reais" virava 80 mil; mercadorias fora da lista fixa ("iPhone 15", "televisão")
+  agora são reconhecidas. Métrica informativa do parser puro na fala real subiu de 49,8% para 57,2% de
+  "execução insegura" porque ele agora preenche mais campos em vez de perguntar; em produção esse caminho
+  sempre lê de volta e só grava com "sim" (fallback de produção continua 0% inseguro).
 
 `npm run test:ui` precisa de `next start` rodando e Chrome instalado (`CHROME_PATH` se estiver em outro lugar):
 `npm run build && npx next start -p 3100` e depois `UI_BASE_URL=http://localhost:3100 npm run test:ui`.
@@ -176,6 +226,9 @@ passou 9/9. É instabilidade externa, não regressão.
 | `0bf0143` | feat(auth): sign-up, login, password reset and route guards |
 | `ac77dfb` | feat(app): shortcut-driven app with customers, stock, sales, trades, loans and payments |
 | `8798d48` | test: cover app modules, loans, contextual voice and screens in a real browser |
+| `82a3da4` | feat(db): sell without stock and provisional customers/items |
+| `5940f66` | feat: voice never blocks on a missing customer or product |
+| `ca4c849` | test: cover provisional sales, cost follow-up and linking |
 
 95 arquivos (64 novos, 31 alterados), +8.525 / −826 linhas. Dependência nova só de desenvolvimento:
 `playwright-core` (sem download de navegador; usa o Chrome instalado).
@@ -189,7 +242,8 @@ passou 9/9. É instabilidade externa, não regressão.
 
 - Push `61ef171..8798d48` em `main` → status do GitHub `Vercel: success — Deployment has completed`
   (`2026-09-24T00:44Z`). O commit deste relatório gera um novo deploy só de documentação.
-- Migration `000014` aplicada no banco real antes do deploy (`npm run db:migrate`).
+- Ajuste de avulsos: push `0110dbf..ca4c849` → `Vercel: success — Deployment has completed` (`2026-09-24T02:12Z`).
+- Migrations `000014`, `000015` e `000016` aplicadas no banco real antes dos deploys (`npm run db:migrate`).
 - O domínio de produção continua atrás do Deployment Protection (ver relatório anterior): as telas foram
   validadas em `next start` local com o mesmo commit, o mesmo Supabase e a mesma OpenAI (`npm run test:ui`).
 
@@ -208,6 +262,9 @@ passou 9/9. É instabilidade externa, não regressão.
 
 **Produto / técnico:**
 
+- Avulsos: nome que bate com dois cadastros ainda pergunta qual (decisão consciente; dá para oferecer
+  "nenhum desses → avulso" como opção extra). Mercadoria **recebida** em troca não é marcada como avulsa
+  (entra no estoque normalmente). Cada venda sem nome gera seu próprio "Cliente avulso".
 - "Ganhei este mês" não inclui juros de empréstimo: separar juros de principal em cada recebimento é regra
   financeira ainda não definida (qual parte do pagamento é juro).
 - Não há desfazer de empréstimo nem de negócio inteiro (só de pagamento/abatimento).
