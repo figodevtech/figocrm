@@ -67,6 +67,12 @@ try {
     checkout: { id: 'checkout-1', customer: 'cus-1' } }), new Headers({ 'asaas-access-token': 'test-webhook-token' }));
   assert.strictEqual(checkoutPaid?.type, 'checkout.paid');
   assert.strictEqual(checkoutPaid?.providerCustomerId, 'cus-1');
+  const paymentCreated = await provider.verifyWebhook(JSON.stringify({ id: 'evt-3', event: 'PAYMENT_CREATED',
+    payment: { id: 'pay-2', customer: 'cus-1', subscription: 'sub-1', checkoutSession: 'checkout-1' } }),
+  new Headers({ 'asaas-access-token': 'test-webhook-token' }));
+  assert.strictEqual(paymentCreated?.type, 'subscription.created');
+  assert.strictEqual(paymentCreated?.providerCheckoutId, 'checkout-1');
+  assert.strictEqual(paymentCreated?.providerSubscriptionId, 'sub-1');
   await provider.cancelSubscription({ providerSubscriptionId: 'sub-1', atPeriodEnd: true });
   await provider.reactivateSubscription({ providerSubscriptionId: 'sub-1' });
   const updates = requests.filter((r) => r.init.method === 'PUT').map((r) => JSON.parse(String(r.init.body)));

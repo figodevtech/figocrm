@@ -21,6 +21,16 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    if (access.status === 'trialing') {
+      const { data: paid, error: paidError } = await admin.from('billing_checkout_sessions').select('id')
+        .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid')
+        .limit(1).maybeSingle();
+      if (paidError) return NextResponse.json({ error: 'billing_unavailable' }, { status: 503 });
+      if (paid) return NextResponse.json({
+        error: 'checkout_already_paid',
+        message: 'Sua assinatura já foi cadastrada. Aguarde a primeira cobrança; não é necessário assinar novamente.',
+      }, { status: 409 });
+    }
     const { data: existing } = await admin.from('billing_checkout_sessions').select('checkout_url, created_at')
       .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'created')
       .order('created_at', { ascending: false }).limit(1).maybeSingle();

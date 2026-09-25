@@ -276,6 +276,15 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
     const paid = await handleBillingWebhook(req(checkoutEvent), { provider, admin });
     assert.strictEqual(paid.status, 200);
     assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    const created = await handleBillingWebhook(req({ id: `evt_payment_created_${Date.now()}`, event: 'PAYMENT_CREATED',
+      payment: { id: 'pay_asaas_1', customer: 'cus_asaas_1', subscription: 'sub_asaas_1',
+        checkoutSession: checkoutId } }), { provider, admin });
+    assert.strictEqual(created.status, 200);
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    const { data: linked, error: linkedError } = await admin.from('subscriptions')
+      .select('provider_subscription_id').eq('user_id', billed.id).single();
+    assert.ifError(linkedError);
+    assert.strictEqual(linked?.provider_subscription_id, 'sub_asaas_1');
     const paymentEvent = { id: `evt_payment_${Date.now()}`, event: 'PAYMENT_CONFIRMED',
       payment: { id: 'pay_asaas_1', customer: 'cus_asaas_1', subscription: 'sub_asaas_1',
         dueDate: new Date().toISOString().slice(0, 10) } };

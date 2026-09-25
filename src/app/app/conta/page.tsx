@@ -4,6 +4,7 @@ import { getProfile } from '@/lib/domain/app-data';
 import { getSubscriptionAccess, MONTHLY_SUBSCRIPTION_FEE } from '@/lib/subscription';
 import { formatDate } from '@/lib/format';
 import { getBillingProvider } from '@/lib/billing/registry';
+import { createAdminClient } from '@/lib/supabase/admin';
 import { BillingCheckoutButton } from '@/components/app/billing-checkout-button';
 import { BillingCancelButton } from '@/components/app/billing-cancel-button';
 import { BillingReactivateButton } from '@/components/app/billing-reactivate-button';
@@ -37,8 +38,20 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   ]);
   const plan = access.effectivePlan === 'free' ? { label: 'Free', tone: 'sky' as const } : planLabel(access.effectiveStatus);
   const provider = getBillingProvider();
-  const checkoutAvailable = provider !== null;
+  const admin = createAdminClient();
+  const checkoutAvailable = provider !== null && admin !== null;
+  let paidCheckout = false;
+  let checkoutLookupFailed = false;
+  if (provider && admin && access.status === 'trialing') {
+    const { data, error } = await admin.from('billing_checkout_sessions').select('id')
+      .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid')
+      .limit(1).maybeSingle();
+    paidCheckout = !!data;
+    checkoutLookupFailed = !!error;
+  }
   const managedSubscription = !!(provider && billingSub?.provider === provider.name && billingSub.provider_subscription_id);
+  const canSubscribe = checkoutAvailable && !paidCheckout && !checkoutLookupFailed
+    && (access.effectiveStatus === 'trialing' || (access.effectiveStatus !== 'active' && access.effectivePlan !== 'pro'));
 
   return (
     <div className="mx-auto max-w-xl">
@@ -46,7 +59,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
       <SectionTitle>Plano</SectionTitle>
       <Card>
-        {checkout === 'retorno' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Checkout concluído. Aguardando a confirmação financeira do Asaas para atualizar o plano.</p> : null}
+        {paidCheckout ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Assinatura cadastrada no Asaas. {access.effectiveStatus === 'trialing' ? `Seu Pro continua no teste gratuito até ${access.trialEndsAt ? formatDate(access.trialEndsAt) : 'o fim do teste'}.` : 'A primeira cobrança ainda está pendente.'} Você não precisa assinar novamente.</p> : null}
+        {checkout === 'retorno' && !paidCheckout && access.effectiveStatus === 'active' ? <p className="mb-3 rounded-xl bg-emerald-400/10 p-3 text-sm text-emerald-100">Pagamento confirmado. Seu Pro está ativo.</p> : null}
+        {checkout === 'retorno' && !paidCheckout && access.effectiveStatus !== 'active' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Retorno do checkout recebido. Estamos conferindo o resultado com o Asaas; atualize a página em instantes.</p> : null}
+        {checkoutLookupFailed ? <p className="mb-3 rounded-xl bg-amber-400/10 p-3 text-sm text-amber-100">Não consegui verificar sua assinatura agora. Atualize a página em instantes.</p> : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-lg font-semibold text-white">FigoCRM {access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
           <Badge tone={plan.tone}>{plan.label}</Badge>
@@ -55,7 +71,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <Row label="Dias restantes" value={`${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'dia' : 'dias'}`} strong tone="sky" />
         ) : null}
         {access.trialEndsAt && access.effectiveStatus === 'trialing' ? <Row label="Teste termina em" value={formatDate(access.trialEndsAt)} /> : null}
-        {access.effectiveStatus === 'trialing' ? <p className="mt-3 text-sm text-slate-300">Depois do teste você continua no Free se não assinar.</p> : null}
+        {access.effectiveStatus === 'trialing' ? <p className="mt-3 text-sm text-slate-300">{paidCheckout ? 'O plano pago começa após a confirmação da primeira cobrança. Se ela não for confirmada, você continua no Free.' : 'Depois do teste você continua no Free se não assinar.'}</p> : null}
         {access.currentPeriodEnd && access.effectiveStatus !== 'trialing' ? <Row label={access.effectiveStatus === 'active' ? 'Próxima renovação' : 'Período pago até'} value={formatDate(access.currentPeriodEnd)} /> : null}
         <Row label="Clientes" value={access.customerLimit === null ? `${access.customerCount} · ilimitados` : `${access.customerCount} / ${access.customerLimit}`} />
         <Row label="Comandos de voz neste mês" value={access.effectivePlan === 'free' ? `${access.voiceUsedThisMonth} / ${access.voiceMonthlyLimit}` : `${access.voiceUsedThisMonth}`} />
@@ -64,8 +80,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {!access.canWrite ? (
           <p className="mt-2 text-base text-rose-200">Novos registros estão bloqueados. Seus dados continuam disponíveis para consulta.</p>
         ) : null}
-        {checkoutAvailable && access.effectiveStatus !== 'active' && access.effectivePlan !== 'pro' ? <BillingCheckoutButton /> : null}
-        {checkoutAvailable && access.effectiveStatus === 'trialing' ? <BillingCheckoutButton /> : null}
+        {canSubscribe ? <BillingCheckoutButton /> : null}
         {managedSubscription && access.effectiveStatus === 'active' && !access.cancelAtPeriodEnd ? <BillingCancelButton /> : null}
         {managedSubscription && access.effectiveStatus === 'canceled' && access.currentPeriodEnd ? <BillingReactivateButton /> : null}
         {!checkoutAvailable ? <p className="mt-2 text-sm text-slate-400">A assinatura online está sendo preparada. O Free continua disponível.</p> : null}

@@ -157,6 +157,8 @@ export class AsaasProvider implements BillingProvider {
       return { ...base, type: type || 'ignored' };
     }
     if (kind === 'SUBSCRIPTION_CREATED') return { ...base, type: 'subscription.created' };
+    if (kind === 'PAYMENT_CREATED' && providerSubscriptionId)
+      return { ...base, type: 'subscription.created' };
     if (kind === 'PAYMENT_CONFIRMED' || kind === 'PAYMENT_RECEIVED') {
       if (!providerSubscriptionId) return { ...base, type: 'ignored' };
       let periodEnd = isoDay(payment.dueDate);

@@ -135,6 +135,11 @@ test('billing: ativação, falha, cancelamento e evento atrasado', () => {
   assert.strictEqual(late.status, undefined, 'evento atrasado não reativa assinatura cancelada');
   const checkout = subscriptionUpdateFor(event('checkout.paid'), { current_period_end: null, past_due_at: null }, now);
   assert.deepStrictEqual(checkout, {}, 'checkout pago não libera Pro sem webhook financeiro');
+  const created = subscriptionUpdateFor(event('subscription.created', {
+    providerSubscriptionId: 'sub-nova', providerCustomerId: 'cus-novo',
+  }), { current_period_end: null, past_due_at: null, status: 'trialing' }, now);
+  assert.strictEqual(created.provider_subscription_id, 'sub-nova');
+  assert.strictEqual(created.status, undefined, 'cobrança criada não ativa Pro pago');
   const oldFailure = subscriptionUpdateFor(event('payment.failed', { providerSubscriptionId: 'sub-antiga' }),
     { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null, provider_subscription_id: 'sub-atual' }, now);
   assert.deepStrictEqual(oldFailure, {}, 'falha de assinatura antiga não derruba a assinatura atual');
