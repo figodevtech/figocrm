@@ -39,3 +39,5 @@ Thumbs.db
 
 # Relatórios gerados pelo benchmark LLM
 /tests/voice-benchmark/reports/
+
+/.vercel/
