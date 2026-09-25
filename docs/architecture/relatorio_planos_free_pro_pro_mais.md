@@ -32,3 +32,13 @@ Assinaturas existentes com `provider_subscription_id` e R$ 24,50 permanecem com 
 - `npm run report:ai-usage -- --days=30` executado contra o Supabase.
 
 Não foi feito um pagamento real nos preços novos. A primeira compra real deve confirmar a cobrança no Asaas, a associação ao plano comprado e a data da próxima renovação.
+
+## Incidente de cancelamento após a virada para produção (25/09/2026)
+
+O cancelamento retornava `provider_unavailable` porque a única assinatura Pro vinculada no banco havia sido criada no Asaas Sandbox (R$ 24,50), enquanto o endpoint de produção consultava o Asaas de produção. Os dois ambientes têm dados separados. Os logs da Vercel registraram duas respostas 502 em `/api/billing/cancel`.
+
+A recorrência de teste foi inativada no Sandbox e sua parcela futura pendente foi removida. A conferência posterior retornou `INACTIVE` e zero parcelas futuras pendentes. No Supabase, a assinatura ficou `canceled`, com `cancel_at_period_end = true`, sem vínculo com a recorrência ou o cliente de teste. O acesso Pro existente termina em 24/10/2026; nenhuma cobrança real foi criada nesse procedimento.
+
+O commit `7cc542e` permite contratar Pro ou Pro Mais em produção durante o período remanescente dessa assinatura de teste encerrada. O checkout pago depois do cancelamento bloqueia uma segunda contratação, e a ativação continua condicionada ao evento financeiro autenticado. A página de conta explica essa opção. Falhas futuras de cancelamento agora registram a causa no servidor, sem expor credenciais na resposta.
+
+Validação: TypeScript, lint, build e 18/18 testes E2E de assinatura passaram; a chave Asaas configurada na Vercel Production respondeu HTTP 200 a uma consulta de leitura; o deploy Production do commit `7cc542e` ficou `READY`. Os endpoints publicados exigem autenticação (401 sem sessão). A primeira compra real e o webhook financeiro correspondente ainda precisam ser observados para confirmar o ciclo completo em produção.
