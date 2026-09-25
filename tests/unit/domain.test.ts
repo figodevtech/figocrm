@@ -131,6 +131,12 @@ test('billing: ativação, falha, cancelamento e evento atrasado', () => {
   const canceled = subscriptionUpdateFor(event('subscription.canceled'), { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null }, now);
   assert.strictEqual(canceled.status, 'canceled');
 
+  const paidAfterCancel = subscriptionUpdateFor(event('subscription.activated', {
+    cancelAtPeriodEnd: true, currentPeriodEnd: '2026-11-23T00:00:00Z',
+  }), { status: 'canceled', current_period_end: '2026-10-23T00:00:00Z', past_due_at: null }, now);
+  assert.strictEqual(paidAfterCancel.status, 'canceled', 'evento financeiro tardio não religa renovação');
+  assert.strictEqual(paidAfterCancel.current_period_end, '2026-11-23T00:00:00Z');
+
   const late = subscriptionUpdateFor(event('subscription.renewed', { currentPeriodEnd: '2026-09-30T00:00:00Z' }), { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null }, now);
   assert.strictEqual(late.current_period_end, undefined, 'evento atrasado não volta o período');
   assert.strictEqual(late.status, undefined, 'evento atrasado não reativa assinatura cancelada');

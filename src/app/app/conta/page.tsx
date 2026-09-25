@@ -10,7 +10,7 @@ import { BillingCancelButton } from '@/components/app/billing-cancel-button';
 import { BillingReactivateButton } from '@/components/app/billing-reactivate-button';
 import { BillingStatusRefresh } from '@/components/app/billing-status-refresh';
 import { LogoutButton, PasswordForm, ProfileForm } from '@/components/app/account-forms';
-import { Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
+import { Alert, Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
 
 export const metadata: Metadata = { title: 'Conta' };
 
@@ -23,7 +23,7 @@ function planLabel(effective: string): { label: string; tone: 'emerald' | 'amber
     case 'past_due':
       return { label: 'Pagamento pendente', tone: 'amber' };
     case 'canceled':
-      return { label: 'Cancelado (até o fim do período)', tone: 'amber' };
+      return { label: 'Pro até o fim do período', tone: 'amber' };
     default:
       return { label: 'Vencido', tone: 'rose' };
   }
@@ -78,12 +78,12 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <Row label="Clientes" value={access.customerLimit === null ? `${access.customerCount} · ilimitados` : `${access.customerCount} / ${access.customerLimit}`} />
         <Row label="Comandos de voz neste mês" value={access.effectivePlan === 'free' ? `${access.voiceUsedThisMonth} / ${access.voiceMonthlyLimit}` : `${access.voiceUsedThisMonth}`} />
         {access.effectivePlan === 'free' ? <p className="mt-3 text-sm text-slate-300">O Free continua sem prazo: até {access.customerLimit} clientes e {access.voiceMonthlyLimit} comandos de voz por mês. O Pro custa {MONTHLY_SUBSCRIPTION_FEE}, com clientes ilimitados.</p> : null}
-        {access.cancelAtPeriodEnd ? <p className="mt-3 text-sm text-amber-200">A renovação foi cancelada. O Pro fica disponível até o fim do período pago; depois você continua no Free.</p> : null}
+        {access.cancelAtPeriodEnd ? <div className="mt-3"><Alert tone="success">Renovação cancelada. Seu Pro continua até {formatDate(access.currentPeriodEnd)}. Depois, você continua no Free, sem perder seus dados nem receber outra cobrança.</Alert></div> : null}
         {!access.canWrite ? (
           <p className="mt-2 text-base text-rose-200">Novos registros estão bloqueados. Seus dados continuam disponíveis para consulta.</p>
         ) : null}
         {canSubscribe ? <BillingCheckoutButton /> : null}
-        {managedSubscription && access.effectiveStatus === 'active' && !access.cancelAtPeriodEnd ? <BillingCancelButton /> : null}
+        {managedSubscription && access.effectiveStatus === 'active' && !access.cancelAtPeriodEnd && access.currentPeriodEnd ? <BillingCancelButton paidUntil={access.currentPeriodEnd} /> : null}
         {managedSubscription && access.effectiveStatus === 'canceled' && access.currentPeriodEnd ? <BillingReactivateButton /> : null}
         {!checkoutAvailable ? <p className="mt-2 text-sm text-slate-400">A assinatura online está sendo preparada. O Free continua disponível.</p> : null}
       </Card>

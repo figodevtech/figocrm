@@ -4,15 +4,34 @@ import { AsaasProvider, asaasConfig } from '../../src/lib/billing/asaas';
 const provider = new AsaasProvider({ apiKey: 'test-key', webhookToken: 'test-webhook-token', baseUrl: 'https://api-sandbox.asaas.com/v3' });
 const originalFetch = globalThis.fetch;
 const requests: Array<{ url: string; init: RequestInit }> = [];
+let subscriptionStatus = 'ACTIVE';
+let futurePaymentDeleted = false;
+let subscriptionMissing = false;
 
 globalThis.fetch = async (url, init) => {
   requests.push({ url: String(url), init: init || {} });
   if (String(url).endsWith('/checkouts')) return Response.json({ id: 'checkout-1', link: 'https://sandbox.asaas.com/checkoutSession/show/checkout-1' });
-  if (String(url).endsWith('/subscriptions/sub-1') && init?.method === 'PUT') return Response.json({ id: 'sub-1' });
+  if (String(url).endsWith('/subscriptions/sub-1') && init?.method === 'PUT') {
+    subscriptionStatus = JSON.parse(String(init.body)).status;
+    return Response.json({ id: 'sub-1', status: subscriptionStatus });
+  }
+  if (String(url).endsWith('/subscriptions/sub-1') && subscriptionMissing)
+    return Response.json({}, { status: 404 });
   if (String(url).endsWith('/subscriptions/sub-1')) return Response.json({
-    id: 'sub-1', customer: 'cus-1', status: 'ACTIVE', cycle: 'MONTHLY', billingType: 'CREDIT_CARD',
+    id: 'sub-1', customer: 'cus-1', status: subscriptionStatus, cycle: 'MONTHLY', billingType: 'CREDIT_CARD',
     value: 24.5, nextDueDate: '2026-11-01', externalReference: 'user-1',
   });
+  if (String(url).includes('/subscriptions/sub-1/payments?')) return Response.json({
+    data: [
+      { id: 'pay-paid', status: 'CONFIRMED', dueDate: '2026-10-01' },
+      { id: 'pay-prior', status: 'PENDING', dueDate: '2026-10-15' },
+      ...(futurePaymentDeleted ? [] : [{ id: 'pay-next', status: 'PENDING', dueDate: '2026-11-01' }]),
+    ], hasMore: false,
+  });
+  if (String(url).endsWith('/payments/pay-next') && init?.method === 'DELETE') {
+    futurePaymentDeleted = true;
+    return Response.json({ deleted: true });
+  }
   throw new Error(`Unexpected URL: ${url}`);
 };
 
@@ -63,6 +82,7 @@ try {
   assert.strictEqual(event?.userId, 'user-1');
   assert.strictEqual(event?.currentPeriodStart, '2026-10-01T00:00:00.000Z');
   assert.strictEqual(event?.currentPeriodEnd, '2026-11-01T00:00:00.000Z');
+  assert.strictEqual(event?.cancelAtPeriodEnd, false);
 
   const checkoutPaid = await provider.verifyWebhook(JSON.stringify({ id: 'evt-2', event: 'CHECKOUT_PAID',
     checkout: { id: 'checkout-1', customer: 'cus-1' } }), new Headers({ 'asaas-access-token': 'test-webhook-token' }));
@@ -74,8 +94,24 @@ try {
   assert.strictEqual(paymentCreated?.type, 'subscription.created');
   assert.strictEqual(paymentCreated?.providerCheckoutId, 'checkout-1');
   assert.strictEqual(paymentCreated?.providerSubscriptionId, 'sub-1');
-  await provider.cancelSubscription({ providerSubscriptionId: 'sub-1', atPeriodEnd: true });
+  await provider.cancelSubscription({ providerSubscriptionId: 'sub-1', atPeriodEnd: true,
+    currentPeriodEnd: '2026-11-01T00:00:00.000Z' });
+  assert.strictEqual(futurePaymentDeleted, true);
+  await provider.cancelSubscription({ providerSubscriptionId: 'sub-1', atPeriodEnd: true,
+    currentPeriodEnd: '2026-11-01T00:00:00.000Z' });
+  assert.strictEqual(requests.filter((r) => r.url.endsWith('/payments/pay-next') && r.init.method === 'DELETE').length, 1);
+  const delayedPayment = await provider.verifyWebhook(raw, new Headers({ 'asaas-access-token': 'test-webhook-token' }));
+  assert.strictEqual(delayedPayment?.cancelAtPeriodEnd, true, 'cobrança tardia não religa recorrência inativa');
   await provider.reactivateSubscription({ providerSubscriptionId: 'sub-1' });
+  const staleInactivated = await provider.verifyWebhook(JSON.stringify({ id: 'evt-4',
+    event: 'SUBSCRIPTION_INACTIVATED', subscription: { id: 'sub-1' } }),
+  new Headers({ 'asaas-access-token': 'test-webhook-token' }));
+  assert.strictEqual(staleInactivated?.type, 'ignored', 'webhook atrasado não cancela assinatura reativada');
+  subscriptionMissing = true;
+  const removedBeforeDelivery = await provider.verifyWebhook(JSON.stringify({ id: 'evt-5',
+    event: 'SUBSCRIPTION_INACTIVATED', subscription: { id: 'sub-1' } }),
+  new Headers({ 'asaas-access-token': 'test-webhook-token' }));
+  assert.strictEqual(removedBeforeDelivery?.type, 'subscription.canceled');
   const updates = requests.filter((r) => r.init.method === 'PUT').map((r) => JSON.parse(String(r.init.body)));
   assert.deepStrictEqual(updates.map((u) => u.status), ['INACTIVE', 'ACTIVE']);
   console.log('Asaas: checkout, token, evento financeiro e correlação passaram.');

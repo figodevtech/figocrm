@@ -192,7 +192,8 @@ const testProvider: BillingProvider = {
     if (given.length !== expected.length || !crypto.timingSafeEqual(Buffer.from(given), Buffer.from(expected))) return null;
     const body = JSON.parse(rawBody);
     return { provider: 'test', eventId: body.id, type: body.type, userId: body.userId, providerSubscriptionId: body.subscriptionId,
-      currentPeriodEnd: body.periodEnd, occurredAt: body.createdAt, raw: body } satisfies NormalizedBillingEvent;
+      currentPeriodEnd: body.periodEnd, cancelAtPeriodEnd: body.cancelAtPeriodEnd,
+      occurredAt: body.createdAt, raw: body } satisfies NormalizedBillingEvent;
   },
 };
 
@@ -208,6 +209,19 @@ function webhookRequest(body: object, signature?: string): Request {
 test('webhook sem provedor configurado recusa e não altera nada', async () => {
   const res = await handleBillingWebhook(webhookRequest({ id: 'x' }), { provider: null });
   assert.strictEqual(res.status, 503);
+});
+
+test('cancelamento de assinatura sem conta vinculada é reconhecido sem travar a fila', async () => {
+  const eventId = `evt_orphan_sub_cancel_${Date.now()}`;
+  const response = await handleBillingWebhook(webhookRequest({ id: eventId, type: 'subscription.canceled',
+    subscriptionId: 'sub_sem_conta', createdAt: new Date().toISOString() }),
+  { provider: testProvider, admin: adminClient() });
+  assert.strictEqual(response.status, 200);
+  const { data } = await adminClient().from('billing_events').select('processed_at,error')
+    .eq('event_id', eventId).single();
+  assert.ok(data?.processed_at);
+  assert.strictEqual(data?.error, null);
+  await adminClient().from('billing_events').delete().eq('event_id', eventId);
 });
 
 test('webhook com assinatura inválida é recusado', async () => {
@@ -233,6 +247,19 @@ test('webhook válido ativa a assinatura uma única vez (idempotente por event_i
   assert.strictEqual(await canInsert(), true, 'assinatura ativa libera escrita');
   await seedItem(user, 'Item pós-assinatura', 10);
   await sql('DELETE FROM billing_events WHERE provider = $1 AND user_id = $2', ['test', user.id]);
+});
+
+test('cancelamento mantém Pro pago até o vencimento e depois libera o Free', async () => {
+  const event = { id: `evt_cancel_${Date.now()}`, type: 'subscription.canceled', userId: user.id,
+    subscriptionId: `sub_${user.id.slice(0, 8)}`, cancelAtPeriodEnd: true, createdAt: new Date().toISOString() };
+  const response = await handleBillingWebhook(webhookRequest(event), { provider: testProvider, admin: adminClient() });
+  assert.strictEqual(response.status, 200);
+  const paid = await access();
+  assert.deepStrictEqual([paid.status, paid.effectivePlan, paid.reason, paid.cancelAtPeriodEnd],
+    ['canceled', 'pro', 'canceled_until_period_end', true]);
+  await setSub(`current_period_end = NOW() - INTERVAL '1 day'`);
+  const free = await access();
+  assert.deepStrictEqual([free.effectivePlan, free.reason], ['free', 'canceled']);
 });
 
 test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token inválido recusa', async () => {
@@ -267,9 +294,11 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
     assert.strictEqual(orphanLog?.error, null);
     await admin.from('billing_events').delete().eq('event_id', orphanEventId);
     const other = await createTestUser('asaas-other');
-    const mismatched = await handleBillingWebhook(req({ id: `evt_mismatch_${Date.now()}`, event: 'CHECKOUT_PAID',
+    const mismatchEventId = `evt_mismatch_${Date.now()}`;
+    const mismatched = await handleBillingWebhook(req({ id: mismatchEventId, event: 'CHECKOUT_PAID',
       checkout: { id: checkoutId, customer: 'cus_asaas_1', externalReference: other.id } }), { provider, admin });
     assert.strictEqual(mismatched.status, 500);
+    await admin.from('billing_events').delete().eq('event_id', mismatchEventId);
     assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
     const checkoutEvent = { id: `evt_checkout_${Date.now()}`, event: 'CHECKOUT_PAID',
       checkout: { id: checkoutId, customer: 'cus_asaas_1' } };

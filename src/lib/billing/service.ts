@@ -99,6 +99,9 @@ export function subscriptionUpdateFor(
     && event.providerSubscriptionId !== current.provider_subscription_id);
   if (differentSubscription && ['payment.failed', 'subscription.canceled', 'subscription.expired', 'subscription.created'].includes(event.type))
     return {};
+  if (differentSubscription && current.status === 'active'
+    && ['subscription.activated', 'subscription.renewed', 'subscription.reactivated'].includes(event.type))
+    return {};
 
   switch (event.type) {
     case 'subscription.activated':
@@ -106,6 +109,12 @@ export function subscriptionUpdateFor(
     case 'subscription.reactivated':
       if (event.currentPeriodEnd && current.current_period_end && event.currentPeriodEnd <= current.current_period_end
         && current.status !== 'past_due') return {};
+      if (event.cancelAtPeriodEnd === true) {
+        // Uma cobrança financeira entregue após o cancelamento pode ampliar o período já pago,
+        // mas não deve religar a renovação desativada no provedor.
+        return { ...provider, ...period, status: 'canceled', cancel_at_period_end: true,
+          ...(current.status === 'canceled' ? {} : { canceled_at: now.toISOString() }) };
+      }
       return { ...provider, ...period, status: 'active', trial_ends_at: null,
         plan_code: 'figo_pro_mensal', price_cents: 2450,
         cancel_at_period_end: event.cancelAtPeriodEnd ?? false, past_due_at: null, canceled_at: null };
@@ -159,7 +168,7 @@ export async function applyBillingEvent(admin: SupabaseClient, event: Normalized
   }
 
   if (!sub) {
-    if (event.type === 'subscription.created' || event.type === 'checkout.created'
+    if (event.type === 'subscription.created' || event.type === 'subscription.canceled' || event.type === 'checkout.created'
       || event.type === 'checkout.canceled' || event.type === 'checkout.expired') {
       const markError = await markProcessed(admin, logged!.id);
       if (markError) return { applied: false, duplicate: false, error: markError };

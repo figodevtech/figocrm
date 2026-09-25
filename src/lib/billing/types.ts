@@ -61,7 +61,7 @@ export interface BillingProvider {
   createCustomer(input: { userId: string; email: string; name?: string }): Promise<{ providerCustomerId: string }>;
   createSubscription(input: { userId: string; providerCustomerId: string }): Promise<ProviderSubscription>;
   createCheckout(input: { userId: string; email: string; successUrl: string; cancelUrl: string; nextDueDate?: string }): Promise<CheckoutSession>;
-  cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean }): Promise<void>;
+  cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean; currentPeriodEnd: string }): Promise<void>;
   reactivateSubscription(input: { providerSubscriptionId: string }): Promise<void>;
   getSubscription(providerSubscriptionId: string): Promise<ProviderSubscription | null>;
   /**

@@ -100,11 +100,37 @@ export class AsaasProvider implements BillingProvider {
     return { providerSessionId: id, url, externalReference: input.userId };
   }
 
-  async cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean }): Promise<void> {
+  async cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean; currentPeriodEnd: string }): Promise<void> {
     if (!input.atPeriodEnd) throw new Error('Cancelamento imediato não está disponível.');
-    await this.request(`/subscriptions/${encodeURIComponent(input.providerSubscriptionId)}`, {
+    const periodEnd = input.currentPeriodEnd.slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(periodEnd)) throw new Error('Período pago inválido.');
+    const subscriptionPath = `/subscriptions/${encodeURIComponent(input.providerSubscriptionId)}`;
+    const current = await this.request(subscriptionPath);
+    if (current.status !== 'ACTIVE' && current.status !== 'INACTIVE')
+      throw new Error('Assinatura indisponível para cancelamento.');
+    if (current.status === 'ACTIVE') await this.request(subscriptionPath, {
       method: 'PUT', body: JSON.stringify({ status: 'INACTIVE' }),
     });
+
+    // O Asaas não remove cobranças já geradas ao inativar a recorrência.
+    // Elimina somente parcelas não pagas do próximo ciclo em diante.
+    const pendingIds: string[] = [];
+    for (let offset = 0; offset < 2000; offset += 100) {
+      const page = await this.request(`${subscriptionPath}/payments?limit=100&offset=${offset}`);
+      if (!Array.isArray(page.data)) throw new Error('Lista de cobranças inválida.');
+      for (const item of page.data) {
+        const payment = record(item);
+        const id = string(payment.id);
+        const dueDate = string(payment.dueDate);
+        if (id && dueDate && dueDate >= periodEnd && (payment.status === 'PENDING' || payment.status === 'OVERDUE'))
+          pendingIds.push(id);
+      }
+      if (page.hasMore !== true) break;
+      if (offset === 1900) throw new Error('Lista de cobranças excedeu o limite de segurança.');
+    }
+    for (const id of pendingIds) {
+      await this.request(`/payments/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    }
   }
 
   async reactivateSubscription(input: { providerSubscriptionId: string }): Promise<void> {
@@ -170,11 +196,26 @@ export class AsaasProvider implements BillingProvider {
       if (!periodEnd) return { ...base, type: 'ignored' };
       return { ...base, type: kind === 'PAYMENT_CONFIRMED' ? 'subscription.activated' : 'subscription.renewed',
         userId: base.userId || string(current.externalReference),
-        currentPeriodStart: isoDay(payment.dueDate), currentPeriodEnd: periodEnd };
+        currentPeriodStart: isoDay(payment.dueDate), currentPeriodEnd: periodEnd,
+        cancelAtPeriodEnd: current.status === 'INACTIVE' };
     }
     if (kind === 'PAYMENT_OVERDUE' || kind === 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED')
       return { ...base, type: 'payment.failed' };
-    if (kind === 'SUBSCRIPTION_INACTIVATED' || kind === 'SUBSCRIPTION_DELETED')
+    if (kind === 'SUBSCRIPTION_INACTIVATED') {
+      if (!providerSubscriptionId) return { ...base, type: 'ignored' };
+      let current: AsaasObject;
+      try {
+        current = await this.request(`/subscriptions/${encodeURIComponent(providerSubscriptionId)}`);
+      } catch (error) {
+        // A assinatura pode ter sido removida antes da entrega do evento de inativação.
+        if (error instanceof Error && error.message === 'Asaas HTTP 404')
+          return { ...base, type: 'subscription.canceled', cancelAtPeriodEnd: true };
+        throw error;
+      }
+      return { ...base, type: current.status === 'INACTIVE' ? 'subscription.canceled' : 'ignored',
+        cancelAtPeriodEnd: true };
+    }
+    if (kind === 'SUBSCRIPTION_DELETED')
       return { ...base, type: 'subscription.canceled', cancelAtPeriodEnd: true };
     return { ...base, type: 'ignored' };
   }
