@@ -40,6 +40,13 @@ test('brecha fechada: usuário não altera o próprio status/trial nem a tabela 
   assert.ok(sub.error || (sub.data ?? []).length === 0, 'update em subscriptions deve falhar');
   const ins = await user.client.from('subscriptions').insert({ user_id: user.id, status: 'active' });
   assert.ok(ins.error);
+  const catalog = await user.client.from('plan_entitlements').update({ voice_monthly_limit: 9999 })
+    .eq('plan_code', 'free').select();
+  assert.ok(catalog.error || (catalog.data ?? []).length === 0, 'usuário não muda a cota do catálogo');
+  const checkout = await user.client.from('billing_checkout_sessions').insert({ user_id: user.id,
+    provider: 'asaas', provider_checkout_id: 'forged', external_reference: user.id,
+    checkout_url: 'https://asaas.com/forged', plan_code: 'figo_pro_plus_mensal', price_cents: 8990 });
+  assert.ok(checkout.error, 'usuário não cria checkout pago na Data API');
   const [row] = await sql<{ status: string }>('SELECT status FROM subscriptions WHERE user_id = $1', [user.id]);
   assert.strictEqual(row.status, 'trialing');
 });
@@ -164,6 +171,36 @@ test('Free permite 20 comandos de voz no mês e recusa o 21º', async () => {
   assert.strictEqual((await getSubscriptionAccess(voice.client)).voiceRemainingThisMonth, 0);
 });
 
+test('trial usa 300 comandos; Pro e Pro Mais respeitam 300 e 1000 no banco', async () => {
+  const limited = await createTestUser('three-plan-voice');
+  const consume = () => limited.client.rpc('consume_voice_rate_limit', {
+    p_bucket: 'voice', p_limit_per_minute: 10000, p_limit_per_hour: 10000,
+  });
+  const seedUsage = (hits: number) => sql(`INSERT INTO voice_rate_limits (user_id,bucket,window_kind,window_start,hits)
+    VALUES ($1,'voice','month',date_trunc('month',now()),$2)
+    ON CONFLICT (user_id,bucket,window_kind,window_start) DO UPDATE SET hits = excluded.hits`, [limited.id, hits]);
+  assert.deepStrictEqual([(await getSubscriptionAccess(limited.client)).effectivePlan,
+    (await getSubscriptionAccess(limited.client)).voiceMonthlyLimit], ['pro', 300]);
+  await seedUsage(299);
+  assert.strictEqual((await consume()).data?.allowed, true);
+  assert.deepStrictEqual([(await consume()).data?.allowed, (await consume()).data?.monthly_limit], [false, 300]);
+  await sql(`UPDATE subscriptions SET status='active', plan_code='figo_pro_plus_mensal', price_cents=8990,
+    current_period_end=now()+interval '30 days' WHERE user_id=$1`, [limited.id]);
+  assert.deepStrictEqual([(await getSubscriptionAccess(limited.client)).effectivePlan,
+    (await getSubscriptionAccess(limited.client)).voiceMonthlyLimit], ['pro_plus', 1000]);
+  for (let i = 0; i < 11; i++) {
+    const { error } = await limited.client.from('customers').insert({ user_id: limited.id, name: `Pro Mais ${i}` });
+    assert.ifError(error);
+  }
+  await seedUsage(999);
+  assert.strictEqual((await consume()).data?.allowed, true);
+  assert.deepStrictEqual([(await consume()).data?.allowed, (await consume()).data?.monthly_limit], [false, 1000]);
+  await sql(`UPDATE subscriptions SET plan_code='figo_pro_mensal', price_cents=3990 WHERE user_id=$1`, [limited.id]);
+  await seedUsage(299);
+  assert.strictEqual((await consume()).data?.allowed, true);
+  assert.deepStrictEqual([(await consume()).data?.allowed, (await consume()).data?.monthly_limit], [false, 300]);
+});
+
 test('dois inserts simultâneos com 9 clientes só permitem chegar a 10', async () => {
   const concurrent = await createTestUser('free-concurrent');
   await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [concurrent.id]);
@@ -183,6 +220,7 @@ const testProvider: BillingProvider = {
   createCustomer: async () => ({ providerCustomerId: 'cus_1' }),
   createSubscription: async () => { throw new Error('não usado'); },
   createCheckout: async () => { throw new Error('não usado'); },
+  changeSubscriptionPlan: async () => undefined,
   cancelSubscription: async () => undefined,
   reactivateSubscription: async () => undefined,
   getSubscription: async () => null,
@@ -262,7 +300,7 @@ test('cancelamento mantém Pro pago até o vencimento e depois libera o Free', a
   assert.deepStrictEqual([free.effectivePlan, free.reason], ['free', 'canceled']);
 });
 
-test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token inválido recusa', async () => {
+test('Asaas: checkout pago não ativa Pro Mais; pagamento autenticado ativa o plano comprado', async () => {
   const billed = await createTestUser('asaas-billing');
   await sql(`UPDATE subscriptions SET status = 'expired' WHERE user_id = $1`, [billed.id]);
   const checkoutId = `co_${Date.now()}`;
@@ -270,13 +308,14 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
   const { error: checkoutError } = await admin.from('billing_checkout_sessions').insert({
     user_id: billed.id, provider: 'asaas', provider_checkout_id: checkoutId,
     external_reference: billed.id, checkout_url: `https://sandbox.asaas.com/checkoutSession/show?id=${checkoutId}`,
+    plan_code: 'figo_pro_plus_mensal', price_cents: 8990,
   });
   assert.ifError(checkoutError);
   const provider = new AsaasProvider({ apiKey: 'mock-key', webhookToken: 'mock-token', baseUrl: 'https://api-sandbox.asaas.com/v3' });
   const originalFetch = globalThis.fetch;
   globalThis.fetch = async (url, init) => String(url).includes('api-sandbox.asaas.com')
     ? Response.json({ id: 'sub_asaas_1', customer: 'cus_asaas_1', status: 'ACTIVE',
-      cycle: 'MONTHLY', billingType: 'CREDIT_CARD', value: 24.5,
+      cycle: 'MONTHLY', billingType: 'CREDIT_CARD', value: 89.9,
       nextDueDate: new Date(Date.now() + 30 * 86_400_000).toISOString().slice(0, 10), externalReference: billed.id })
     : originalFetch(url, init);
   try {
@@ -316,14 +355,15 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
     assert.strictEqual(linked?.provider_subscription_id, 'sub_asaas_1');
     const paymentEvent = { id: `evt_payment_${Date.now()}`, event: 'PAYMENT_CONFIRMED',
       payment: { id: 'pay_asaas_1', customer: 'cus_asaas_1', subscription: 'sub_asaas_1',
-        dueDate: new Date().toISOString().slice(0, 10) } };
+        dueDate: new Date().toISOString().slice(0, 10), value: 89.9 } };
     const badToken = await handleBillingWebhook(req(paymentEvent, 'wrong'), { provider, admin });
     assert.strictEqual(badToken.status, 401);
     assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
     const confirmed = await handleBillingWebhook(req(paymentEvent), { provider, admin });
     assert.strictEqual(confirmed.status, 200);
     const paidAccess = await getSubscriptionAccess(billed.client);
-    assert.strictEqual(paidAccess.effectivePlan, 'pro');
+    assert.strictEqual(paidAccess.effectivePlan, 'pro_plus');
+    assert.strictEqual(paidAccess.voiceMonthlyLimit, 1000);
     assert.strictEqual(paidAccess.effectiveStatus, 'active');
     assert.strictEqual(paidAccess.trialEndsAt, undefined);
     assert.ok(paidAccess.currentPeriodEnd);

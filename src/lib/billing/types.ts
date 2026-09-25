@@ -1,14 +1,26 @@
 // src/lib/billing/types.ts
 // Contrato de cobrança compartilhado pelo adaptador Asaas e pelos testes.
 
-export const PLAN = {
-  code: 'figo_pro_mensal',
-  name: 'FigoCRM Pro',
-  priceCents: 2450,
-  currency: 'BRL',
-  interval: 'month',
-  trialDays: 7,
+export const PAID_PLANS = {
+  pro: { code: 'figo_pro_mensal', name: 'FigoCRM Pro', priceCents: 3990, voiceMonthlyLimit: 300 },
+  pro_plus: { code: 'figo_pro_plus_mensal', name: 'FigoCRM Pro Mais', priceCents: 8990, voiceMonthlyLimit: 1000 },
 } as const;
+export type PaidPlan = keyof typeof PAID_PLANS;
+export type PlanCode = (typeof PAID_PLANS)[PaidPlan]['code'];
+export function isPaidPlan(value: unknown): value is PaidPlan { return value === 'pro' || value === 'pro_plus'; }
+export function requestedPlanFromPayload(value: unknown): PaidPlan | null {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+  const entries = Object.entries(value);
+  return entries.length === 1 && entries[0][0] === 'plan' && isPaidPlan(entries[0][1]) ? entries[0][1] : null;
+}
+export function planForCode(code: string): PaidPlan | null {
+  if (code === PAID_PLANS.pro.code) return 'pro';
+  if (code === PAID_PLANS.pro_plus.code) return 'pro_plus';
+  return null;
+}
+export function formatPrice(cents: number): string {
+  return (cents / 100).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+}
 
 export type BillingEventType =
   | 'subscription.activated'
@@ -34,6 +46,10 @@ export interface NormalizedBillingEvent {
   providerCustomerId?: string;
   providerSubscriptionId?: string;
   providerCheckoutId?: string;
+  /** Valor da cobrança confirmada, não o valor atual da recorrência. */
+  paymentValueCents?: number;
+  planCode?: string;
+  priceCents?: number;
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   cancelAtPeriodEnd?: boolean;
@@ -54,13 +70,15 @@ export interface ProviderSubscription {
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
   cancelAtPeriodEnd: boolean;
+  priceCents?: number;
 }
 
 export interface BillingProvider {
   readonly name: string;
   createCustomer(input: { userId: string; email: string; name?: string }): Promise<{ providerCustomerId: string }>;
   createSubscription(input: { userId: string; providerCustomerId: string }): Promise<ProviderSubscription>;
-  createCheckout(input: { userId: string; email: string; successUrl: string; cancelUrl: string; nextDueDate?: string }): Promise<CheckoutSession>;
+  createCheckout(input: { userId: string; email: string; plan: PaidPlan; successUrl: string; cancelUrl: string; nextDueDate?: string }): Promise<CheckoutSession>;
+  changeSubscriptionPlan(input: { providerSubscriptionId: string; plan: PaidPlan }): Promise<void>;
   cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean; currentPeriodEnd: string }): Promise<void>;
   reactivateSubscription(input: { providerSubscriptionId: string }): Promise<void>;
   getSubscription(providerSubscriptionId: string): Promise<ProviderSubscription | null>;

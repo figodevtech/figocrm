@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 import { getSubscriptionAccess, writeDeniedMessage } from '@/lib/subscription';
-import { PLAN } from '@/lib/billing/types';
+import { PAID_PLANS } from '@/lib/billing/types';
 import { getBillingProvider } from '@/lib/billing/registry';
 
 export async function GET() {
@@ -31,7 +31,7 @@ export async function GET() {
     currentPeriodEnd: access.currentPeriodEnd ?? null,
     graceUntil: access.graceUntil ?? null,
     cancelAtPeriodEnd: access.cancelAtPeriodEnd,
-    plan: { name: PLAN.name, priceCents: PLAN.priceCents, currency: PLAN.currency, interval: PLAN.interval },
+    plans: PAID_PLANS,
     checkoutAvailable: getBillingProvider() !== null,
   });
 }

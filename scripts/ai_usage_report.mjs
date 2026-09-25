@@ -1,83 +1,76 @@
-// scripts/ai_usage_report.mjs
-// Painel interno mínimo de custo de IA (lê ai_telemetry com a conexão direta do banco; nunca exposto ao app).
-// Responde: quanto custa um usuário ativo? quem consome mais IA? a margem de R$ 24,90/mês se sustenta?
-//
-// Uso: npm run report:ai-usage -- [--days=30] [--top=10] [--json=arquivo]
-// Premissas (env): USD_BRL (padrão 5.40, ajuste para o câmbio do dia), PLAN_PRICE_BRL (padrão 24.90).
-// Custo de STT: US$ 0,006/min de áudio (whisper-1). Custo de LLM: estimated_cost_usd gravado na requisição
-// (tabela de preços/LLM_PRICE_*_PER_1M do servidor) menos o STT.
-
-import fs from 'fs';
+// Relatório interno de custo por plano. Requer DATABASE_DIRECT_CONNECTION_STRING em .env.local.
+// Uso: npm run report:ai-usage -- --days=30 --json=arquivo.json
+// USD_BRL é uma estimativa configurável; estimated_cost_usd já inclui STT e LLM.
+import fs from 'node:fs';
 import pg from 'pg';
 import dotenv from 'dotenv';
 
 dotenv.config({ path: '.env.local', quiet: true });
-
-const args = Object.fromEntries(process.argv.slice(2).map((a) => a.replace(/^--/, '').split('=')));
+const args = Object.fromEntries(process.argv.slice(2).map((arg) => arg.replace(/^--/, '').split('=')));
 const days = Number(args.days ?? 30);
-const top = Number(args.top ?? 10);
 const usdBrl = Number(process.env.USD_BRL || 5.4);
-const planBrl = Number(process.env.PLAN_PRICE_BRL || 24.9);
+if (!Number.isInteger(days) || days < 1 || days > 365 || !Number.isFinite(usdBrl) || usdBrl <= 0)
+  throw new Error('Parâmetros days ou USD_BRL inválidos.');
 
-const client = new pg.Client({ connectionString: process.env.DATABASE_DIRECT_CONNECTION_STRING || process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
-await client.connect();
-
-const perUser = (
-  await client.query(
-    `
-    SELECT u.email,
-           count(*)::int AS commands,
-           count(*) FILTER (WHERE t.input_type = 'audio')::int AS audio_commands,
-           round(coalesce(sum(t.audio_duration_seconds), 0)::numeric, 1)::float8 AS audio_seconds,
-           coalesce(sum(t.prompt_tokens), 0)::int AS prompt_tokens,
-           coalesce(sum(t.completion_tokens), 0)::int AS completion_tokens,
-           round((coalesce(sum(t.audio_duration_seconds), 0) / 60 * 0.006)::numeric, 6)::float8 AS stt_cost_usd,
-           round(coalesce(sum(t.estimated_cost_usd), 0)::numeric, 6)::float8 AS total_cost_usd,
-           percentile_cont(0.5) WITHIN GROUP (ORDER BY t.total_latency_ms)::int AS p50_ms,
-           percentile_cont(0.95) WITHIN GROUP (ORDER BY t.total_latency_ms)::int AS p95_ms,
-           round(100.0 * count(*) FILTER (WHERE t.interpretation_source = 'rules_fallback') / count(*), 1)::float8 AS fallback_pct,
-           round(100.0 * count(*) FILTER (WHERE NOT t.success) / count(*), 1)::float8 AS error_pct
-    FROM ai_telemetry t
-    JOIN auth.users u ON u.id = t.user_id
-    WHERE t.created_at >= NOW() - make_interval(days => $1)
-    GROUP BY u.email
-    ORDER BY total_cost_usd DESC
-    `,
-    [days]
-  )
-).rows.map((r) => ({ ...r, llm_cost_usd: Math.max(0, r.total_cost_usd - r.stt_cost_usd) }));
-
-const [overall] = (
-  await client.query(
-    `SELECT count(*)::int AS commands,
-            count(DISTINCT user_id)::int AS active_users,
-            percentile_cont(0.5) WITHIN GROUP (ORDER BY total_latency_ms)::int AS p50_ms,
-            percentile_cont(0.95) WITHIN GROUP (ORDER BY total_latency_ms)::int AS p95_ms,
-            coalesce(sum(estimated_cost_usd), 0)::float8 AS total_cost_usd,
-            round(100.0 * count(*) FILTER (WHERE interpretation_source = 'rules_fallback') / greatest(count(*), 1), 1)::float8 AS fallback_pct,
-            round(100.0 * count(*) FILTER (WHERE NOT success) / greatest(count(*), 1), 1)::float8 AS error_pct,
-            string_agg(DISTINCT llm_model, ', ') AS models
-     FROM ai_telemetry WHERE created_at >= NOW() - make_interval(days => $1)`,
-    [days]
-  )
-).rows;
-await client.end();
-
-const perActiveUsd = overall.active_users ? overall.total_cost_usd / overall.active_users : 0;
-const monthlyPerActiveBrl = perActiveUsd * (30 / days) * usdBrl;
-
-console.log(`\nCUSTO DE IA — últimos ${days} dias`);
-console.log('─'.repeat(60));
-console.log(`Comandos: ${overall.commands} · usuários ativos: ${overall.active_users} · modelos: ${overall.models || '-'}`);
-console.log(`Latência total p50 ${overall.p50_ms ?? '-'} ms · p95 ${overall.p95_ms ?? '-'} ms`);
-console.log(`Fallback por regras: ${overall.fallback_pct}% · erros: ${overall.error_pct}%`);
-console.log(`Custo total: US$ ${overall.total_cost_usd.toFixed(4)}`);
-console.log(`Custo por usuário ativo: US$ ${perActiveUsd.toFixed(4)} no período ≈ R$ ${monthlyPerActiveBrl.toFixed(2)}/mês (câmbio ${usdBrl})`);
-console.log(`Participação no plano de R$ ${planBrl.toFixed(2)}: ${planBrl ? ((monthlyPerActiveBrl / planBrl) * 100).toFixed(1) : '-'}%`);
-console.log(`\nMaiores consumidores (top ${top}):`);
-console.table(perUser.slice(0, top));
-
-if (typeof args.json === 'string') {
-  fs.writeFileSync(args.json, JSON.stringify({ days, usdBrl, planBrl, overall, perActiveUsd, monthlyPerActiveBrl, perUser }, null, 2));
-  console.log(`Relatório salvo em ${args.json}`);
+const client = new pg.Client({
+  connectionString: process.env.DATABASE_DIRECT_CONNECTION_STRING || process.env.DATABASE_URL,
+  ssl: { rejectUnauthorized: false },
+});
+try {
+  await client.connect();
+  const { rows } = await client.query(`
+    WITH accounts AS (
+      SELECT s.user_id,
+        CASE WHEN s.status = 'trialing' AND now() < s.trial_ends_at THEN 'trial_pro'
+             WHEN s.status = 'active' AND now() <= s.current_period_end + interval '3 days'
+               OR s.status = 'canceled' AND now() < s.current_period_end
+               OR s.status = 'past_due' AND now() <= coalesce(s.past_due_at, s.updated_at) + interval '3 days'
+               THEN CASE WHEN s.plan_code = 'figo_pro_plus_mensal' THEN 'pro_plus' ELSE 'pro' END
+             ELSE 'free' END AS plan,
+        CASE WHEN s.status = 'active' AND now() <= s.current_period_end + interval '3 days'
+             THEN s.price_cents ELSE 0 END AS revenue_cents
+      FROM public.subscriptions s
+    ), usage AS (
+      SELECT t.user_id, count(*)::int AS commands,
+        count(*) FILTER (WHERE t.input_type = 'audio')::int AS voice_commands,
+        coalesce(sum(t.audio_duration_seconds), 0)::float8 / 60 AS audio_minutes,
+        coalesce(sum(t.prompt_tokens), 0)::bigint AS input_tokens,
+        coalesce(sum(t.completion_tokens), 0)::bigint AS output_tokens,
+        coalesce(sum(t.estimated_cost_usd), 0)::float8 AS ai_cost_usd
+      FROM public.ai_telemetry t
+      WHERE t.created_at >= now() - make_interval(days => $1)
+      GROUP BY t.user_id
+    )
+    SELECT a.plan, count(*)::int AS users,
+      count(*) FILTER (WHERE u.commands > 0)::int AS active_users,
+      coalesce(sum(u.commands), 0)::int AS commands,
+      coalesce(sum(u.voice_commands), 0)::int AS voice_commands,
+      coalesce(sum(u.audio_minutes), 0)::float8 AS audio_minutes,
+      coalesce(sum(u.input_tokens), 0)::bigint AS input_tokens,
+      coalesce(sum(u.output_tokens), 0)::bigint AS output_tokens,
+      coalesce(sum(u.ai_cost_usd), 0)::float8 AS ai_cost_usd,
+      coalesce(sum(a.revenue_cents), 0)::int AS revenue_cents
+    FROM accounts a LEFT JOIN usage u ON u.user_id = a.user_id
+    GROUP BY a.plan ORDER BY a.plan`, [days]);
+  const byPlan = rows.map((row) => {
+    const monthlyAiCostBrl = row.ai_cost_usd * usdBrl * 30 / days;
+    const revenueBrl = row.revenue_cents / 100;
+    return {
+      ...row,
+      input_tokens: Number(row.input_tokens),
+      output_tokens: Number(row.output_tokens),
+      audio_minutes: Number(row.audio_minutes.toFixed(2)),
+      ai_cost_usd: Number(row.ai_cost_usd.toFixed(4)),
+      revenue_brl_estimated: Number(revenueBrl.toFixed(2)),
+      monthly_ai_cost_brl_estimated: Number(monthlyAiCostBrl.toFixed(2)),
+      ai_cost_per_user_brl: row.users ? Number((monthlyAiCostBrl / row.users).toFixed(2)) : 0,
+      gross_margin_per_user_brl: row.users ? Number(((revenueBrl - monthlyAiCostBrl) / row.users).toFixed(2)) : 0,
+      price_consumed_by_ai_pct: revenueBrl ? Number((monthlyAiCostBrl / revenueBrl * 100).toFixed(1)) : null,
+    };
+  });
+  console.log(`Custo de IA por plano — últimos ${days} dias; câmbio estimado ${usdBrl} BRL/USD`);
+  console.table(byPlan);
+  if (typeof args.json === 'string') fs.writeFileSync(args.json, JSON.stringify({ days, usdBrl, byPlan }, null, 2));
+} finally {
+  await client.end();
 }

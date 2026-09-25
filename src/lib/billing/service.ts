@@ -5,6 +5,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { NormalizedBillingEvent } from '@/lib/billing/types';
+import { PAID_PLANS, planForCode } from '@/lib/billing/types';
 import { trackProductEvent, type ProductEvent } from '@/lib/analytics/events';
 
 export interface ApplyEventResult {
@@ -22,6 +23,10 @@ type SubscriptionRow = {
   past_due_at: string | null;
   provider_subscription_id: string | null;
   provider_customer_id: string | null;
+  plan_code: string;
+  price_cents: number;
+  pending_plan_code: string | null;
+  pending_price_cents: number | null;
 };
 
 async function markProcessed(admin: SupabaseClient, id: string, userId?: string): Promise<string | null> {
@@ -32,7 +37,7 @@ async function markProcessed(admin: SupabaseClient, id: string, userId?: string)
 }
 
 async function findUser(admin: SupabaseClient, event: NormalizedBillingEvent): Promise<SubscriptionRow | null> {
-  const columns = 'user_id, status, current_period_end, past_due_at, provider_subscription_id, provider_customer_id';
+  const columns = 'user_id, status, current_period_end, past_due_at, provider_subscription_id, provider_customer_id, plan_code, price_cents, pending_plan_code, pending_price_cents';
   let checkoutUserId: string | undefined;
   if (event.providerCheckoutId) {
     const { data } = await admin.from('billing_checkout_sessions').select('user_id')
@@ -82,7 +87,7 @@ async function findUser(admin: SupabaseClient, event: NormalizedBillingEvent): P
 /** Tradução pura evento → alteração (testável sem banco). */
 export function subscriptionUpdateFor(
   event: NormalizedBillingEvent,
-  current: Pick<SubscriptionRow, 'current_period_end' | 'past_due_at'> & { status?: string; provider_subscription_id?: string | null },
+  current: Pick<SubscriptionRow, 'current_period_end' | 'past_due_at'> & { status?: string; provider_subscription_id?: string | null; pending_plan_code?: string | null; plan_code?: string },
   now: Date = new Date()
 ): Record<string, unknown> {
   const provider = {
@@ -107,6 +112,9 @@ export function subscriptionUpdateFor(
     case 'subscription.activated':
     case 'subscription.renewed':
     case 'subscription.reactivated':
+      if (event.planCode && current.plan_code && event.planCode !== current.plan_code
+        && event.currentPeriodEnd && current.current_period_end && event.currentPeriodEnd <= current.current_period_end)
+        return {};
       if (event.currentPeriodEnd && current.current_period_end && event.currentPeriodEnd <= current.current_period_end
         && current.status !== 'past_due') return {};
       if (event.cancelAtPeriodEnd === true) {
@@ -116,7 +124,9 @@ export function subscriptionUpdateFor(
           ...(current.status === 'canceled' ? {} : { canceled_at: now.toISOString() }) };
       }
       return { ...provider, ...period, status: 'active', trial_ends_at: null,
-        plan_code: 'figo_pro_mensal', price_cents: 2450,
+        plan_code: event.planCode || 'figo_pro_mensal', price_cents: event.priceCents || 3990,
+        ...(event.planCode && (!current.pending_plan_code || current.pending_plan_code === event.planCode || differentSubscription)
+          ? { pending_plan_code: null, pending_price_cents: null } : {}),
         cancel_at_period_end: event.cancelAtPeriodEnd ?? false, past_due_at: null, canceled_at: null };
     case 'payment.failed':
       if (current.status === 'canceled') return {};
@@ -136,6 +146,38 @@ export function subscriptionUpdateFor(
     case 'checkout.expired':
       return {};
   }
+}
+
+/** Correlaciona a cobrança financeira ao checkout ou contrato já vinculado. */
+async function resolveFinancialPlan(admin: SupabaseClient, event: NormalizedBillingEvent, sub: SubscriptionRow) {
+  if (event.provider !== 'asaas') return { planCode: event.planCode || PAID_PLANS.pro.code, priceCents: event.priceCents || PAID_PLANS.pro.priceCents };
+  if (!event.providerSubscriptionId || !event.paymentValueCents) return null;
+  const columns = 'plan_code, price_cents, provider_subscription_id, provider_checkout_id';
+  const { data: bySubscription, error } = await admin.from('billing_checkout_sessions').select(columns)
+    .eq('provider', event.provider).eq('user_id', sub.user_id)
+    .eq('provider_subscription_id', event.providerSubscriptionId).limit(1).maybeSingle();
+  if (error) return null;
+  let session = bySubscription;
+  if (!session && event.providerCheckoutId) {
+    const { data, error: checkoutError } = await admin.from('billing_checkout_sessions').select(columns)
+      .eq('provider', event.provider).eq('user_id', sub.user_id)
+      .eq('provider_checkout_id', event.providerCheckoutId).maybeSingle();
+    if (checkoutError) return null;
+    session = data;
+  }
+  if (session?.plan_code && session.price_cents && session.price_cents === event.paymentValueCents
+    && planForCode(session.plan_code))
+    return { planCode: session.plan_code, priceCents: session.price_cents };
+  if (sub.provider_subscription_id !== event.providerSubscriptionId) return null;
+  if (sub.pending_plan_code && sub.pending_price_cents === event.paymentValueCents
+    && planForCode(sub.pending_plan_code))
+    return { planCode: sub.pending_plan_code, priceCents: sub.pending_price_cents };
+  if (sub.price_cents === event.paymentValueCents && planForCode(sub.plan_code))
+    return { planCode: sub.plan_code, priceCents: sub.price_cents };
+  // Contratos antigos mantêm o preço e o plano até mudança solicitada pelo cliente.
+  if (sub.price_cents === event.paymentValueCents && sub.plan_code === 'figo_mensal')
+    return { planCode: sub.plan_code, priceCents: sub.price_cents };
+  return null;
 }
 
 export async function applyBillingEvent(admin: SupabaseClient, event: NormalizedBillingEvent): Promise<ApplyEventResult> {
@@ -199,6 +241,23 @@ export async function applyBillingEvent(admin: SupabaseClient, event: Normalized
       'checkout.expired': 'checkout_expired' } as Partial<Record<NormalizedBillingEvent['type'], ProductEvent>>)[event.type];
     if (tracked) await trackProductEvent(sub.user_id, tracked, { provider: event.provider });
     return { applied: true, duplicate: false, userId: sub.user_id };
+  }
+
+  if (event.type === 'subscription.created' && event.providerCheckoutId && event.providerSubscriptionId) {
+    const { error: linkError } = await admin.from('billing_checkout_sessions')
+      .update({ provider_subscription_id: event.providerSubscriptionId })
+      .eq('provider', event.provider).eq('provider_checkout_id', event.providerCheckoutId)
+      .eq('user_id', sub.user_id);
+    if (linkError) return { applied: false, duplicate: false, userId: sub.user_id, error: linkError.message };
+  }
+
+  if (['subscription.activated', 'subscription.renewed', 'subscription.reactivated'].includes(event.type)) {
+    const resolved = await resolveFinancialPlan(admin, event, sub);
+    if (!resolved) {
+      await admin.from('billing_events').update({ error: 'payment_plan_mismatch' }).eq('id', logged!.id);
+      return { applied: false, duplicate: false, userId: sub.user_id, error: 'payment_plan_mismatch' };
+    }
+    event = { ...event, ...resolved };
   }
 
   const update = subscriptionUpdateFor(event, sub);

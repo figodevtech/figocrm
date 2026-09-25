@@ -6,7 +6,7 @@ import { Alert } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 import { formatDate } from '@/lib/format';
 
-export function BillingCancelButton({ paidUntil }: { paidUntil: string }) {
+export function BillingCancelButton({ paidUntil, planName }: { paidUntil: string; planName: string }) {
   const router = useRouter();
   const dialog = useRef<HTMLDialogElement>(null);
   const [pending, startTransition] = useTransition();
@@ -42,15 +42,15 @@ export function BillingCancelButton({ paidUntil }: { paidUntil: string }) {
       onCancel={(event) => { if (pending) event.preventDefault(); }}
       className="fixed inset-0 m-auto w-[min(32rem,calc(100%-2rem))] max-h-[calc(100dvh-2rem)] overflow-y-auto rounded-2xl border border-white/15 bg-slate-900 p-5 text-slate-100 shadow-2xl backdrop:bg-slate-950/80"
     >
-      <h2 id="cancel-plan-title" className="text-xl font-bold">Cancelar a renovação do Pro?</h2>
+      <h2 id="cancel-plan-title" className="text-xl font-bold">Cancelar a renovação do {planName}?</h2>
       <p id="cancel-plan-description" className="mt-3 text-base text-slate-300">
-        Seu Pro continua disponível até <strong className="text-white">{formatDate(paidUntil)}</strong>.
+        Seu {planName} continua disponível até <strong className="text-white">{formatDate(paidUntil)}</strong>.
         Depois, sua conta passa ao Free e seus dados permanecem salvos.
         Não haverá outra cobrança; a mensalidade já paga não é estornada por este cancelamento.
       </p>
       {error ? <div className="mt-4"><Alert>{error}</Alert></div> : null}
       <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-        <Button variant="secondary" disabled={pending} onClick={() => dialog.current?.close()}>Manter meu Pro</Button>
+        <Button variant="secondary" disabled={pending} onClick={() => dialog.current?.close()}>Manter meu plano</Button>
         <Button variant="danger" loading={pending} onClick={cancel}>Confirmar cancelamento</Button>
       </div>
     </dialog>

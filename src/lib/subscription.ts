@@ -9,7 +9,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { createClient } from '@/lib/supabase/server';
 
 export type SubscriptionStatus = 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired' | 'blocked';
-export type EffectivePlan = 'free' | 'pro';
+export type EffectivePlan = 'free' | 'pro' | 'pro_plus';
 
 export type AccessReason =
   | 'trial'
@@ -46,10 +46,8 @@ export interface SubscriptionAccess {
   cancelAtPeriodEnd: boolean;
   /** Dias restantes do trial (0 fora do trial). */
   trialDaysRemaining: number;
-  monthlyFee: string;
 }
 
-export const MONTHLY_SUBSCRIPTION_FEE = 'R$ 24,50/mês';
 export const TRIAL_DURATION_DAYS = 7;
 
 const WRITE_DENIED_MESSAGES: Partial<Record<AccessReason, string>> = {
@@ -87,7 +85,6 @@ function denied(reason: AccessReason): SubscriptionAccess {
     reason,
     cancelAtPeriodEnd: false,
     trialDaysRemaining: 0,
-    monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
   };
 }
 
@@ -116,7 +113,7 @@ export function parseAccessRow(data: unknown): SubscriptionAccess {
   if (!row || typeof row.can_write !== 'boolean' || typeof row.can_read !== 'boolean'
     || typeof row.reason !== 'string' || typeof row.customer_count !== 'number'
     || typeof row.can_create_customer !== 'boolean'
-    || (row.can_write && (row.effective_plan !== 'free' && row.effective_plan !== 'pro'))
+    || (row.can_write && (row.effective_plan !== 'free' && row.effective_plan !== 'pro' && row.effective_plan !== 'pro_plus'))
     || (row.can_write && (typeof row.voice_monthly_limit !== 'number' || typeof row.voice_remaining_this_month !== 'number'))) {
     return denied('billing_unavailable');
   }
@@ -128,7 +125,7 @@ export function parseAccessRow(data: unknown): SubscriptionAccess {
   return {
     status: row.status as SubscriptionAccess['status'],
     effectiveStatus: row.effective_status as SubscriptionAccess['effectiveStatus'],
-    effectivePlan: row.effective_plan === 'free' || row.effective_plan === 'pro' ? row.effective_plan : null,
+    effectivePlan: row.effective_plan === 'free' || row.effective_plan === 'pro' || row.effective_plan === 'pro_plus' ? row.effective_plan : null,
     canRead: row.can_read,
     canWrite: row.can_write === true,
     customerCount: row.customer_count,
@@ -143,7 +140,6 @@ export function parseAccessRow(data: unknown): SubscriptionAccess {
     graceUntil: row.grace_until ?? undefined,
     cancelAtPeriodEnd: row.cancel_at_period_end === true,
     trialDaysRemaining,
-    monthlyFee: MONTHLY_SUBSCRIPTION_FEE,
   };
 }
 

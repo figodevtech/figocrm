@@ -1,5 +1,5 @@
 import { timingSafeEqual } from 'node:crypto';
-import { PLAN, type BillingProvider, type NormalizedBillingEvent, type ProviderSubscription } from '@/lib/billing/types';
+import { PAID_PLANS, type PaidPlan, type BillingProvider, type NormalizedBillingEvent, type ProviderSubscription } from '@/lib/billing/types';
 
 type AsaasConfig = { apiKey: string; webhookToken: string; baseUrl: string };
 type AsaasObject = Record<string, unknown>;
@@ -81,13 +81,14 @@ export class AsaasProvider implements BillingProvider {
     throw new Error('A assinatura é criada no checkout recorrente.');
   }
 
-  async createCheckout(input: { userId: string; email: string; successUrl: string; cancelUrl: string; nextDueDate?: string }) {
+  async createCheckout(input: { userId: string; email: string; plan: PaidPlan; successUrl: string; cancelUrl: string; nextDueDate?: string }) {
     const dueDate = asaasDateTime(input.nextDueDate);
+    const plan = PAID_PLANS[input.plan];
     const result = await this.request('/checkouts', { method: 'POST', body: JSON.stringify({
       billingTypes: ['CREDIT_CARD'],
       chargeTypes: ['RECURRENT'],
       minutesToExpire: 60,
-      items: [{ name: PLAN.name, quantity: 1, value: PLAN.priceCents / 100 }],
+      items: [{ name: plan.name, quantity: 1, value: plan.priceCents / 100 }],
       subscription: { cycle: 'MONTHLY', nextDueDate: dueDate },
       externalReference: input.userId,
       callback: { successUrl: input.successUrl, cancelUrl: input.cancelUrl, expiredUrl: input.cancelUrl },
@@ -98,6 +99,17 @@ export class AsaasProvider implements BillingProvider {
       : undefined);
     if (!id || !url) throw new Error('Asaas retornou checkout incompleto.');
     return { providerSessionId: id, url, externalReference: input.userId };
+  }
+
+  async changeSubscriptionPlan(input: { providerSubscriptionId: string; plan: PaidPlan }): Promise<void> {
+    const path = `/subscriptions/${encodeURIComponent(input.providerSubscriptionId)}`;
+    const current = await this.request(path);
+    if (current.status !== 'ACTIVE' || current.cycle !== 'MONTHLY' || current.billingType !== 'CREDIT_CARD')
+      throw new Error('Assinatura indisponível para mudança de plano.');
+    const plan = PAID_PLANS[input.plan];
+    await this.request(path, { method: 'PUT', body: JSON.stringify({
+      value: plan.priceCents / 100, description: plan.name, updatePendingPayments: false,
+    }) });
   }
 
   async cancelSubscription(input: { providerSubscriptionId: string; atPeriodEnd: boolean; currentPeriodEnd: string }): Promise<void> {
@@ -153,6 +165,7 @@ export class AsaasProvider implements BillingProvider {
       status: row.status === 'ACTIVE' ? 'active' : 'canceled',
       currentPeriodEnd: isoDay(row.nextDueDate),
       cancelAtPeriodEnd: row.status !== 'ACTIVE',
+      priceCents: Number.isFinite(Number(row.value)) ? Math.round(Number(row.value) * 100) : undefined,
     };
   }
 
@@ -190,12 +203,14 @@ export class AsaasProvider implements BillingProvider {
       let periodEnd = isoDay(payment.dueDate);
       if (periodEnd) periodEnd = nextMonth(String(payment.dueDate));
       const current = await this.request(`/subscriptions/${encodeURIComponent(providerSubscriptionId)}`);
-      if (current.cycle !== 'MONTHLY' || current.billingType !== 'CREDIT_CARD'
-        || Number(current.value) !== PLAN.priceCents / 100) return { ...base, type: 'ignored' };
+      if (current.cycle !== 'MONTHLY' || current.billingType !== 'CREDIT_CARD') return { ...base, type: 'ignored' };
+      const paymentValue = Number(payment.value);
+      if (!Number.isFinite(paymentValue) || paymentValue <= 0) return { ...base, type: 'ignored' };
       periodEnd = periodEnd || isoDay(current.nextDueDate);
       if (!periodEnd) return { ...base, type: 'ignored' };
       return { ...base, type: kind === 'PAYMENT_CONFIRMED' ? 'subscription.activated' : 'subscription.renewed',
         userId: base.userId || string(current.externalReference),
+        paymentValueCents: Math.round(paymentValue * 100),
         currentPeriodStart: isoDay(payment.dueDate), currentPeriodEnd: periodEnd,
         cancelAtPeriodEnd: current.status === 'INACTIVE' };
     }

@@ -16,7 +16,7 @@ export function BillingStatusRefresh() {
         const response = await fetch('/api/billing/status', { cache: 'no-store' });
         if (!response.ok) return;
         const status = await response.json();
-        if (status.status === 'active' && status.effectivePlan === 'pro') {
+        if (status.status === 'active' && (status.effectivePlan === 'pro' || status.effectivePlan === 'pro_plus')) {
           window.clearInterval(timer);
           router.refresh();
         }

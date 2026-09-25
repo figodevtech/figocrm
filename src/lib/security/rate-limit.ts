@@ -12,7 +12,7 @@ export interface RateLimitDecision {
   allowed: boolean;
   unavailable?: boolean;
   reason?: 'ok' | 'monthly_limit' | 'rate_limited' | 'account_unavailable';
-  effectivePlan?: 'free' | 'pro';
+  effectivePlan?: 'free' | 'pro' | 'pro_plus';
   retryAfterSeconds: number;
   minuteHits?: number;
   hourHits?: number;

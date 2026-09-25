@@ -1,3 +1,5 @@
+> **Documento histórico.** Os preços e a franquia Pro abaixo descrevem a implementação anterior. A configuração atual de Free, Pro e Pro Mais está em [relatorio_planos_free_pro_pro_mais.md](relatorio_planos_free_pro_pro_mais.md) e na migration `20260925122310_three_plans_billing.sql`.
+
 # Plano de Implementação — FigoCRM Free + Pro + Asaas
 
 **Projeto:** `figodevtech/figocrm`  

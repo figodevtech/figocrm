@@ -72,6 +72,7 @@ try {
   const checkout = await provider.createCheckout({
     userId: `smoke-${randomUUID()}`,
     email: 'qa-sandbox@example.com',
+    plan: 'pro',
     successUrl: `${origin}/app/conta?checkout=retorno`,
     cancelUrl: `${origin}/app/conta`,
   });

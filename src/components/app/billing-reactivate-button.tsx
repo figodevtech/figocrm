@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Alert } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
 
-export function BillingReactivateButton() {
+export function BillingReactivateButton({ planName }: { planName: string }) {
   const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -22,6 +22,6 @@ export function BillingReactivateButton() {
         }
         router.refresh();
       } catch { setError('Sem conexão. Tente de novo.'); }
-    })}>Reativar renovação do Pro</Button>
+    })}>Reativar renovação do {planName}</Button>
   </div>;
 }

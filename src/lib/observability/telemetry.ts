@@ -15,14 +15,12 @@ export interface LLMUsage {
 // Preços de referência (USD). Estimativa operacional — conferir tabela vigente dos provedores.
 const COST_PER_AUDIO_MINUTE_USD = 0.006; // whisper-1
 const LLM_PRICES_PER_1M: Record<string, { input: number; output: number }> = {
+  // https://developers.openai.com/api/docs/models/gpt-5.4-mini (USD por 1M tokens)
+  'gpt-5.4-mini': { input: 0.75, output: 4.5 },
   'gpt-4o-mini': { input: 0.15, output: 0.6 },
   'gemini-2.5-flash': { input: 0.3, output: 2.5 },
 };
 const DEFAULT_LLM_PRICE = { input: 0.15, output: 0.6 };
-
-// Guarda de uso mensal para manter sustentabilidade do plano Pro.
-export const MONTHLY_AUDIO_SECONDS_QUOTA = 3600;
-export const MONTHLY_OPERATIONS_QUOTA = 1500;
 
 export function estimateCostUSD(input: {
   audioSeconds?: number;
@@ -52,24 +50,6 @@ export function calculateOperationCost(durationSeconds: number, promptTokens: nu
     completionTokens,
     totalTokens: promptTokens + completionTokens,
     estimatedCostUSD: estimateCostUSD({ audioSeconds: durationSeconds, promptTokens, completionTokens }),
-  };
-}
-
-/**
- * Verifica se o usuário excedeu a cota mensal preventiva
- */
-export function checkUserUsageQuota(currentMonthSeconds: number, currentMonthOperations: number): {
-  isWithinQuota: boolean;
-  remainingSeconds: number;
-  remainingOperations: number;
-} {
-  const remainingSeconds = Math.max(0, MONTHLY_AUDIO_SECONDS_QUOTA - currentMonthSeconds);
-  const remainingOperations = Math.max(0, MONTHLY_OPERATIONS_QUOTA - currentMonthOperations);
-
-  return {
-    isWithinQuota: remainingSeconds > 0 && remainingOperations > 0,
-    remainingSeconds,
-    remainingOperations,
   };
 }
 

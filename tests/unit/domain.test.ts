@@ -13,6 +13,7 @@ import { buildDealCommand } from '../../src/lib/ai/command-builder';
 import { validateDealBalance } from '../../src/lib/finance/deal-balance';
 import type { NormalizedBillingEvent } from '../../src/lib/billing/types';
 import { confirmationAnswer, describeForReadback } from '../../src/lib/ai/readback';
+import { estimateCostUSD } from '../../src/lib/observability/telemetry';
 
 const tests: Array<[string, () => void | Promise<void>]> = [];
 const test = (name: string, fn: () => void | Promise<void>) => tests.push([name, fn]);
@@ -29,7 +30,7 @@ function fakeRpc(result: { data?: unknown; error?: { message: string } } | Error
 const row = (over: Record<string, unknown>) => ({
   status: 'trialing', effective_status: 'trialing', effective_plan: 'pro', can_read: true, can_write: true, reason: 'trial',
   customer_count: 0, customer_limit: null, can_create_customer: true,
-  voice_monthly_limit: 1000, voice_used_this_month: 0, voice_remaining_this_month: 1000,
+  voice_monthly_limit: 300, voice_used_this_month: 0, voice_remaining_this_month: 300,
   trial_ends_at: new Date(Date.now() + 3 * 86_400_000).toISOString(), current_period_end: null, grace_until: null,
   cancel_at_period_end: false, ...over,
 });
@@ -77,9 +78,31 @@ test('trial encerrado e cobrança vencida preservam escrita no Free com limite d
 
 test('trialing, active e past_due dentro da carência escrevem; dias de trial calculados', async () => {
   assert.strictEqual(parseAccessRow([row({})]).trialDaysRemaining, 3);
+  assert.strictEqual(parseAccessRow([row({ effective_plan: 'pro_plus', voice_monthly_limit: 1000,
+    voice_remaining_this_month: 1000 })]).effectivePlan, 'pro_plus');
   for (const r of [row({}), row({ status: 'active', effective_status: 'active', reason: 'active' }), row({ status: 'past_due', effective_status: 'past_due', reason: 'past_due_grace' })]) {
     const access = await assertWritePermission(undefined, fakeRpc({ data: [r] }));
     assert.strictEqual(access.canWrite, true);
+  }
+});
+
+test('estimativa de GPT-5.4 Mini usa preço explícito e aceita override', () => {
+  const previousInput = process.env.LLM_PRICE_INPUT_PER_1M;
+  const previousOutput = process.env.LLM_PRICE_OUTPUT_PER_1M;
+  delete process.env.LLM_PRICE_INPUT_PER_1M;
+  delete process.env.LLM_PRICE_OUTPUT_PER_1M;
+  try {
+    assert.strictEqual(estimateCostUSD({ model: 'gpt-5.4-mini', promptTokens: 1_000_000,
+      completionTokens: 1_000_000 }), 5.25);
+    process.env.LLM_PRICE_INPUT_PER_1M = '1';
+    process.env.LLM_PRICE_OUTPUT_PER_1M = '2';
+    assert.strictEqual(estimateCostUSD({ model: 'gpt-5.4-mini', promptTokens: 1_000_000,
+      completionTokens: 1_000_000 }), 3);
+  } finally {
+    if (previousInput === undefined) delete process.env.LLM_PRICE_INPUT_PER_1M;
+    else process.env.LLM_PRICE_INPUT_PER_1M = previousInput;
+    if (previousOutput === undefined) delete process.env.LLM_PRICE_OUTPUT_PER_1M;
+    else process.env.LLM_PRICE_OUTPUT_PER_1M = previousOutput;
   }
 });
 
@@ -150,6 +173,30 @@ test('billing: ativação, falha, cancelamento e evento atrasado', () => {
   const oldFailure = subscriptionUpdateFor(event('payment.failed', { providerSubscriptionId: 'sub-antiga' }),
     { current_period_end: '2026-10-23T00:00:00Z', past_due_at: null, provider_subscription_id: 'sub-atual' }, now);
   assert.deepStrictEqual(oldFailure, {}, 'falha de assinatura antiga não derruba a assinatura atual');
+});
+
+test('mudança de plano espera valor confirmado e preserva cobrança antiga', () => {
+  const current = { status: 'active', current_period_end: '2026-10-25T00:00:00Z',
+    past_due_at: null, provider_subscription_id: 'sub-1', plan_code: 'figo_pro_mensal',
+    pending_plan_code: 'figo_pro_plus_mensal' };
+  const older = subscriptionUpdateFor(event('subscription.renewed', {
+    providerSubscriptionId: 'sub-1', planCode: 'figo_pro_mensal', priceCents: 3990,
+    currentPeriodEnd: '2026-11-25T00:00:00Z',
+  }), current);
+  assert.strictEqual(older.plan_code, 'figo_pro_mensal');
+  assert.strictEqual(older.pending_plan_code, undefined, 'cobrança já gerada não desfaz mudança agendada');
+  const upgraded = subscriptionUpdateFor(event('subscription.renewed', {
+    providerSubscriptionId: 'sub-1', planCode: 'figo_pro_plus_mensal', priceCents: 8990,
+    currentPeriodEnd: '2026-12-25T00:00:00Z',
+  }), { ...current, current_period_end: '2026-11-25T00:00:00Z' });
+  assert.deepStrictEqual([upgraded.plan_code, upgraded.price_cents, upgraded.pending_plan_code],
+    ['figo_pro_plus_mensal', 8990, null]);
+  const late = subscriptionUpdateFor(event('subscription.renewed', {
+    providerSubscriptionId: 'sub-1', planCode: 'figo_pro_mensal', priceCents: 3990,
+    currentPeriodEnd: '2026-12-25T00:00:00Z',
+  }), { ...current, status: 'past_due', plan_code: 'figo_pro_plus_mensal',
+    pending_plan_code: null, current_period_end: '2026-12-25T00:00:00Z' });
+  assert.deepStrictEqual(late, {}, 'evento antigo não rebaixa o plano confirmado');
 });
 
 // ------------------------------------------------------------------ manual = voz

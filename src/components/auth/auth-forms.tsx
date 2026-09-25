@@ -71,7 +71,7 @@ export function SignUpForm() {
       <Button type="submit" size="lg" className="w-full" loading={pending}>
         Criar conta e testar 7 dias
       </Button>
-      <p className="text-center text-sm text-slate-500">Sem cartão. Depois de 7 dias, você continua no Free ou assina o Pro por R$ 24,50/mês.</p>
+      <p className="text-center text-sm text-slate-500">Sem cartão. Depois de 7 dias, você continua no Free ou assina o Pro por R$ 39,90/mês.</p>
     </form>
   );
 }
