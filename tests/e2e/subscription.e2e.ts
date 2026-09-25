@@ -356,6 +356,12 @@ test('Asaas: checkout pago não ativa Pro Mais; pagamento autenticado ativa o pl
     const paymentEvent = { id: `evt_payment_${Date.now()}`, event: 'PAYMENT_CONFIRMED',
       payment: { id: 'pay_asaas_1', customer: 'cus_asaas_1', subscription: 'sub_asaas_1',
         dueDate: new Date().toISOString().slice(0, 10), value: 89.9 } };
+    const wrongPriceEvent = { ...paymentEvent, id: `evt_wrong_price_${Date.now()}`,
+      payment: { ...paymentEvent.payment, value: 39.9 } };
+    const wrongPrice = await handleBillingWebhook(req(wrongPriceEvent), { provider, admin });
+    assert.strictEqual(wrongPrice.status, 500, 'valor diferente do checkout não ativa assinatura');
+    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
+    await admin.from('billing_events').delete().eq('event_id', wrongPriceEvent.id);
     const badToken = await handleBillingWebhook(req(paymentEvent, 'wrong'), { provider, admin });
     assert.strictEqual(badToken.status, 401);
     assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');

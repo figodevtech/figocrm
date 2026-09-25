@@ -215,7 +215,8 @@ export class AsaasProvider implements BillingProvider {
         cancelAtPeriodEnd: current.status === 'INACTIVE' };
     }
     if (kind === 'PAYMENT_OVERDUE' || kind === 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED')
-      return { ...base, type: 'payment.failed' };
+      return { ...base, type: 'payment.failed',
+        currentPeriodEnd: isoDay(payment.dueDate) ? nextMonth(String(payment.dueDate)) : undefined };
     if (kind === 'SUBSCRIPTION_INACTIVATED') {
       if (!providerSubscriptionId) return { ...base, type: 'ignored' };
       let current: AsaasObject;

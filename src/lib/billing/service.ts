@@ -130,6 +130,8 @@ export function subscriptionUpdateFor(
         cancel_at_period_end: event.cancelAtPeriodEnd ?? false, past_due_at: null, canceled_at: null };
     case 'payment.failed':
       if (current.status === 'canceled') return {};
+      if (current.status === 'active' && event.currentPeriodEnd && current.current_period_end
+        && event.currentPeriodEnd <= current.current_period_end) return {};
       return { ...provider, status: 'past_due', past_due_at: current.past_due_at ?? now.toISOString() };
     case 'subscription.canceled':
       // Continua escrevendo até o fim do período já pago (regra em subscription_access)
@@ -168,6 +170,8 @@ async function resolveFinancialPlan(admin: SupabaseClient, event: NormalizedBill
   if (session?.plan_code && session.price_cents && session.price_cents === event.paymentValueCents
     && planForCode(session.plan_code))
     return { planCode: session.plan_code, priceCents: session.price_cents };
+  // Na primeira cobrança, a sessão escolhida prevalece sobre defaults do trial e contratos antigos.
+  if (session?.plan_code && sub.status !== 'active' && sub.status !== 'past_due') return null;
   if (sub.provider_subscription_id !== event.providerSubscriptionId) return null;
   if (sub.pending_plan_code && sub.pending_price_cents === event.paymentValueCents
     && planForCode(sub.pending_plan_code))
