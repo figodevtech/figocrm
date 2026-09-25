@@ -2,6 +2,8 @@
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
 import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
 import { chromium } from 'playwright-core';
 import { createServerClient } from '@supabase/ssr';
 import { adminClient, cleanupTestUsers, createTestUser, env } from '../tests/e2e/helpers';
@@ -81,7 +83,8 @@ async function main() {
     const dialog = page.getByRole('dialog', { name: 'Cancelar a renovação do Pro?' });
     await dialog.waitFor({ state: 'visible' });
     assert.match(await dialog.innerText(), new RegExp(paidUntil.split('-').reverse().join('/')));
-    if (process.env.CANCEL_SCREENSHOT_PATH) await page.screenshot({ path: process.env.CANCEL_SCREENSHOT_PATH });
+    await page.screenshot({ path: process.env.CANCEL_SCREENSHOT_PATH
+      || path.join(os.tmpdir(), 'figocrm-cancel-dialog-sandbox.png') });
     await dialog.getByRole('button', { name: 'Manter meu Pro' }).click();
     await dialog.waitFor({ state: 'hidden' });
     assert.equal((await call(`/subscriptions/${subscriptionId}`)).status, 'ACTIVE');
@@ -100,6 +103,20 @@ async function main() {
     assert.equal(canceled?.cancel_at_period_end, true);
     assert.equal(canceled?.current_period_end?.slice(0, 10), paidUntil);
     assert.match(await page.locator('body').innerText(), /Renovação cancelada/);
+
+    // Simula o fim do período para verificar a tela Free sem oferecer reativação inválida.
+    const { error: expireError } = await adminClient().from('subscriptions').update({
+      current_period_end: `${dayAfter(-1)}T00:00:00.000Z`,
+    }).eq('user_id', testUser.id);
+    assert.ifError(expireError);
+    await page.reload();
+    await page.getByText('Sua assinatura Pro terminou.', { exact: false }).waitFor({ timeout: 20_000 });
+    assert.equal(await page.getByRole('button', { name: 'Reativar renovação do Pro' }).count(), 0);
+    const { error: restoreError } = await adminClient().from('subscriptions').update({
+      current_period_end: `${paidUntil}T00:00:00.000Z`,
+    }).eq('user_id', testUser.id);
+    assert.ifError(restoreError);
+    await page.reload();
 
     await page.getByRole('button', { name: 'Reativar renovação do Pro' }).click();
     await page.getByRole('button', { name: 'Cancelar renovação' }).waitFor({ timeout: 25_000 });

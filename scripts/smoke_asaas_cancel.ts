@@ -39,7 +39,8 @@ async function main() {
       name: 'FigoCRM Teste Cancelamento', email: `qa-cancel-${id}@example.com`,
       cpfCnpj: '24971563792', mobilePhone: '47998781877', externalReference: `qa-cancel-${id}`,
     });
-    customerId = String(customer.id);
+    assert.equal(typeof customer.id, 'string');
+    customerId = customer.id as string;
     const firstDueDate = dayAfter(30);
     const paidUntil = dayAfter(15);
     const subscription = await call('/subscriptions', 'POST', {
@@ -53,7 +54,8 @@ async function main() {
         mobilePhone: '47998781877' },
       remoteIp: '203.0.113.10',
     });
-    subscriptionId = String(subscription.id);
+    assert.equal(typeof subscription.id, 'string');
+    subscriptionId = subscription.id as string;
     const path = `/subscriptions/${encodeURIComponent(subscriptionId)}`;
     const before = await call(`${path}/payments?limit=100&offset=0`);
     const pending = (before.data as Array<{ status: string; dueDate: string }> | undefined) ?? [];

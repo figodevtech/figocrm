@@ -78,13 +78,14 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         <Row label="Clientes" value={access.customerLimit === null ? `${access.customerCount} · ilimitados` : `${access.customerCount} / ${access.customerLimit}`} />
         <Row label="Comandos de voz neste mês" value={access.effectivePlan === 'free' ? `${access.voiceUsedThisMonth} / ${access.voiceMonthlyLimit}` : `${access.voiceUsedThisMonth}`} />
         {access.effectivePlan === 'free' ? <p className="mt-3 text-sm text-slate-300">O Free continua sem prazo: até {access.customerLimit} clientes e {access.voiceMonthlyLimit} comandos de voz por mês. O Pro custa {MONTHLY_SUBSCRIPTION_FEE}, com clientes ilimitados.</p> : null}
-        {access.cancelAtPeriodEnd ? <div className="mt-3"><Alert tone="success">Renovação cancelada. Seu Pro continua até {formatDate(access.currentPeriodEnd)}. Depois, você continua no Free, sem perder seus dados nem receber outra cobrança.</Alert></div> : null}
+        {access.cancelAtPeriodEnd && access.reason === 'canceled_until_period_end' ? <div className="mt-3"><Alert tone="success">Renovação cancelada. Seu Pro continua até {formatDate(access.currentPeriodEnd)}. Depois, você continua no Free, sem perder seus dados nem receber outra cobrança.</Alert></div> : null}
+        {access.status === 'canceled' && access.effectivePlan === 'free' ? <div className="mt-3"><Alert tone="info">Sua assinatura Pro terminou. Você está no Free e seus dados permanecem salvos.</Alert></div> : null}
         {!access.canWrite ? (
           <p className="mt-2 text-base text-rose-200">Novos registros estão bloqueados. Seus dados continuam disponíveis para consulta.</p>
         ) : null}
         {canSubscribe ? <BillingCheckoutButton /> : null}
         {managedSubscription && access.effectiveStatus === 'active' && !access.cancelAtPeriodEnd && access.currentPeriodEnd ? <BillingCancelButton paidUntil={access.currentPeriodEnd} /> : null}
-        {managedSubscription && access.effectiveStatus === 'canceled' && access.currentPeriodEnd ? <BillingReactivateButton /> : null}
+        {managedSubscription && access.reason === 'canceled_until_period_end' && access.currentPeriodEnd ? <BillingReactivateButton /> : null}
         {!checkoutAvailable ? <p className="mt-2 text-sm text-slate-400">A assinatura online está sendo preparada. O Free continua disponível.</p> : null}
       </Card>
 

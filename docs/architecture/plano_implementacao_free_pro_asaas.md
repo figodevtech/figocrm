@@ -1051,17 +1051,20 @@ A interface atual de `BillingProvider` possui:
 ```ts
 cancelSubscription({
   providerSubscriptionId,
-  atPeriodEnd
+  atPeriodEnd,
+  currentPeriodEnd
 })
 ```
 
-Antes de implementar essa parte, confirmar a semântica atual de cancelamento do Asaas.
+O Asaas não possui `cancel_at_period_end` equivalente no fluxo usado aqui. `status: INACTIVE` para a recorrência não remove cobranças já geradas. Por isso, o cancelamento:
 
-Se o Asaas não possuir um `cancel_at_period_end` nativo equivalente:
+1. inativa a assinatura no Asaas para impedir a geração de novas cobranças;
+2. remove as cobranças **pendentes ou vencidas** já geradas com vencimento a partir de `current_period_end`, preservando cobranças confirmadas;
+3. grava `status=canceled` e `cancel_at_period_end=true` no FigoCRM, mantendo o entitlement Pro até o fim do período pago;
+4. passa ao Free após essa data, mantendo os dados do usuário;
+5. permite reativar a mesma recorrência durante o período pago.
 
-1. impedir novas cobranças futuras de forma segura;
-2. manter localmente o entitlement Pro até `current_period_end`;
-3. após a data, `effective_plan` passa para Free.
+A confirmação usa um diálogo integrado à interface, com a data final do Pro e os efeitos do cancelamento. O endpoint pode repetir a limpeza com segurança se a primeira tentativa falhar. Webhooks atrasados são conciliados com o estado atual da assinatura no Asaas para não religar uma recorrência cancelada nem cancelar uma reativação.
 
 Não cobrar novamente depois do cancelamento.
 
