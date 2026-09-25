@@ -63,7 +63,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {paidCheckout ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Assinatura cadastrada no Asaas. A primeira cobrança ainda está pendente. O Plano Pro pago começa assim que o pagamento for confirmado. Você não precisa assinar novamente.</p> : null}
         {checkout === 'retorno' && !paidCheckout && access.effectiveStatus === 'active' ? <p className="mb-3 rounded-xl bg-emerald-400/10 p-3 text-sm text-emerald-100">Pagamento confirmado. Seu Pro está ativo.</p> : null}
         {checkout === 'retorno' && !paidCheckout && access.effectiveStatus !== 'active' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Retorno do checkout recebido. Estamos conferindo o pagamento com o Asaas.</p> : null}
-        {checkout === 'retorno' && access.effectiveStatus !== 'active' ? <BillingStatusRefresh /> : null}
+        {(checkout === 'retorno' || paidCheckout) && access.effectiveStatus !== 'active' ? <BillingStatusRefresh /> : null}
         {checkoutLookupFailed ? <p className="mb-3 rounded-xl bg-amber-400/10 p-3 text-sm text-amber-100">Não consegui verificar sua assinatura agora. Atualize a página em instantes.</p> : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-lg font-semibold text-white">FigoCRM {access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
