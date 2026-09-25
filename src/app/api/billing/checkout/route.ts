@@ -45,9 +45,8 @@ export async function POST(request: NextRequest) {
       email: user.email,
       successUrl: `${origin}/app/conta?checkout=retorno`,
       cancelUrl: `${origin}/app/conta`,
-      nextDueDate: access.effectiveStatus === 'trialing' && access.trialEndsAt
-        ? new Date(Math.max(new Date(access.trialEndsAt).getTime(), Date.now() + 10 * 60_000)).toISOString()
-        : new Date(Date.now() + 10 * 60_000).toISOString(),
+      // A primeira mensalidade vence na contratação, mesmo durante o teste Pro.
+      nextDueDate: new Date(Date.now() + 10 * 60_000).toISOString(),
     });
     const url = new URL(checkout.url);
     if (url.protocol !== 'https:') throw new Error('URL inválida do provedor de cobrança.');

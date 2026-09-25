@@ -121,6 +121,7 @@ test('billing: ativação, falha, cancelamento e evento atrasado', () => {
   const now = new Date('2026-09-23T12:00:00Z');
   const activated = subscriptionUpdateFor(event('subscription.activated', { currentPeriodEnd: '2026-10-23T00:00:00Z' }), { current_period_end: null, past_due_at: null }, now);
   assert.strictEqual(activated.status, 'active');
+  assert.strictEqual(activated.trial_ends_at, null, 'pagamento encerra imediatamente o teste');
   assert.strictEqual(activated.current_period_end, '2026-10-23T00:00:00Z');
 
   const failed = subscriptionUpdateFor(event('payment.failed'), { current_period_end: null, past_due_at: '2026-09-20T00:00:00Z' }, now);

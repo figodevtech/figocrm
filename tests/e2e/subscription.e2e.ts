@@ -293,7 +293,11 @@ test('Asaas: checkout pago não ativa Pro; pagamento autenticado ativa e token i
     assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'free');
     const confirmed = await handleBillingWebhook(req(paymentEvent), { provider, admin });
     assert.strictEqual(confirmed.status, 200);
-    assert.strictEqual((await getSubscriptionAccess(billed.client)).effectivePlan, 'pro');
+    const paidAccess = await getSubscriptionAccess(billed.client);
+    assert.strictEqual(paidAccess.effectivePlan, 'pro');
+    assert.strictEqual(paidAccess.effectiveStatus, 'active');
+    assert.strictEqual(paidAccess.trialEndsAt, undefined);
+    assert.ok(paidAccess.currentPeriodEnd);
     const replay = await handleBillingWebhook(req(paymentEvent), { provider, admin });
     assert.strictEqual((await replay.json()).duplicate, true);
   } finally {

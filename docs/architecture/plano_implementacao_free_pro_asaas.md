@@ -758,21 +758,7 @@ Acesso Pro pago deve depender de webhook financeiro válido.
 
 ## 10.2 Primeira cobrança
 
-### Usuário ainda no trial e decide assinar
-
-Definir:
-
-```text
-nextDueDate = trial_ends_at
-```
-
-Assim:
-
-- ele cadastra o cartão durante o trial;
-- mantém o Pro pelo trial;
-- primeira cobrança ocorre quando o trial terminar.
-
-### Usuário já está no Free
+### Usuário no trial ou no Free
 
 Definir:
 
@@ -781,6 +767,8 @@ nextDueDate = hoje
 ```
 
 para cobrar imediatamente.
+
+O teste Pro termina quando o primeiro pagamento for confirmado por webhook financeiro, mesmo que ainda houvesse dias gratuitos. A partir dessa cobrança, a conta mostra **Plano Pro** e a renovação mensal segue o dia da contratação; o fim do teste não determina o vencimento. Enquanto a confirmação financeira não chegar, o acesso continua nas regras atuais do teste ou do Free.
 
 ### Regra de segurança
 

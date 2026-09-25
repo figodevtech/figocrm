@@ -106,7 +106,8 @@ export function subscriptionUpdateFor(
     case 'subscription.reactivated':
       if (event.currentPeriodEnd && current.current_period_end && event.currentPeriodEnd <= current.current_period_end
         && current.status !== 'past_due') return {};
-      return { ...provider, ...period, status: 'active', plan_code: 'figo_pro_mensal', price_cents: 2450,
+      return { ...provider, ...period, status: 'active', trial_ends_at: null,
+        plan_code: 'figo_pro_mensal', price_cents: 2450,
         cancel_at_period_end: event.cancelAtPeriodEnd ?? false, past_due_at: null, canceled_at: null };
     case 'payment.failed':
       if (current.status === 'canceled') return {};

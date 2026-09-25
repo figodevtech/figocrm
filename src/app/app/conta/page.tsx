@@ -8,6 +8,7 @@ import { createAdminClient } from '@/lib/supabase/admin';
 import { BillingCheckoutButton } from '@/components/app/billing-checkout-button';
 import { BillingCancelButton } from '@/components/app/billing-cancel-button';
 import { BillingReactivateButton } from '@/components/app/billing-reactivate-button';
+import { BillingStatusRefresh } from '@/components/app/billing-status-refresh';
 import { LogoutButton, PasswordForm, ProfileForm } from '@/components/app/account-forms';
 import { Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
 
@@ -18,7 +19,7 @@ function planLabel(effective: string): { label: string; tone: 'emerald' | 'amber
     case 'trialing':
       return { label: 'Teste gratuito', tone: 'sky' };
     case 'active':
-      return { label: 'Ativo', tone: 'emerald' };
+      return { label: 'Plano Pro', tone: 'emerald' };
     case 'past_due':
       return { label: 'Pagamento pendente', tone: 'amber' };
     case 'canceled':
@@ -59,9 +60,10 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
       <SectionTitle>Plano</SectionTitle>
       <Card>
-        {paidCheckout ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Assinatura cadastrada no Asaas. {access.effectiveStatus === 'trialing' ? `Seu Pro continua no teste gratuito até ${access.trialEndsAt ? formatDate(access.trialEndsAt) : 'o fim do teste'}.` : 'A primeira cobrança ainda está pendente.'} Você não precisa assinar novamente.</p> : null}
+        {paidCheckout ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Assinatura cadastrada no Asaas. A primeira cobrança ainda está pendente. O Plano Pro pago começa assim que o pagamento for confirmado. Você não precisa assinar novamente.</p> : null}
         {checkout === 'retorno' && !paidCheckout && access.effectiveStatus === 'active' ? <p className="mb-3 rounded-xl bg-emerald-400/10 p-3 text-sm text-emerald-100">Pagamento confirmado. Seu Pro está ativo.</p> : null}
-        {checkout === 'retorno' && !paidCheckout && access.effectiveStatus !== 'active' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Retorno do checkout recebido. Estamos conferindo o resultado com o Asaas; atualize a página em instantes.</p> : null}
+        {checkout === 'retorno' && !paidCheckout && access.effectiveStatus !== 'active' ? <p className="mb-3 rounded-xl bg-sky-400/10 p-3 text-sm text-sky-100">Retorno do checkout recebido. Estamos conferindo o pagamento com o Asaas.</p> : null}
+        {checkout === 'retorno' && access.effectiveStatus !== 'active' ? <BillingStatusRefresh /> : null}
         {checkoutLookupFailed ? <p className="mb-3 rounded-xl bg-amber-400/10 p-3 text-sm text-amber-100">Não consegui verificar sua assinatura agora. Atualize a página em instantes.</p> : null}
         <div className="flex items-center justify-between gap-3">
           <p className="text-lg font-semibold text-white">FigoCRM {access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
@@ -71,7 +73,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
           <Row label="Dias restantes" value={`${access.trialDaysRemaining} ${access.trialDaysRemaining === 1 ? 'dia' : 'dias'}`} strong tone="sky" />
         ) : null}
         {access.trialEndsAt && access.effectiveStatus === 'trialing' ? <Row label="Teste termina em" value={formatDate(access.trialEndsAt)} /> : null}
-        {access.effectiveStatus === 'trialing' ? <p className="mt-3 text-sm text-slate-300">{paidCheckout ? 'O plano pago começa após a confirmação da primeira cobrança. Se ela não for confirmada, você continua no Free.' : 'Depois do teste você continua no Free se não assinar.'}</p> : null}
+        {access.effectiveStatus === 'trialing' ? <p className="mt-3 text-sm text-slate-300">{paidCheckout ? 'Quando a primeira cobrança for confirmada, o teste acaba e sua mensalidade Pro começa naquele dia.' : 'Ao assinar, a primeira mensalidade é cobrada agora e o teste acaba quando o pagamento for confirmado. Sem assinatura, você continua no Free depois do teste.'}</p> : null}
         {access.currentPeriodEnd && access.effectiveStatus !== 'trialing' ? <Row label={access.effectiveStatus === 'active' ? 'Próxima renovação' : 'Período pago até'} value={formatDate(access.currentPeriodEnd)} /> : null}
         <Row label="Clientes" value={access.customerLimit === null ? `${access.customerCount} · ilimitados` : `${access.customerCount} / ${access.customerLimit}`} />
         <Row label="Comandos de voz neste mês" value={access.effectivePlan === 'free' ? `${access.voiceUsedThisMonth} / ${access.voiceMonthlyLimit}` : `${access.voiceUsedThisMonth}`} />

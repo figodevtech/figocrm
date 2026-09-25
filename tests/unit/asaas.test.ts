@@ -61,6 +61,7 @@ try {
   const event = await provider.verifyWebhook(raw, new Headers({ 'asaas-access-token': 'test-webhook-token' }));
   assert.strictEqual(event?.type, 'subscription.activated');
   assert.strictEqual(event?.userId, 'user-1');
+  assert.strictEqual(event?.currentPeriodStart, '2026-10-01T00:00:00.000Z');
   assert.strictEqual(event?.currentPeriodEnd, '2026-11-01T00:00:00.000Z');
 
   const checkoutPaid = await provider.verifyWebhook(JSON.stringify({ id: 'evt-2', event: 'CHECKOUT_PAID',

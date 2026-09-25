@@ -169,7 +169,8 @@ export class AsaasProvider implements BillingProvider {
       periodEnd = periodEnd || isoDay(current.nextDueDate);
       if (!periodEnd) return { ...base, type: 'ignored' };
       return { ...base, type: kind === 'PAYMENT_CONFIRMED' ? 'subscription.activated' : 'subscription.renewed',
-        userId: base.userId || string(current.externalReference), currentPeriodEnd: periodEnd };
+        userId: base.userId || string(current.externalReference),
+        currentPeriodStart: isoDay(payment.dueDate), currentPeriodEnd: periodEnd };
     }
     if (kind === 'PAYMENT_OVERDUE' || kind === 'PAYMENT_CREDIT_CARD_CAPTURE_REFUSED')
       return { ...base, type: 'payment.failed' };
