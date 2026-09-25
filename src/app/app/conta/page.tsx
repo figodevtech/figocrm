@@ -37,7 +37,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
     searchParams,
     getProfile(supabase, user.id, user.email ?? ''),
     getSubscriptionAccess(supabase),
-    supabase.from('subscriptions').select('provider, provider_subscription_id, plan_code, price_cents, pending_plan_code, cancel_at_period_end').eq('user_id', user.id).maybeSingle(),
+    supabase.from('subscriptions').select('provider, provider_subscription_id, plan_code, price_cents, pending_plan_code, cancel_at_period_end, canceled_at').eq('user_id', user.id).maybeSingle(),
   ]);
   const activeName = access.effectivePlan === 'pro_plus' ? 'Pro Mais' : 'Pro';
   const plan = access.effectivePlan === 'free' ? { label: 'Free', tone: 'sky' as const } : planLabel(access.effectiveStatus, activeName);
@@ -47,17 +47,21 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
   let paidCheckout = false;
   let paidCheckoutName = 'Pro';
   let checkoutLookupFailed = false;
-  if (provider && admin && access.status === 'trialing') {
-    const { data, error } = await admin.from('billing_checkout_sessions').select('id, plan_code')
-      .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid')
-      .limit(1).maybeSingle();
+  const detachedCanceledSubscription = !!billingSub && !!provider && billingSub.provider === provider.name
+    && billingSub.provider_subscription_id === null && access.reason === 'canceled_until_period_end';
+  if (provider && admin && (access.status === 'trialing' || detachedCanceledSubscription)) {
+    let paidQuery = admin.from('billing_checkout_sessions').select('id, plan_code')
+      .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid');
+    if (detachedCanceledSubscription && billingSub?.canceled_at)
+      paidQuery = paidQuery.gt('created_at', billingSub.canceled_at);
+    const { data, error } = await paidQuery.limit(1).maybeSingle();
     paidCheckout = !!data;
     if (data?.plan_code === PAID_PLANS.pro_plus.code) paidCheckoutName = 'Pro Mais';
     checkoutLookupFailed = !!error;
   }
   const managedSubscription = !!(provider && billingSub?.provider === provider.name && billingSub.provider_subscription_id);
   const canSubscribe = checkoutAvailable && !paidCheckout && !checkoutLookupFailed
-    && (access.effectiveStatus === 'trialing' || access.effectivePlan === 'free')
+    && (access.effectiveStatus === 'trialing' || access.effectivePlan === 'free' || detachedCanceledSubscription)
     && !(billingSub?.provider_subscription_id && access.effectiveStatus === 'trialing');
   const voicePercentage = access.voiceMonthlyLimit > 0
     ? Math.min(100, Math.round(access.voiceUsedThisMonth / access.voiceMonthlyLimit * 100)) : 0;
@@ -99,6 +103,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {billingSub?.pending_plan_code ? <div className="mt-3"><Alert tone="info">Mudança para {billingSub.pending_plan_code === PAID_PLANS.pro_plus.code ? 'Pro Mais' : 'Pro'} agendada. Seu plano atual continua até a confirmação da primeira cobrança com o novo valor.</Alert></div> : null}
         {billingSub?.provider_subscription_id && billingSub.price_cents === 2450 && access.effectivePlan === 'pro' ? <p className="mt-2 text-sm text-slate-300">Sua assinatura anterior mantém o preço contratado de {formatPrice(2450)}/mês.</p> : null}
         {access.cancelAtPeriodEnd && access.reason === 'canceled_until_period_end' ? <div className="mt-3"><Alert tone="success">Renovação cancelada. Seu plano {activeName} continua até {formatDate(access.currentPeriodEnd)}. Depois, você continua no Free, sem perder seus dados nem receber outra cobrança.</Alert></div> : null}
+        {detachedCanceledSubscription ? <div className="mt-3"><Alert tone="info">Sua assinatura de teste foi encerrada. Você pode contratar um plano com cobrança real agora; o novo plano começa quando o pagamento for confirmado.</Alert></div> : null}
         {access.status === 'canceled' && access.effectivePlan === 'free' ? <div className="mt-3"><Alert tone="info">Sua assinatura Pro terminou. Você está no Free e seus dados permanecem salvos.</Alert></div> : null}
         {!access.canWrite ? (
           <p className="mt-2 text-base text-rose-200">Novos registros estão bloqueados. Seus dados continuam disponíveis para consulta.</p>

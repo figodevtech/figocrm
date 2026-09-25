@@ -20,8 +20,6 @@ export async function POST(request: NextRequest) {
   if (!admin) return NextResponse.json({ error: 'billing_storage_unavailable' }, { status: 503 });
 
   const access = await getSubscriptionAccess(supabase);
-  if (access.effectiveStatus === 'active' || access.reason === 'canceled_until_period_end')
-    return NextResponse.json({ error: 'already_active' }, { status: 409 });
   if (access.reason === 'billing_unavailable' || access.reason === 'subscription_missing') {
     return NextResponse.json({ error: 'billing_unavailable' }, { status: 503 });
   }
@@ -33,8 +31,13 @@ export async function POST(request: NextRequest) {
       .lt('created_at', new Date(Date.now() - 60 * 60_000).toISOString());
     if (expireError) return NextResponse.json({ error: 'billing_unavailable' }, { status: 503 });
     const { data: subscription, error: subError } = await admin.from('subscriptions')
-      .select('provider_subscription_id, status').eq('user_id', user.id).single();
+      .select('provider_subscription_id, status, canceled_at').eq('user_id', user.id).single();
     if (subError || !subscription) return NextResponse.json({ error: 'billing_unavailable' }, { status: 503 });
+    // Uma recorrência encerrada em outro ambiente pode ter sido desvinculada
+    // sem retirar o acesso até o fim do período. Permite contratar no Asaas atual.
+    if (access.effectiveStatus === 'active' || (access.reason === 'canceled_until_period_end'
+      && (subscription.status !== 'canceled' || subscription.provider_subscription_id)))
+      return NextResponse.json({ error: 'already_active' }, { status: 409 });
     if (subscription.provider_subscription_id && ['trialing', 'active', 'past_due'].includes(subscription.status))
       return NextResponse.json({ error: 'subscription_already_created' }, { status: 409 });
     if (subscription.provider_subscription_id) {
@@ -42,10 +45,12 @@ export async function POST(request: NextRequest) {
       if (existingProviderSub?.status === 'active')
         return NextResponse.json({ error: 'subscription_already_created' }, { status: 409 });
     }
-    if (access.status === 'trialing') {
-      const { data: paid, error: paidError } = await admin.from('billing_checkout_sessions').select('id')
-        .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid')
-        .limit(1).maybeSingle();
+    if (access.status === 'trialing' || (subscription.status === 'canceled' && !subscription.provider_subscription_id)) {
+      let paidQuery = admin.from('billing_checkout_sessions').select('id')
+        .eq('user_id', user.id).eq('provider', provider.name).eq('status', 'paid');
+      if (subscription.status === 'canceled' && subscription.canceled_at)
+        paidQuery = paidQuery.gt('created_at', subscription.canceled_at);
+      const { data: paid, error: paidError } = await paidQuery.limit(1).maybeSingle();
       if (paidError) return NextResponse.json({ error: 'billing_unavailable' }, { status: 503 });
       if (paid) return NextResponse.json({
         error: 'checkout_already_paid',

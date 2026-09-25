@@ -26,7 +26,8 @@ export async function POST() {
       .select('status').single();
     if (updateError || updated?.status !== 'canceled') throw updateError || new Error('Cancelamento não persistido.');
     return NextResponse.json({ canceled: true, accessUntil: sub.current_period_end });
-  } catch {
+  } catch (cause) {
+    console.error('[billing/cancel] falha ao cancelar assinatura:', cause instanceof Error ? cause.message : 'erro desconhecido');
     return NextResponse.json({ error: 'provider_unavailable', message: 'Não consegui cancelar agora. Tente de novo.' }, { status: 502 });
   }
 }
