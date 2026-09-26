@@ -5,7 +5,7 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 ## Publicação e proteção
 
 - [ ] PR revisado e CI verde: lint, typecheck, unit, benchmark de regras, build e security no environment `ci`.
-- [ ] `main` exige PR e status checks, bloqueia force push e delete.
+- [x] `main` exige PR e status checks, bloqueia force push e delete (verificado pela API do GitHub em 26/09/2026).
 - [ ] Deployment de produção `READY` no commit do PR; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
 - [ ] Runtime Errors e 5xx novos examinados após a publicação.
 
