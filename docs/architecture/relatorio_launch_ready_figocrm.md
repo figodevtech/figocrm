@@ -4,8 +4,9 @@ Data: 26/09/2026. **Classificação atual: ainda não pronto para beta público 
 
 ## HEAD, commits e entrega
 
-- Base de trabalho: `main` no commit `c8e28f9`. Branch de entrega local: `launch/hardening-final-20260926`. O SHA do commit de entrega, PR, CI e deployment devem ser consultados no GitHub após a publicação da branch.
+- Base de trabalho: `main` no commit `c8e28f9`. Implementação no commit `865e147` da branch `launch/hardening-final-20260926`, [PR draft #1](https://github.com/figodevtech/figocrm/pull/1). O HEAD final da branch pode avançar para incorporar este relatório; conferir o PR antes do merge.
 - O deployment de produção `dpl_DxKF1UJEEcUBVkD7KUNPs9JePRoM` está `READY` e serve `c8e28f9` em `crm.figosoftwares.com.br` e `figocrm-navy.vercel.app`. A página inicial respondeu HTTP 200 em 26/09. Esse deployment **não contém** as novas rotas e correções.
+- O deployment preview `dpl_3SjRLDzfxFn7BENmRjFuYdXwzLyp` está `READY` no commit `865e147`. Smoke de leitura no preview: `/api/health` HTTP 200 com `database: ok`, `billing: configured` e `version: 865e1471`; `/termos`, `/privacidade` e `/suporte` HTTP 200; rota inexistente HTTP 404. O preview não substitui o smoke no domínio oficial após merge.
 - Vercel Runtime Errors: nenhuma ocorrência agregada nas últimas 24 horas no momento da consulta. Isso não comprova ausência de erros anteriores ou de caminhos pouco usados.
 
 ## Estado por frente
@@ -16,14 +17,14 @@ Data: 26/09/2026. **Classificação atual: ainda não pronto para beta público 
 | Webhooks órfãos | Política de 24 horas com correlação por checkout, assinatura, customer e external reference. 7 eventos históricos confirmados sem vínculo receberam `processed_at` e `terminal_ignored:subscription_not_found`; nova leitura encontrou 0 elegíveis. Eventos conflitantes não são fechados. | Feito |
 | Billing e Asaas | `billing:report` das últimas 24h: 1 webhook processado, 0 falhas, 0 `payment_plan_mismatch`, 0 checkout pago sem ativação. `billing:reconcile:asaas`: 1 assinatura comparada, 0 divergências. Falta smoke real pós deploy e alerta agendado para 5xx/billing indisponível. | BLOCKER |
 | Observabilidade | JSON estruturado para erro e duplicação de webhook, snapshot operacional e código de saída 2 para mismatch/checkout sem ativação. Entregas duplicadas não persistem contagem no banco; acompanhar Runtime Logs. Alertas automáticos ainda não configurados. | IMPORTANTE |
-| CI | `.github/workflows/ci.yml` com lint, typecheck, unit, benchmark de regras e build no PR/main; security em `main` com environment `ci`; E2E manual. Falta criar secrets do environment, abrir PR e observar checks verdes. | BLOCKER |
-| Proteção da main | Ainda sem confirmação de regras obrigatórias de PR/checks, bloqueio de force push e delete. O conector GitHub disponível não expõe branch protection. | BLOCKER |
+| CI | `.github/workflows/ci.yml` com lint, typecheck, unit, benchmark de regras e build no PR/main; execução do PR #1 `36255334956` concluiu `checks` com sucesso. `security` foi pulado no PR conforme desenho; precisa de secrets de um environment `ci` isolado e validação no `main` após merge. E2E completo é manual. | BLOCKER |
+| Proteção da main | API do GitHub confirmou PR obrigatório com 1 aprovação, check `checks` obrigatório e atualizado, administração incluída, force push e delete desativados. Configurada após o primeiro CI verde. | Feito |
 | Supabase security | Auditoria SQL real: todas as tabelas com RLS; novas `account_closure_requests` e `feedback_reports` com policies restritas. `ai_telemetry` e `billing_events` sem policies e sem acesso direto de `anon`/`authenticated` por intenção. Quatro funções `SECURITY DEFINER` seguem com `search_path`, `auth.uid()`, checagem de ownership pertinente e sem `PUBLIC`/`anon`; acesso `authenticated` é necessário aos fluxos atuais. Advisor oficial e Leaked Password Protection não puderam ser verificados pela conexão disponível ao projeto CRM. | BLOCKER |
 | Termos e Privacidade | Rascunhos públicos `/termos` e `/privacidade`, links no cadastro e landing, ainda locais. Precisam revisão jurídica e deploy. | BLOCKER |
 | Exportação | `/api/account/export` autentica usuário, pagina seções e filtra `user_id`, retornando JSON sem tokens e sem telemetria. E2E HTTP autenticado confirmou isolamento entre contas. Falta smoke após deploy. | BLOCKER |
 | Encerramento de conta | Migration aplicada e registrada: pedido com `requested_at`, `status`, `scheduled_for`, `completed_at`; confirmação `ENCERRAR` + senha; cancelamento da renovação quando aplicável. Falha do provedor mantém status pendente para atendimento. E2E HTTP confirmou senha, status e RLS. Exclusão física exige revisão humana de retenção e procedimento posterior. | BLOCKER |
 | Suporte e feedback | Página `/suporte`, atalho e formulário na Conta; tabela de relatos com RLS e índice aplicada. E-mail/WhatsApp oficiais ainda não informados/configurados. | BLOCKER |
-| Health, versão, erros | `/api/health`, commit na Conta, 404 e error boundary globais implementados localmente. Falta smoke HTTP pós deploy. | BLOCKER |
+| Health, versão, erros | `/api/health`, commit na Conta, 404 e error boundary globais implementados; preview READY respondeu health 200 e 404 correto. Falta smoke HTTP no domínio oficial após merge. | BLOCKER |
 | PWA | Suite unitária existente valida manifest, ícones e cache público; suíte de interface validou estado offline e responsividade em 360 a 1440 px. Instalação Android/desktop, standalone e safe areas exigem smoke em dispositivo/navegador. | IMPORTANTE |
 | Voz/IA | E2E com LLM real validou venda, recebimento, ambiguidade e consultas no banco de teste. Benchmark real de 100 cenários aprovou com 98% de acerto completo e 0% de execução insegura; duas falhas de interpretação de recebimento ficaram registradas. Smoke no deployment novo ainda pendente. | IMPORTANTE |
 | UX de erros e rate limit | Erros públicos novos retornam texto amigável; rotas de voz têm rate limit distribuído; checkout limita sessão ativa e evita cobrança duplicada. Revisão completa dos códigos técnicos legados e limites de login/reset/billing ainda pendente. | IMPORTANTE |
@@ -41,7 +42,7 @@ Data: 26/09/2026. **Classificação atual: ainda não pronto para beta público 
 
 ## Bloqueios antes do beta público
 
-1. Publicar o código por PR com CI verde e configurar proteção da `main`. O job `security` precisa dos quatro secrets `CI_SUPABASE_URL`, `CI_SUPABASE_ANON_KEY`, `CI_SUPABASE_SERVICE_ROLE_KEY` e `CI_DATABASE_URL` em environment `ci` isolado.
+1. Revisar e concluir o PR #1 com o check `checks` verde. O job `security` ainda precisa dos quatro secrets `CI_SUPABASE_URL`, `CI_SUPABASE_ANON_KEY`, `CI_SUPABASE_SERVICE_ROLE_KEY` e `CI_DATABASE_URL` em environment `ci` isolado para rodar após merge. A proteção da `main` já está ativa.
 2. Configurar contato oficial de suporte (`NEXT_PUBLIC_SUPPORT_EMAIL` e opcional WhatsApp), revisar juridicamente Termos/Privacidade e publicar.
 3. No painel Supabase do projeto `crm`, revisar Security/Performance Advisor, ativar Leaked Password Protection, confirmar senha mínima ≥ 8 e validar backup/restauração.
 4. No deploy novo, verificar health, login, logout, reset, exportação, pedido de encerramento, feedback, 404, voz, PWA e um ciclo de cobrança controlado sem repetir cobranças desnecessárias.
