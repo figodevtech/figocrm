@@ -82,6 +82,8 @@ const CLEANUP_ORDER = [
   'voice_rate_limits',
   'billing_checkout_sessions',
   'billing_events',
+  'feedback_reports',
+  'account_closure_requests',
   'audit_log',
 ];
 

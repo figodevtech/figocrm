@@ -68,7 +68,7 @@ async function main() {
     const jar = new Map<string, string>();
     const ssr = createServerClient(env.url, env.anonKey, { cookies: {
       getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })),
-      setAll: (list) => list.forEach(({ name, value }) => jar.set(name, value)),
+      setAll: (list: Array<{ name: string; value: string }>) => list.forEach(({ name, value }) => jar.set(name, value)),
     } });
     assert.ifError((await ssr.auth.signInWithPassword({ email: testUser.email, password: testUser.password })).error);
     browser = await chromium.launch({ executablePath: chrome, headless: true });

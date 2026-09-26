@@ -384,6 +384,7 @@ export default function LandingPage() {
             <span className="font-bold text-slate-400">Figo CRM</span> — O CRM Voice-First para quem vive de negócios
           </div>
           <div>© {new Date().getFullYear()} Todos os direitos reservados. Free permanente · Pro R$ 39,90/mês · Pro Mais R$ 89,90/mês.</div>
+          <div className="flex gap-4"><Link href="/termos">Termos</Link><Link href="/privacidade">Privacidade</Link><Link href="/suporte">Suporte</Link></div>
         </div>
       </footer>
     </div>

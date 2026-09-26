@@ -22,7 +22,9 @@ import { createLoanContract } from '../../src/lib/domain/loans';
 
 const BASE = (process.env.UI_BASE_URL || 'http://localhost:3100').replace(/\/$/, '');
 const SHOTS = process.env.UI_SCREENSHOT_DIR;
-const WIDTHS = [360, 390, 430, 768, 1024, 1440];
+const WIDTHS = process.env.UI_WIDTHS
+  ? process.env.UI_WIDTHS.split(',').map(Number).filter((width) => Number.isInteger(width) && width > 0)
+  : [360, 390, 430, 768, 1024, 1440];
 const CHROME = process.env.CHROME_PATH || ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find((p) => fs.existsSync(p));
 
 let user: TestUser;
@@ -38,8 +40,9 @@ async function authedContext(width: number): Promise<BrowserContext> {
 }
 
 async function open(page: Page, route: string) {
-  const res = await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle' });
+  const res = await page.goto(`${BASE}${route}`, { waitUntil: 'load', timeout: 60_000 });
   assert.ok(res && res.status() < 400, `${route}: HTTP ${res?.status()}`);
+  await page.locator('main h1').first().waitFor({ timeout: 15_000 });
 }
 
 test('setup: usuário com cliente, estoque, venda parcelada e empréstimo', async () => {
@@ -68,7 +71,7 @@ test('setup: usuário com cliente, estoque, venda parcelada e empréstimo', asyn
   // Sessão pelo mesmo formato de cookie do app (@supabase/ssr)
   const jar = new Map<string, string>();
   const ssr = createServerClient(env.url, env.anonKey, {
-    cookies: { getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })), setAll: (list) => list.forEach(({ name, value }) => jar.set(name, value)) },
+    cookies: { getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })), setAll: (list: Array<{ name: string; value: string }>) => list.forEach(({ name, value }) => jar.set(name, value)) },
   });
   assert.ifError((await ssr.auth.signInWithPassword({ email: user.email, password: user.password })).error);
   cookies = [...jar.entries()].map(([name, value]) => ({ name, value, url: BASE }));

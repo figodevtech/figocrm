@@ -3,14 +3,14 @@
 
 /** Rotas de entrada: quem já está logado vai direto para /app. */
 const AUTH_ONLY = ['/login', '/cadastro'];
-/** Abertas para todos (landing, recuperação de senha, callback do e-mail, APIs que respondem 401 sozinhas). */
-const PUBLIC_PREFIXES = ['/login', '/cadastro', '/esqueci-senha', '/redefinir-senha', '/auth/', '/api/'];
+/** Rotas públicas conhecidas; APIs validam a própria sessão. */
+const PUBLIC_PREFIXES = ['/login', '/cadastro', '/esqueci-senha', '/redefinir-senha', '/termos', '/privacidade', '/suporte', '/auth/', '/api/'];
 
 const matches = (pathname: string, route: string) =>
   route.endsWith('/') ? pathname.startsWith(route) : pathname === route || pathname.startsWith(`${route}/`);
 
 export function isPublicPath(pathname: string): boolean {
-  return pathname === '/' || PUBLIC_PREFIXES.some((r) => matches(pathname, r));
+  return pathname === '/' || PUBLIC_PREFIXES.some((route) => matches(pathname, route));
 }
 
 /**
@@ -19,7 +19,7 @@ export function isPublicPath(pathname: string): boolean {
  *   autenticado em /login ou /cadastro → /app
  */
 export function guardRedirect(pathname: string, search: string, authenticated: boolean): string | null {
-  if (!authenticated && !isPublicPath(pathname)) {
+  if (!authenticated && matches(pathname, '/app')) {
     const next = safeNextPath(`${pathname}${search}`, '');
     return next ? `/login?next=${encodeURIComponent(next)}` : '/login';
   }

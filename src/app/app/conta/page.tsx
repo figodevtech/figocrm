@@ -12,6 +12,8 @@ import { BillingCancelButton } from '@/components/app/billing-cancel-button';
 import { BillingReactivateButton } from '@/components/app/billing-reactivate-button';
 import { BillingStatusRefresh } from '@/components/app/billing-status-refresh';
 import { LogoutButton, PasswordForm, ProfileForm } from '@/components/app/account-forms';
+import { AccountPrivacyActions, FeedbackForm } from '@/components/app/account-privacy-actions';
+import Link from 'next/link';
 import { Alert, Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
 
 export const metadata: Metadata = { title: 'Conta' };
@@ -138,6 +140,13 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       <Card>
         <PasswordForm />
       </Card>
+
+      <SectionTitle>Seus dados e privacidade</SectionTitle>
+      <Card><AccountPrivacyActions /><p className="mt-4 text-sm"><Link href="/termos" className="text-emerald-300 underline">Termos de Uso</Link> · <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link></p></Card>
+
+      <SectionTitle>Suporte</SectionTitle>
+      <Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card>
+      <p className="mt-5 text-center text-xs text-slate-500">FigoCRM · v1.0.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || 'local'}</p>
 
       <div className="mt-8">
         <LogoutButton />

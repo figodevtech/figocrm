@@ -44,8 +44,10 @@ export async function handleBillingWebhook(
 
   const result = await applyBillingEvent(admin, event);
   if (result.error && !result.duplicate) {
-    console.error('[billing] falha ao aplicar evento', event.eventId, result.error);
+    console.error(JSON.stringify({ kind: 'billing_webhook_failed', provider: event.provider,
+      event_id: event.eventId, event_type: event.type, reason: result.error }));
     return NextResponse.json({ received: true, applied: false, error: result.error }, { status: 500 });
   }
+  if (result.duplicate) console.info(JSON.stringify({ kind: 'billing_webhook_duplicate', provider: event.provider, event_id: event.eventId }));
   return NextResponse.json({ received: true, applied: result.applied, duplicate: result.duplicate });
 }

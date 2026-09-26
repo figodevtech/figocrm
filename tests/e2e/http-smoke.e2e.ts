@@ -51,7 +51,7 @@ test('login gera cookie de sessão válido para as rotas', async () => {
   const ssr = createServerClient(env.url, env.anonKey, {
     cookies: {
       getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })),
-      setAll: (cookies) => cookies.forEach(({ name, value }) => jar.set(name, value)),
+      setAll: (cookies: Array<{ name: string; value: string }>) => cookies.forEach(({ name, value }) => jar.set(name, value)),
     },
   });
   const { error } = await ssr.auth.signInWithPassword({ email: user.email, password: user.password });

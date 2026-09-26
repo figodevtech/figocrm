@@ -1,11 +1,13 @@
 // src/lib/supabase/middleware.ts
 // Middleware Supabase para manutenção e renovação automática de sessão
 
-import { createServerClient } from '@supabase/ssr';
+import { createServerClient, type SetAllCookies } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
 import { guardRedirect } from '@/lib/auth/redirects';
+import { isInvalidSessionError, isSupabaseSessionCookie } from '@/lib/auth/invalid-session';
 
 export async function updateSession(request: NextRequest) {
+  const hadSessionCookie = request.cookies.getAll().some(({ name }) => isSupabaseSessionCookie(name));
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -18,7 +20,7 @@ export async function updateSession(request: NextRequest) {
       getAll() {
         return request.cookies.getAll();
       },
-      setAll(cookiesToSet) {
+      setAll(cookiesToSet: Parameters<SetAllCookies>[0]) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({
           request,
@@ -30,13 +32,29 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Atualiza o token do usuário se estiver expirado
+  // getUser pode retornar { error } sem lançar. Só erros definitivos invalidam cookies.
   let user = null;
+  let authError: unknown = null;
   try {
-    const { data } = await supabase.auth.getUser();
+    const { data, error } = await supabase.auth.getUser();
     user = data?.user ?? null;
-  } catch {
-    // Supabase não configurado ou inacessível no ambiente local
+    authError = error;
+  } catch (error) {
+    authError = error;
+  }
+
+  if (isInvalidSessionError(authError)) {
+    for (const { name } of request.cookies.getAll()) {
+      if (!isSupabaseSessionCookie(name)) continue;
+      request.cookies.delete(name);
+      supabaseResponse.cookies.set(name, '', { path: '/', maxAge: 0 });
+    }
+  } else if (authError && hadSessionCookie && request.nextUrl.pathname.startsWith('/app')) {
+    // Falha de rede não é logout. Evita novo refresh no render e preserva os cookies.
+    return new NextResponse('Não foi possível verificar sua sessão agora. Tente novamente.', {
+      status: 503,
+      headers: { 'cache-control': 'no-store', 'content-type': 'text/plain; charset=utf-8' },
+    });
   }
 
   // Proteção de rotas: /app/* exige sessão; /login e /cadastro com sessão vão para /app

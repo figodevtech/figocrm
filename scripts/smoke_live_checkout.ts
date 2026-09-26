@@ -27,7 +27,7 @@ async function main() {
     const ssr = createServerClient(env.url, env.anonKey, {
       cookies: {
         getAll: () => [...jar.entries()].map(([name, value]) => ({ name, value })),
-        setAll: (list) => list.forEach(({ name, value }) => jar.set(name, value)),
+        setAll: (list: Array<{ name: string; value: string }>) => list.forEach(({ name, value }) => jar.set(name, value)),
       },
     });
     const { error: loginError } = await ssr.auth.signInWithPassword({ email: user.email, password: user.password });
