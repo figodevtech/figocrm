@@ -1,6 +1,6 @@
 # NOT LAUNCH READY
 
-**BLOCKER = 6** · Revisão de 26/09/2026. O beta público continua fechado. O código de hardening já está publicado; os bloqueios restantes dependem de configuração, operação ou informação do responsável.
+**BLOCKER = 7**, além da verificação do deployment criado por este relatório, ainda pendente no momento desta revisão de 26/09/2026. O beta público continua fechado.
 
 ## Estado publicado e entrega
 
@@ -32,6 +32,7 @@
 4. **BLOCKER — recuperação:** o plano Supabase Free não oferece backup diário gerenciado nem PITR. Não há exportação periódica externa ou teste de restore comprovado. O [runbook](../operations/runbook.md) contém o procedimento e exige restauração isolada antes do beta.
 5. **BLOCKER — alertas:** há scripts read-only de billing e logs estruturados, mas não há execução/entrega de alertas comprovada para mismatch, checkout pago sem ativação, 5xx recorrente no webhook ou `billing_unavailable` recorrente. Definir canal operacional e executar teste de alerta apenas com evento controlado.
 6. **BLOCKER — E2E manual do GitHub:** fornecer uma chave de IA própria do environment `ci` ou autorizar explicitamente o uso da chave local como secret criptografado desse environment; então repetir o workflow manual. O E2E completo já passou em Supabase local isolado. Não repetir pagamento real sem necessidade.
+7. **BLOCKER — smoke de produto:** ainda falta evidência completa para cadastro e reset de senha, fluxos centrais de cliente/item/venda/troca/recebimento/empréstimo/PDF, todos os cenários de voz exigidos, instalação PWA em Android e desktop e ciclo real controlado de Free/trial até cancelamento da renovação Pro. Os testes parciais descritos acima não encerram essas linhas do checklist.
 
 ## Procedimento para encerrar os bloqueios
 
@@ -39,6 +40,7 @@
 - Receber contato oficial e validação jurídica do responsável; configurar variáveis da Vercel, revisar conteúdo e então publicar.
 - Repetir o E2E manual do GitHub com a chave autorizada, mantendo banco descartável; conferir `main`, produção e Runtime Logs após qualquer nova publicação.
 - Configurar um canal de alerta operacional com teste de entrega; manter reconciliação Asaas read-only como padrão e investigar divergências antes de qualquer correção.
+- Concluir cada linha do smoke de produto com evidência de resultado. Depois do merge deste relatório, verificar que o novo deployment está `READY`, que `/api/health` informa o novo SHA e que os Runtime Errors/5xx foram revisados antes de marcar a publicação mais recente como concluída.
 
 ## Pós-lançamento
 

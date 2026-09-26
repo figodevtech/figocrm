@@ -8,6 +8,7 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 - [x] `main` exige PR e `final-gate` atualizado, inclui administradores, bloqueia force push e delete (API do GitHub em 26/09/2026). Há um único colaborador; por isso, a regra exige 0 aprovações temporariamente.
 - [x] Deployment de produção `READY` no commit `eba8b5c5`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
 - [x] Runtime Errors e 5xx novos examinados após a publicação; nenhum erro novo recorrente no deployment.
+- [ ] Após o merge do relatório de 26/09, confirmar o novo deployment de produção em `READY`, `/api/health` com o SHA correspondente e revisar Runtime Errors/5xx desse deployment. Repetir esta verificação após qualquer novo commit na `main` antes de abrir o beta.
 
 ## Dados, segurança e suporte
 
