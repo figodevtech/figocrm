@@ -15,6 +15,7 @@ export default function SupportPage() {
       {whatsapp ? <p>WhatsApp: <a className="text-emerald-300 underline" href={`https://wa.me/${whatsapp}`}>Abrir conversa</a></p> : null}
       {!email && !whatsapp ? <p>Os canais de atendimento serão publicados antes da abertura do beta. Usuários autenticados podem enviar um relato pela área Conta.</p> : null}
     </div>
+    <p className="mt-6">Encontrou um problema? <Link href="/app/conta#feedback" className="text-emerald-300 underline">Envie um relato pela sua conta</Link>.</p>
     <p className="mt-6 text-sm">Para questões sobre dados pessoais, consulte a <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link>.</p>
   </main>;
 }

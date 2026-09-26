@@ -8,7 +8,8 @@ const INVALID_CODES = new Set([
 /** Only permanent session failures may remove browser credentials. */
 export function isInvalidSessionError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
-  const candidate = error as { code?: unknown; message?: unknown };
+  const candidate = error as { code?: unknown; message?: unknown; name?: unknown };
+  if (candidate.name === 'AuthSessionMissingError') return true;
   if (typeof candidate.code === 'string' && INVALID_CODES.has(candidate.code.toLowerCase())) return true;
   if (typeof candidate.message !== 'string') return false;
   return /invalid refresh token|refresh token not found|refresh token already used|session not found/i.test(candidate.message);

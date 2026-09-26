@@ -262,6 +262,33 @@ test('offline: avisa que ações dependem de conexão', async () => {
   await ctx.close();
 });
 
+test('logout bloqueia /app e permite login novamente', async () => {
+  const ctx = await authedContext(390);
+  const page = await ctx.newPage();
+  await open(page, '/app/conta');
+  await page.getByRole('button', { name: 'Sair' }).click();
+  await page.waitForURL((url) => url.pathname === '/login', { timeout: 15000 });
+  await page.goto(`${BASE}/app`);
+  await page.waitForURL((url) => url.pathname === '/login', { timeout: 15000 });
+  await page.getByLabel('E-mail').fill(user.email);
+  await page.getByLabel('Senha').fill(user.password);
+  await page.getByRole('button', { name: 'Entrar' }).click();
+  await page.waitForURL((url) => url.pathname === '/app', { timeout: 15000 });
+  await ctx.close();
+});
+
+test('cookie de sessão inválido volta ao login sem loop e é removido', async () => {
+  const tokenCookie = cookies.find((cookie) => cookie.name.includes('auth-token'));
+  assert.ok(tokenCookie, 'cookie de sessão não encontrado');
+  const ctx = await browser.newContext();
+  await ctx.addCookies([{ ...tokenCookie, value: 'invalid' }]);
+  const page = await ctx.newPage();
+  await page.goto(`${BASE}/app`);
+  await page.waitForURL((url) => url.pathname === '/login', { timeout: 15000 });
+  assert.ok(!(await ctx.cookies(BASE)).some((cookie) => cookie.name === tokenCookie.name && cookie.value === 'invalid'));
+  await ctx.close();
+});
+
 test('encerra navegador', async () => {
   await browser?.close();
 });
