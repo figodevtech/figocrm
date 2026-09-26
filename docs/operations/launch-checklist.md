@@ -4,8 +4,8 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 ## Publicação e proteção
 
-- [ ] PR revisado e CI verde: lint, typecheck, unit, benchmark de regras, build e security no environment `ci`.
-- [x] `main` exige PR e status checks, bloqueia force push e delete (verificado pela API do GitHub em 26/09/2026).
+- [ ] PR #2 concluída e CI verde no commit final: lint, typecheck, unit, benchmark de regras, build, security e `final-gate`.
+- [x] `main` exige PR e `final-gate` atualizado, inclui administradores, bloqueia force push e delete (API do GitHub em 26/09/2026). Há um único colaborador; por isso, a regra exige 0 aprovações temporariamente.
 - [ ] Deployment de produção `READY` no commit do PR; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
 - [ ] Runtime Errors e 5xx novos examinados após a publicação.
 
@@ -13,7 +13,7 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 - [ ] Migrations locais e remotas alinhadas; Security Advisor e Performance Advisor revisados.
 - [ ] Leaked Password Protection ativa e senha mínima de pelo menos 8 caracteres.
-- [ ] Backup restaurado em ambiente separado ao menos uma vez; último deployment estável conhecido.
+- [ ] Backup exportado e restaurado em ambiente separado ao menos uma vez; retenção e responsável definidos. O Supabase CRM está no plano Free, sem backup diário gerenciado ou PITR.
 - [ ] Termos e Privacidade revisados e publicados; e-mail oficial de suporte publicado.
 - [ ] Exportação e pedido de encerramento verificados com conta descartável; feedback chega à operação.
 

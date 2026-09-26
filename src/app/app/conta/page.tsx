@@ -145,7 +145,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       <Card><AccountPrivacyActions /><p className="mt-4 text-sm"><Link href="/termos" className="text-emerald-300 underline">Termos de Uso</Link> · <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link></p></Card>
 
       <SectionTitle>Suporte</SectionTitle>
-      <Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card>
+      <div id="feedback"><Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card></div>
       <p className="mt-5 text-center text-xs text-slate-500">FigoCRM · v1.0.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || 'local'}</p>
 
       <div className="mt-8">

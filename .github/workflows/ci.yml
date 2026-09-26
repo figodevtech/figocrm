@@ -75,6 +75,9 @@ jobs:
     needs: final-gate
     runs-on: ubuntu-latest
     environment: ci
+    env:
+      OPENAI_API_KEY: ${{ secrets.CI_OPENAI_API_KEY }}
+      E2E_INTERPRETER: llm
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

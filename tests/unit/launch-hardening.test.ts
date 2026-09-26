@@ -6,6 +6,7 @@ import { billingReferences, compareAsaasSubscription, mayTerminallyIgnore } from
 for (const code of ['refresh_token_not_found', 'invalid_refresh_token', 'refresh_token_already_used', 'session_not_found'])
   assert.equal(isInvalidSessionError({ code }), true, code);
 assert.equal(isInvalidSessionError({ message: 'Invalid Refresh Token: Refresh Token Not Found' }), true);
+assert.equal(isInvalidSessionError({ name: 'AuthSessionMissingError', message: 'Auth session missing!' }), true);
 for (const error of [{ code: 'unexpected_failure', message: 'Network request failed' }, { message: 'fetch failed' }, null])
   assert.equal(isInvalidSessionError(error), false);
 assert.equal(isSupabaseSessionCookie('sb-project-auth-token'), true);

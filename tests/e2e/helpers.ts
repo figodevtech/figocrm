@@ -16,6 +16,12 @@ export const env = {
   dbUrl: process.env.DATABASE_DIRECT_CONNECTION_STRING || process.env.DATABASE_URL || '',
 };
 
+export function dbClient(): pg.Client {
+  const dbHost = new URL(env.dbUrl).hostname;
+  const ssl = dbHost === '127.0.0.1' || dbHost === 'localhost' ? false : { rejectUnauthorized: false };
+  return new pg.Client({ connectionString: env.dbUrl, ssl });
+}
+
 export function assertEnv(): void {
   const missing = Object.entries(env).filter(([, v]) => !v).map(([k]) => k);
   if (missing.length > 0) {
@@ -101,9 +107,7 @@ async function removeUserPhotos(userId: string): Promise<void> {
 export async function cleanupTestUsers(): Promise<void> {
   if (createdUserIds.length === 0) return;
   for (const userId of createdUserIds) await removeUserPhotos(userId);
-  const dbHost = new URL(env.dbUrl).hostname;
-  const ssl = dbHost === '127.0.0.1' || dbHost === 'localhost' ? false : { rejectUnauthorized: false };
-  const db = new pg.Client({ connectionString: env.dbUrl, ssl });
+  const db = dbClient();
   await db.connect();
   try {
     for (const userId of createdUserIds.splice(0)) {
@@ -160,7 +164,7 @@ export async function run(title: string): Promise<void> {
 
 /** SQL direto como postgres (sem RLS, sem trigger de assinatura) — só para preparar cenários. */
 export async function sql<T = Record<string, unknown>>(query: string, params: unknown[] = []): Promise<T[]> {
-  const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+  const db = dbClient();
   await db.connect();
   try {
     return (await db.query(query, params)).rows as T[];

@@ -8,9 +8,8 @@
 // transcribe com áudio inválido + fallbackText, rate limit distribuído (429) e telemetria gravada.
 
 import assert from 'assert';
-import pg from 'pg';
 import { createServerClient } from '@supabase/ssr';
-import { createTestUser, env, run, seedItem, test, TestUser } from './helpers';
+import { createTestUser, dbClient, env, run, seedItem, test, TestUser } from './helpers';
 
 const BASE = (process.env.SMOKE_BASE_URL || 'http://localhost:3000').replace(/\/$/, '');
 const bypass = process.env.VERCEL_PROTECTION_BYPASS;
@@ -122,7 +121,7 @@ test('áudio de fala real (TTS) → Whisper → LLM → resposta e telemetria de
   assert.strictEqual(body.processResult?.assistant?.status, 'answered');
 
   const [row] = await (async () => {
-    const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+    const db = dbClient();
     await db.connect();
     try {
       return (await db.query(`SELECT stt_provider, audio_duration_seconds::float8 AS secs, stt_latency_ms, llm_model, success
@@ -147,7 +146,7 @@ test('rate limit distribuído devolve 429 com Retry-After ao passar do limite po
 });
 
 test('telemetria estruturada registrada para o usuário (sem texto nem áudio)', async () => {
-  const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+  const db = dbClient();
   await db.connect();
   try {
     const r = await db.query(

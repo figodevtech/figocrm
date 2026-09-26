@@ -7,7 +7,7 @@ export default function TermsPage() {
   return <main className="mx-auto max-w-3xl px-5 py-12 text-slate-200">
     <Link href="/" className="text-emerald-300 hover:underline">← FigoCRM</Link>
     <h1 className="mt-8 text-3xl font-bold text-white">Termos de Uso</h1>
-    <p className="mt-3 text-sm text-slate-400">Versão de 26 de setembro de 2026. Texto sujeito a revisão jurídica antes do beta público.</p>
+    <p className="mt-3 text-sm text-slate-400">Versão de 26/09/2026. Texto sujeito a revisão jurídica antes do beta público.</p>
     <div className="mt-8 space-y-7 leading-relaxed">
       <section><h2 className="text-xl font-semibold text-white">1. Serviço</h2><p>O FigoCRM ajuda vendedores e revendedores a registrar clientes, estoque, negócios, pagamentos e empréstimos. O usuário confere os dados e decide como usar os registros. O serviço não substitui contabilidade, assessoria financeira ou jurídica.</p></section>
       <section><h2 className="text-xl font-semibold text-white">2. Conta e dados</h2><p>Você deve informar dados corretos, proteger sua senha e ter autorização para cadastrar informações de terceiros. Você é responsável por revisar valores, contratos, vencimentos e resultados antes de tomar decisões ou compartilhar documentos.</p></section>

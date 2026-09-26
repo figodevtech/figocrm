@@ -35,10 +35,13 @@
 
 ## Backup e recuperação
 
-1. Confirmar no painel Supabase o plano de backups e o ponto de recuperação disponível antes da abertura do beta. Registrar responsável e frequência; não presumir que PITR está habilitado.
-2. Para restaurar, criar ambiente separado a partir do backup/ponto escolhido, comparar contagens e integridade de `subscriptions`, `deals`, `payments` e `billing_events`, e só então planejar troca de tráfego. Não restaurar sobre produção durante diagnóstico.
-3. Migrations são progressivas. Para reverter, preparar migration compensatória específica, testar em cópia e preservar dados; jamais editar uma migration já aplicada.
-4. Para rollback de deploy, usar o último deployment de produção `READY` sem regressão conhecida, verificando compatibilidade com o schema atual. Registrar SHA, ID do deployment e horário no incidente.
+Situação verificada em 26/09/2026: o projeto CRM `wjtsxomfezrqwdnnxcuh` está no plano Supabase **Free**. Esse plano não oferece backups diários gerenciados nem PITR; não existe retenção de backup confirmada para este projeto. O beta público continua bloqueado até existir cópia externa periódica e um teste de restauração, ou até a contratação e validação de um plano com backups. A [documentação de backups do Supabase](https://supabase.com/docs/guides/platform/backups) recomenda `supabase db dump` e cópias fora do projeto para o plano Free. O dump do banco não inclui os objetos do Storage, apenas seus metadados.
+
+1. Definir responsável, frequência, retenção e local **privado e criptografado** das cópias. No Free, exportar schema e dados com `supabase db dump` conforme o [procedimento oficial](https://supabase.com/docs/guides/platform/migrating-within-supabase/backup-restore), e copiar separadamente os objetos do Storage. Nunca gravar dumps, senhas ou chaves no Git.
+2. Antes da abertura, criar um projeto isolado de recuperação, restaurar nele uma cópia recente e registrar data, duração, hash/identificador da cópia e resultado. Confirmar migrations, Auth, objetos de Storage e contagens de `subscriptions`, `deals`, `payments` e `billing_events`; executar smoke de login e financeiro sem cobrar novamente no Asaas.
+3. Em incidente de corrupção: registrar o horário e a última operação íntegra; interromper escritas se necessário; escolher o ponto/cópia anterior à corrupção; restaurar primeiro em ambiente isolado; comparar dados financeiros e migrations; planejar corte de tráfego; reabrir escritas somente após smoke e aprovação do responsável. Não restaurar sobre produção durante diagnóstico.
+4. Se o projeto for atualizado para Pro ou superior, confirmar no painel `Database > Backups` a janela disponível e testar restauração. Pro oferece 7 dias de backups diários; PITR é adicional e só deve ser considerado contratado após confirmação no painel. Registrar evidências, não apenas a existência do menu.
+5. Migrations são progressivas. Para reverter, preparar migration compensatória específica, testar em cópia e preservar dados; jamais editar uma migration já aplicada. Para rollback de deploy, usar o último deployment de produção `READY` compatível com o schema atual e registrar SHA, ID e horário.
 
 ## Ritmo operacional
 
