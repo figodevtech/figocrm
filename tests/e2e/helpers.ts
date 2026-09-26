@@ -101,7 +101,9 @@ async function removeUserPhotos(userId: string): Promise<void> {
 export async function cleanupTestUsers(): Promise<void> {
   if (createdUserIds.length === 0) return;
   for (const userId of createdUserIds) await removeUserPhotos(userId);
-  const db = new pg.Client({ connectionString: env.dbUrl, ssl: { rejectUnauthorized: false } });
+  const dbHost = new URL(env.dbUrl).hostname;
+  const ssl = dbHost === '127.0.0.1' || dbHost === 'localhost' ? false : { rejectUnauthorized: false };
+  const db = new pg.Client({ connectionString: env.dbUrl, ssl });
   await db.connect();
   try {
     for (const userId of createdUserIds.splice(0)) {
