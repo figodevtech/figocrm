@@ -4,21 +4,23 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 ## Publicação e proteção
 
-- [ ] PR #2 concluída e CI verde no commit final: lint, typecheck, unit, benchmark de regras, build, security e `final-gate`.
+- [x] PR #2 mesclada; CI da `main` verde no commit `eba8b5c5`: lint, typecheck, unit, benchmark de regras, build, security e `final-gate`.
 - [x] `main` exige PR e `final-gate` atualizado, inclui administradores, bloqueia force push e delete (API do GitHub em 26/09/2026). Há um único colaborador; por isso, a regra exige 0 aprovações temporariamente.
-- [ ] Deployment de produção `READY` no commit do PR; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
-- [ ] Runtime Errors e 5xx novos examinados após a publicação.
+- [x] Deployment de produção `READY` no commit `eba8b5c5`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
+- [x] Runtime Errors e 5xx novos examinados após a publicação; nenhum erro novo recorrente no deployment.
+- [ ] Após o merge do relatório de 26/09, confirmar o novo deployment de produção em `READY`, `/api/health` com o SHA correspondente e revisar Runtime Errors/5xx desse deployment. Repetir esta verificação após qualquer novo commit na `main` antes de abrir o beta.
 
 ## Dados, segurança e suporte
 
-- [ ] Migrations locais e remotas alinhadas; Security Advisor e Performance Advisor revisados.
+- [x] Migrations locais e remotas alinhadas; Security Advisor e Performance Advisor oficiais revisados, com achados documentados no relatório.
 - [ ] Leaked Password Protection ativa e senha mínima de pelo menos 8 caracteres.
 - [ ] Backup exportado e restaurado em ambiente separado ao menos uma vez; retenção e responsável definidos. O Supabase CRM está no plano Free, sem backup diário gerenciado ou PITR.
 - [ ] Termos e Privacidade revisados e publicados; e-mail oficial de suporte publicado.
-- [ ] Exportação e pedido de encerramento verificados com conta descartável; feedback chega à operação.
+- [x] Exportação, feedback e pedido de encerramento verificados com conta descartável no domínio oficial.
 
 ## Smoke de produto
 
+- [ ] E2E manual do GitHub verde com LLM real no environment `ci`; o E2E completo já passou localmente com Supabase descartável.
 - [ ] Cadastro, login, logout e reset de senha; sessão expirada/revogada leva ao login sem loop.
 - [ ] Cliente, item, venda, troca, recebimento, empréstimo e contrato PDF.
 - [ ] Comandos de voz: venda, recebimento, cliente avulso, item sem estoque, empréstimo e consulta; telemetria registra provedor, modelo, fonte e sucesso.
