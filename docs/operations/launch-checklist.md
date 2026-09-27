@@ -22,13 +22,14 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 ## Smoke de produto
 
-- [ ] E2E manual do GitHub verde com LLM real no environment `ci`; o E2E completo já passou localmente com Supabase descartável.
 - [ ] Cadastro, login, logout e reset de senha; sessão expirada/revogada leva ao login sem loop.
 - [ ] Cliente, item, venda, troca, recebimento, empréstimo e contrato PDF.
 - [ ] Comandos de voz: venda, recebimento, cliente avulso, item sem estoque, empréstimo e consulta; telemetria registra provedor, modelo, fonte e sucesso.
 - [ ] PWA em Android e desktop: ícones, standalone, offline page e safe areas.
 - [ ] Conta controlada: Free/trial → Pro pago → webhook → plano ativo → cancelar renovação → Pro até `current_period_end`. Pro → Pro Mais apenas se houver necessidade de confirmar valor, sem cobrança de teste repetida.
-- [ ] `billing:report` sem mismatch nem checkout pago sem ativação; `billing:reconcile:asaas` sem divergências; alertas operacionais ativos.
+- [ ] `billing:report` sem mismatch nem checkout pago sem ativação; `billing:reconcile:asaas` sem divergências. Durante o beta, acompanhar manualmente esses scripts, GitHub Actions e Runtime Logs/5xx da Vercel.
+
+O E2E com LLM real no GitHub e os alertas automáticos avançados são melhorias posteriores. O E2E local real e os smokes de produção já realizados constam no relatório; ainda é necessário concluir este smoke final após backup/restore e publicação legal.
 
 ## Freeze
 
