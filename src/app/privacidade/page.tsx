@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 export const metadata: Metadata = { title: 'Política de Privacidade' };
 
@@ -14,7 +15,7 @@ export default function PrivacyPage() {
       <section><h2 className="text-xl font-semibold text-white">Serviços terceiros</h2><p>O Supabase hospeda autenticação e banco de dados; a Vercel hospeda a aplicação; o Asaas processa cobranças; a OpenAI pode processar conteúdo enviado aos recursos de voz e IA. Compartilhamos com cada serviço apenas os dados necessários à finalidade correspondente, sujeitos às condições e medidas de segurança desses fornecedores.</p></section>
       <section><h2 className="text-xl font-semibold text-white">Retenção e segurança</h2><p>Os dados ficam disponíveis enquanto a conta estiver ativa. Após pedido de encerramento, avaliamos exclusão ou anonimização conforme obrigações legais, financeiras, prevenção de fraude e disputas. Usamos controles de acesso por conta, autenticação e transporte criptografado. Nenhum sistema oferece segurança absoluta.</p></section>
       <section><h2 className="text-xl font-semibold text-white">Seus direitos</h2><p>Você pode corrigir dados do perfil, exportar os dados da conta e solicitar seu encerramento na área Conta. Para acesso, correção, exclusão ou outras solicitações previstas na LGPD, entre em contato pelo <Link href="/suporte" className="text-emerald-300 underline">suporte</Link>. Podemos pedir confirmação de identidade antes de atender.</p></section>
-      <section><h2 className="text-xl font-semibold text-white">Mudanças e contato</h2><p>Podemos atualizar esta política e informaremos mudanças relevantes. Para questões de privacidade, use a <Link href="/suporte" className="text-emerald-300 underline">página de suporte</Link>. Veja também os <Link href="/termos" className="text-emerald-300 underline">Termos de Uso</Link>.</p></section>
+      <section><h2 className="text-xl font-semibold text-white">Mudanças e contato</h2><p>Podemos atualizar esta política e informaremos mudanças relevantes. Para questões de privacidade, escreva para <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-300 underline">{SUPPORT_EMAIL}</a> ou use a <Link href="/suporte" className="text-emerald-300 underline">página de suporte</Link>. Veja também os <Link href="/termos" className="text-emerald-300 underline">Termos de Uso</Link>.</p></section>
     </div>
   </main>;
 }

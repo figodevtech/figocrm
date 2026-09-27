@@ -41,3 +41,4 @@ Thumbs.db
 /tests/voice-benchmark/reports/
 
 /.vercel/
+__pycache__/

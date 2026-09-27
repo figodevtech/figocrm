@@ -15,6 +15,7 @@ import { LogoutButton, PasswordForm, ProfileForm } from '@/components/app/accoun
 import { AccountPrivacyActions, FeedbackForm } from '@/components/app/account-privacy-actions';
 import Link from 'next/link';
 import { Alert, Badge, Card, PageHeader, Row, SectionTitle } from '@/components/ui/layout';
+import { SUPPORT_EMAIL, SUPPORT_WHATSAPP, SUPPORT_WHATSAPP_DISPLAY } from '@/lib/support';
 
 export const metadata: Metadata = { title: 'Conta' };
 
@@ -145,7 +146,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
       <Card><AccountPrivacyActions /><p className="mt-4 text-sm"><Link href="/termos" className="text-emerald-300 underline">Termos de Uso</Link> · <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link></p></Card>
 
       <SectionTitle>Suporte</SectionTitle>
-      <div id="feedback"><Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card></div>
+      <div id="feedback"><Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><p className="mt-3 text-sm">E-mail: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-300 underline">{SUPPORT_EMAIL}</a></p><p className="mt-2 text-sm">WhatsApp: <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} className="text-emerald-300 underline">{SUPPORT_WHATSAPP_DISPLAY}</a></p><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card></div>
       <p className="mt-5 text-center text-xs text-slate-500">FigoCRM · v1.0.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || 'local'}</p>
 
       <div className="mt-8">
