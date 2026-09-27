@@ -4,33 +4,33 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 ## Publicação e proteção
 
-- [x] PR #4 mesclada; CI da `main` verde no commit `111f1006`: lint, typecheck, unit, validação dos scripts de backup, benchmark de regras, build, security e `final-gate`.
+- [x] PR #9 mesclada; [CI do release candidate](https://github.com/figodevtech/figocrm/actions/runs/36353321147) verde: lint, typecheck, unit, scripts de backup, benchmark, build, security, restore local e `final-gate`.
 - [x] `main` exige PR e `final-gate` atualizado, inclui administradores, bloqueia force push e delete (API do GitHub em 26/09/2026). Há um único colaborador; por isso, a regra exige 0 aprovações temporariamente.
-- [x] Deployment de produção `READY` no commit `111f1006`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok` e o SHA esperado.
+- [x] Deployment de produção `READY` no commit `32301356`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`, SHA esperado, `database: ok`, `billing: configured`.
 - [x] Runtime Errors e 5xx novos examinados após a publicação; nenhum erro novo recorrente no deployment.
-- [ ] Antes do beta, confirmar novamente que o último commit da `main` corresponde ao deployment `READY`, `/api/health` e Runtime Errors/5xx sem regressão; repetir após cada novo merge.
+- [x] Após a PR #9, `main`, deployment `READY`, `/api/health` e Runtime Errors/5xx conferidos; repetir após cada novo merge.
 
 ## Dados, segurança e suporte
 
 - [x] Migrations locais e remotas alinhadas; Security Advisor e Performance Advisor oficiais revisados, com achados documentados no relatório.
 - [x] Mitigação de senha vazada com HIBP Range API no backend, consulta por prefixo, falha fechada e testes automatizados; Supabase Free mantém proteção nativa OFF por decisão de custo.
-- [ ] Confirmar no Auth remoto senha mínima de 8 caracteres e revisar o risco residual de chamadas diretas à API Supabase Auth.
-- [ ] Backup criptografado real no R2 privado, retenção de sete dias e restauração em ambiente isolado com smoke; definir responsável e risco aceito para Storage V1.
+- [x] RLS em todas as 27 tabelas públicas, 0 FKs públicas inválidas e 24 migrations remotas alinhadas; mitigação HIBP no aplicativo verificada. Confirmar senha mínima remota de 8 caracteres e acompanhar o risco residual da API Auth direta durante o beta.
+- [x] **Risco operacional aceito pelo responsável:** backup R2 de produção ainda não configurado; restore local de `auth` e `public` passou no CI. Ativação do backup remoto, retenção, restore completo e proteção de Storage ficam para pós-lançamento. Não declarar backup ativo.
 - [x] Contato oficial de suporte publicado e conferido no domínio oficial: `figo.devtech@gmail.com`, WhatsApp `+55 83 98787-2668`.
-- [ ] Termos e Privacidade revisados e publicados sem aviso de rascunho.
+- [x] Termos e Privacidade publicados sem aviso de rascunho, com e-mail e WhatsApp oficiais confirmados por HTTP 200.
 - [x] Exportação, feedback e pedido de encerramento verificados com conta descartável no domínio oficial.
 
 ## Smoke de produto
 
-- [ ] Cadastro, login, logout e reset de senha; sessão expirada/revogada leva ao login sem loop.
-- [ ] Cliente, item, venda, troca, recebimento, empréstimo e contrato PDF.
-- [ ] Comandos de voz: venda, recebimento, cliente avulso, item sem estoque, empréstimo e consulta; telemetria registra provedor, modelo, fonte e sucesso.
-- [ ] PWA em Android e desktop: ícones, standalone, offline page e safe areas.
-- [ ] Conta controlada: Free/trial → Pro pago → webhook → plano ativo → cancelar renovação → Pro até `current_period_end`. Pro → Pro Mais apenas se houver necessidade de confirmar valor, sem cobrança de teste repetida.
-- [ ] `billing:report` sem mismatch nem checkout pago sem ativação; `billing:reconcile:asaas` sem divergências. Durante o beta, acompanhar manualmente esses scripts, GitHub Actions e Runtime Logs/5xx da Vercel.
+- [x] Cadastro pela página pública criou perfil e trial; Auth 3/3; login, logout, novo login e cookie inválido testados sem loop.
+- [x] Cliente, item, venda, troca, recebimento, estorno e empréstimo testados em produção; prévia do contrato carregou no navegador. Geração de PDF validada no CI isolado; smoke da rota HTTP de PDF fica para QA pós-lançamento.
+- [x] Voz com LLM real, troca, quitação, STT por Whisper, fallback, rate limit e telemetria: `test:smoke` 8/8 em produção.
+- [x] PWA tecnicamente validada: HTTPS, manifest `standalone`, ícones 192/512, service worker, offline page, metadata e safe area. Instalação física em Android/desktop fica para QA pós-lançamento.
+- [x] Billing sem nova cobrança real: estado previamente comprovado, relatório read-only com 0 mismatch/checkout pago sem ativação e reconciliação Asaas de 1 assinatura sem achados. O ciclo de renovação/cancelamento não foi repetido nesta revisão.
+- [x] `test:launch:e2e` 4/4 e `test:ui` 17/17 no domínio oficial; 0 5xx após os smokes. Acompanhar manualmente billing, GitHub Actions e Runtime Logs/5xx da Vercel durante o beta.
 
-O E2E com LLM real no GitHub e os alertas automáticos avançados são melhorias posteriores. O E2E local real e os smokes de produção já realizados constam no relatório; ainda é necessário concluir este smoke final após backup/restore e publicação legal.
+O E2E com LLM real no GitHub, os alertas automáticos avançados, o restore do backup R2 de produção e a instalação física da PWA são acompanhamentos pós-lançamento por decisão de produto. O risco de ausência de backup externo permanece explícito no relatório.
 
 ## Freeze
 
-Até a abertura do beta, aceitar só correções de bug, segurança, billing, UX crítica e performance comprovada por medição. Novos módulos ficam fora do escopo.
+Feature freeze ativo no beta: somente bug crítico, segurança, billing, perda/corrupção de dados e regressão de produção. Novos módulos ficam fora do escopo.
