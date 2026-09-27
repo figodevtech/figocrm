@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Exercise pg_dump and pg_restore against two disposable databases in CI.
+# Exercise application and Auth pg_dump/pg_restore against two disposable databases in CI.
+# Managed Supabase service schemas need a Supabase target and are outside this local drill.
 set -euo pipefail
 umask 077
 
@@ -50,7 +51,7 @@ PY
 
 docker run --rm --network host --user "$(id -u):$(id -g)" \
   -e DATABASE_URL -v "$workdir:/backup" postgres:17 \
-  sh -c 'exec pg_dump --format=custom --compress=9 --no-owner --no-acl --file=/backup/archive.dump "$DATABASE_URL"'
+  sh -c 'exec pg_dump --schema=auth --schema=public --format=custom --compress=9 --no-owner --no-acl --file=/backup/archive.dump "$DATABASE_URL"'
 [[ -s "$archive" ]] || { echo 'CI pg_dump produced an empty archive' >&2; exit 1; }
 
 docker run --rm --network host -e DATABASE_URL postgres:17 \
