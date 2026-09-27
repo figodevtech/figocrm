@@ -4,11 +4,11 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 
 ## Publicação e proteção
 
-- [x] PR #2 mesclada; CI da `main` verde no commit `eba8b5c5`: lint, typecheck, unit, benchmark de regras, build, security e `final-gate`.
+- [x] PR #4 mesclada; CI da `main` verde no commit `111f1006`: lint, typecheck, unit, validação dos scripts de backup, benchmark de regras, build, security e `final-gate`.
 - [x] `main` exige PR e `final-gate` atualizado, inclui administradores, bloqueia force push e delete (API do GitHub em 26/09/2026). Há um único colaborador; por isso, a regra exige 0 aprovações temporariamente.
-- [x] Deployment de produção `READY` no commit `eba8b5c5`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok`.
+- [x] Deployment de produção `READY` no commit `111f1006`; domínio `crm.figosoftwares.com.br` responde; `/api/health` retorna `ok` e o SHA esperado.
 - [x] Runtime Errors e 5xx novos examinados após a publicação; nenhum erro novo recorrente no deployment.
-- [ ] Após o merge do relatório de 26/09, confirmar o novo deployment de produção em `READY`, `/api/health` com o SHA correspondente e revisar Runtime Errors/5xx desse deployment. Repetir esta verificação após qualquer novo commit na `main` antes de abrir o beta.
+- [ ] Antes do beta, confirmar novamente que o último commit da `main` corresponde ao deployment `READY`, `/api/health` e Runtime Errors/5xx sem regressão; repetir após cada novo merge.
 
 ## Dados, segurança e suporte
 
@@ -16,7 +16,7 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 - [x] Mitigação de senha vazada com HIBP Range API no backend, consulta por prefixo, falha fechada e testes automatizados; Supabase Free mantém proteção nativa OFF por decisão de custo.
 - [ ] Confirmar no Auth remoto senha mínima de 8 caracteres e revisar o risco residual de chamadas diretas à API Supabase Auth.
 - [ ] Backup criptografado real no R2 privado, retenção de sete dias e restauração em ambiente isolado com smoke; definir responsável e risco aceito para Storage V1.
-- [x] Contato oficial de suporte incorporado: `figo.devtech@gmail.com`, WhatsApp `+55 83 98787-2668`; confirmar no domínio oficial após o deploy.
+- [x] Contato oficial de suporte publicado e conferido no domínio oficial: `figo.devtech@gmail.com`, WhatsApp `+55 83 98787-2668`.
 - [ ] Termos e Privacidade revisados e publicados sem aviso de rascunho.
 - [x] Exportação, feedback e pedido de encerramento verificados com conta descartável no domínio oficial.
 
