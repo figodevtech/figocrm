@@ -56,10 +56,12 @@ docker run --rm --network host --user "$(id -u):$(id -g)" \
 
 docker run --rm --network host -e DATABASE_URL postgres:17 \
   sh -c 'exec psql --set=ON_ERROR_STOP=1 "$DATABASE_URL" -c "CREATE DATABASE figocrm_restore_drill"'
+docker run --rm --network host -e RESTORE_DATABASE_URL postgres:17 \
+  sh -c 'exec psql --set=ON_ERROR_STOP=1 "$RESTORE_DATABASE_URL" -c "DROP SCHEMA public CASCADE"'
 
 docker run --rm --network host --user "$(id -u):$(id -g)" \
   -e RESTORE_DATABASE_URL -v "$workdir:/backup:ro" postgres:17 \
-  sh -c 'exec pg_restore --clean --if-exists --no-owner --no-acl --single-transaction --exit-on-error --dbname="$RESTORE_DATABASE_URL" /backup/archive.dump'
+  sh -c 'exec pg_restore --no-owner --no-acl --single-transaction --exit-on-error --dbname="$RESTORE_DATABASE_URL" /backup/archive.dump'
 
 docker run --rm --network host --user "$(id -u):$(id -g)" \
   -e RESTORE_DATABASE_URL -v "$PWD/scripts/restore_validation.sql:/backup/validate.sql:ro" postgres:17 \
