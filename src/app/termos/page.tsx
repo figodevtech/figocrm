@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { Metadata } from 'next';
+import { SUPPORT_EMAIL } from '@/lib/support';
 
 export const metadata: Metadata = { title: 'Termos de Uso' };
 
@@ -15,7 +16,7 @@ export default function TermsPage() {
       <section><h2 className="text-xl font-semibold text-white">4. Disponibilidade e IA</h2><p>Trabalhamos para manter o serviço disponível, mas podem ocorrer interrupções para manutenção ou por falhas de infraestrutura. Comandos de voz e recursos de IA podem interpretar informações de modo incorreto. Confirme nomes, quantias, datas e ações antes de salvar.</p></section>
       <section><h2 className="text-xl font-semibold text-white">5. Responsabilidade</h2><p>O FigoCRM não garante resultados comerciais, recebimentos ou validade jurídica de contratos gerados. Na extensão permitida pela lei aplicável, não respondemos por prejuízos decorrentes de dados incorretos fornecidos pelo usuário ou de decisões tomadas sem conferir os registros. Direitos legais do consumidor permanecem preservados.</p></section>
       <section><h2 className="text-xl font-semibold text-white">6. Encerramento e alterações</h2><p>Você pode solicitar o encerramento da conta na área Conta. Alguns registros poderão ser retidos pelo prazo necessário para obrigações legais, prevenção de fraude e resolução de disputas, conforme a Política de Privacidade. Podemos atualizar estes termos; mudanças relevantes serão comunicadas pelo serviço ou e-mail antes de entrarem em vigor quando exigido.</p></section>
-      <section><h2 className="text-xl font-semibold text-white">7. Contato</h2><p>Para dúvidas, use a <Link href="/suporte" className="text-emerald-300 underline">página de suporte</Link>. Consulte também a <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link>.</p></section>
+      <section><h2 className="text-xl font-semibold text-white">7. Contato</h2><p>Para dúvidas, escreva para <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-300 underline">{SUPPORT_EMAIL}</a> ou use a <Link href="/suporte" className="text-emerald-300 underline">página de suporte</Link>. Consulte também a <Link href="/privacidade" className="text-emerald-300 underline">Política de Privacidade</Link>.</p></section>
     </div>
   </main>;
 }

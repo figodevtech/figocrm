@@ -13,9 +13,11 @@ Marque somente após guardar evidência (SHA, URL, horário e resultado) no [rel
 ## Dados, segurança e suporte
 
 - [x] Migrations locais e remotas alinhadas; Security Advisor e Performance Advisor oficiais revisados, com achados documentados no relatório.
-- [ ] Leaked Password Protection ativa e senha mínima de pelo menos 8 caracteres.
-- [ ] Backup exportado e restaurado em ambiente separado ao menos uma vez; retenção e responsável definidos. O Supabase CRM está no plano Free, sem backup diário gerenciado ou PITR.
-- [ ] Termos e Privacidade revisados e publicados; e-mail oficial de suporte publicado.
+- [x] Mitigação de senha vazada com HIBP Range API no backend, consulta por prefixo, falha fechada e testes automatizados; Supabase Free mantém proteção nativa OFF por decisão de custo.
+- [ ] Confirmar no Auth remoto senha mínima de 8 caracteres e revisar o risco residual de chamadas diretas à API Supabase Auth.
+- [ ] Backup criptografado real no R2 privado, retenção de sete dias e restauração em ambiente isolado com smoke; definir responsável e risco aceito para Storage V1.
+- [x] Contato oficial de suporte incorporado: `figo.devtech@gmail.com`, WhatsApp `+55 83 98787-2668`; confirmar no domínio oficial após o deploy.
+- [ ] Termos e Privacidade revisados e publicados sem aviso de rascunho.
 - [x] Exportação, feedback e pedido de encerramento verificados com conta descartável no domínio oficial.
 
 ## Smoke de produto

@@ -7,14 +7,13 @@ import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { safeNextPath } from '@/lib/auth/redirects';
+import { validateNewPassword } from '@/lib/security/pwned-password';
 
 export interface AuthState {
   error?: string;
   success?: boolean;
   message?: string;
 }
-
-const MIN_PASSWORD = 8;
 
 function isConfigured(): boolean {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -68,8 +67,9 @@ export async function signUpAction(prevState: AuthState | null, formData: FormDa
   const businessName = String(formData.get('businessName') || '').trim();
 
   if (!fullName || !email || !password) return { error: 'Nome, e-mail e senha são obrigatórios.' };
-  if (password.length < MIN_PASSWORD) return { error: `A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.` };
   if (!isConfigured()) return { error: 'Serviço de cadastro indisponível no momento.' };
+  const passwordError = await validateNewPassword(password);
+  if (passwordError) return { error: passwordError };
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -110,12 +110,15 @@ export async function requestPasswordResetAction(prevState: AuthState | null, fo
 export async function updatePasswordAction(prevState: AuthState | null, formData: FormData): Promise<AuthState> {
   const password = String(formData.get('password') || '');
   const confirm = String(formData.get('confirm') || '');
-  if (password.length < MIN_PASSWORD) return { error: `A senha precisa ter pelo menos ${MIN_PASSWORD} caracteres.` };
+  if (password.length < 8) return { error: 'A senha precisa ter pelo menos 8 caracteres.' };
   if (password !== confirm) return { error: 'As senhas não são iguais.' };
 
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Link expirado ou sessão encerrada. Peça um novo link de recuperação.' };
+
+  const passwordError = await validateNewPassword(password);
+  if (passwordError) return { error: passwordError };
 
   const { error } = await supabase.auth.updateUser({ password });
   if (error) return { error: authMessage(error.message) };
