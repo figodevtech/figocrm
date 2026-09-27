@@ -25,6 +25,10 @@
 
 **Identificar:** Runtime Errors por rota e commit, `/api/health`, logs do deployment. **Onde olhar:** deployment `READY` anterior, variáveis de ambiente, funções e banco. **Mitigar:** se a regressão veio do deploy, promover/retornar ao último deployment `READY` conhecido e abrir correção em PR. **Não fazer:** reverter migration que contém dados sem plano de compatibilidade.
 
+## PWA instalado abre a rota antiga
+
+Novas instalações usam `/login` como ponto de entrada; o proxy leva sessões válidas para `/app`. Se uma instalação anterior continuar abrindo o antigo `start_url`, remover e reinstalar o PWA após confirmar que `/manifest.json` já contém `start_url: /login`. O navegador pode conservar metadados da instalação antiga; não alterar o redirecionamento do login nem forçar navegação pelo service worker.
+
 ## OpenAI indisponível
 
 **Identificar:** erros de voz/IA e telemetria `success=false`; fluxos manuais continuam disponíveis. **Onde olhar:** Runtime Logs de `/api/voice/*` e status do provedor. **Mitigar:** orientar uso dos formulários manuais e retentar quando o serviço normalizar. **Não fazer:** executar comandos financeiros a partir de interpretação parcial ou desativar confirmações.

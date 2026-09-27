@@ -13,6 +13,8 @@ test('health, páginas legais e 404 respondem sem sessão', async () => {
   assert.equal((await health.json()).status, 'ok');
   for (const route of ['/termos', '/privacidade', '/suporte'])
     assert.equal((await fetch(`${BASE}${route}`)).status, 200, route);
+  const login = await fetch(`${BASE}/login`, { redirect: 'manual' });
+  assert.equal(login.status, 200);
   assert.equal((await fetch(`${BASE}/pagina-inexistente`)).status, 404);
   const app = await fetch(`${BASE}/app`, { redirect: 'manual' });
   assert.equal(app.status, 307);
@@ -41,6 +43,9 @@ test('exportação inclui somente dados próprios e omite tokens', async () => {
   });
   assert.ifError((await ssr.auth.signInWithPassword({ email: user.email, password: user.password })).error);
   cookieHeader = [...jar.entries()].map(([key, value]) => `${key}=${value}`).join('; ');
+  const login = await fetch(`${BASE}/login`, { headers: { cookie: cookieHeader }, redirect: 'manual' });
+  assert.equal(login.status, 307);
+  assert.equal(new URL(login.headers.get('location') || '', BASE).pathname, '/app');
   const response = await fetch(`${BASE}/api/account/export`, { headers: { cookie: cookieHeader } });
   assert.equal(response.status, 200);
   assert.match(response.headers.get('content-disposition') || '', /attachment/);
