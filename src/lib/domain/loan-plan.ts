@@ -11,6 +11,7 @@ import {
   loanTermsFromInstallments,
 } from '@/lib/finance/loans';
 import type { PaymentMethod } from '@/types/domain';
+import { buildInstallmentSchedule, type InstallmentScheduleRule } from '@/lib/finance/installment-schedule';
 
 export interface LoanPlanInput {
   principal: number;
@@ -23,6 +24,7 @@ export interface LoanPlanInput {
   startDate?: string;
   firstDueDate?: string;
   dueDay?: number;
+  scheduleRule?: InstallmentScheduleRule;
   paymentMethod?: PaymentMethod | 'card';
   notes?: string;
   idempotencyKey?: string;
@@ -62,6 +64,17 @@ export function planLoan(input: LoanPlanInput, now: Date = new Date()): LoanPlan
         });
   if (!res.ok) return res;
 
-  const schedule = buildLoanSchedule(res.terms, { startDate, firstDueDate: input.firstDueDate, dueDay: input.dueDay });
+  let schedule: LoanInstallment[];
+  if (input.scheduleRule) {
+    try {
+      const explicit = buildInstallmentSchedule({ total: res.terms.totalCents / 100, count: input.installmentsCount, rule: input.scheduleRule, minimumDate: startDate });
+      const legacy = buildLoanSchedule(res.terms, { startDate, firstDueDate: input.firstDueDate, dueDay: input.dueDay });
+      schedule = legacy.map((item, index) => ({ ...item, dueDate: explicit[index].dueDate }));
+    } catch (error) {
+      return { ok: false, error: error instanceof Error ? error.message : 'Cronograma de parcelas inválido.' };
+    }
+  } else {
+    schedule = buildLoanSchedule(res.terms, { startDate, firstDueDate: input.firstDueDate, dueDay: input.dueDay });
+  }
   return { ok: true, terms: res.terms, schedule, startDate };
 }

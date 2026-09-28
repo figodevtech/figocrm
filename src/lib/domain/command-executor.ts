@@ -265,9 +265,10 @@ export async function executeDealCommand(command: DealCommand, deps: ExecutionDe
       totalAmountCents: toCents(totalAmount),
       count: inst?.count || 1,
       dueDayOfMonth: inst?.dueDayOfMonth,
-      intervalDays: inst?.intervalDays || 30,
+      intervalDays: inst?.intervalDays,
       isPromissory: inst?.isPromissory || false,
       firstDueDate: inst?.firstDueDate,
+      manualInstallments: inst?.manualInstallments?.map((item) => ({ number: item.number, amountCents: toCents(item.amount), dueDate: item.dueDate })),
     }).map((i) => ({
       installment_number: i.installmentNumber,
       total_installments: i.totalInstallments,

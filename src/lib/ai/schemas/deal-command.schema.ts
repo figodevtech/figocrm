@@ -86,7 +86,7 @@ export const InstallmentScheduleSchema = z.object({
   installmentAmount: z.number().positive('Valor da parcela deve ser positivo.'),
   firstDueDate: z.string().optional(),
   dueDayOfMonth: z.number().int().min(1).max(31).optional(),
-  intervalDays: z.number().int().positive().default(30),
+  intervalDays: z.number().int().positive().optional(),
   isPromissory: z.boolean().default(false),
   manualInstallments: z
     .array(

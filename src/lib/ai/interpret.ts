@@ -25,6 +25,8 @@ import {
 } from '@/lib/ai/schemas/llm-interpretation.schema';
 import { checkGrounding, completenessGaps, consistencyAmbiguities, correctionAmbiguities, CREATION_INTENTS, groundingAmbiguities, WRITE_INTENTS } from '@/lib/ai/grounding';
 import { describeForReadback } from '@/lib/ai/readback';
+import { interpretScheduleRule, spokenDueDates } from '@/lib/ai/schedule-interpretation';
+import { todayISO } from '@/lib/domain/loan-plan';
 
 export type InterpretMode = 'auto' | 'llm_required' | 'rules_only';
 
@@ -60,12 +62,13 @@ export async function interpretVoiceCommandWithLLM(
       },
       { source: 'guardrail' },
       spokenText,
-      context
+      context,
+      options.now
     );
   }
 
   if (mode === 'rules_only') {
-    return finalize(interpretVoiceCommand(spokenText, context), { source: 'rules' }, spokenText, context);
+    return finalize(interpretVoiceCommand(spokenText, context), { source: 'rules' }, spokenText, context, options.now);
   }
 
   const llm = options.llm ?? callLLMStructured;
@@ -135,7 +138,7 @@ export async function interpretVoiceCommandWithLLM(
     };
   }
 
-  return finalize(fromLLM(parsed.data, spokenText, normalized), meta, spokenText, context);
+  return finalize(fromLLM(parsed.data, spokenText, normalized), meta, spokenText, context, options.now);
 }
 
 function parseAndValidate(content: string): { success: true; data: LLMInterpretation } | { success: false; errors: string[] } {
@@ -211,6 +214,10 @@ export function fromLLM(o: LLMInterpretation, rawText: string, normalizedText: s
     dueDay: undef(o.dueDay),
     dueMonthOffset: undef(o.dueMonthOffset),
     firstDueDate: undef(o.firstDueDate),
+    scheduleType: undef(o.scheduleType),
+    explicitDueDates: o.explicitDueDates,
+    recurrenceDay: undef(o.recurrenceDay),
+    intervalDays: undef(o.intervalDays),
     amount: undef(o.amount),
     adjustmentAmount: isAdjustment ? undef(o.amount) : undefined,
     adjustmentType: undef(o.adjustmentType),
@@ -243,11 +250,37 @@ function finalize(
   cmd: InterpretedVoiceCommand,
   meta: InterpretationMeta,
   spokenText: string,
-  context?: ConversationContext
+  context?: ConversationContext,
+  now?: Date
 ): InterpretedVoiceCommand {
   // "pau a pau" = volta zero (normalização, não invenção)
   if (cmd.intent === 'create_trade' && cmd.direction === 'even' && cmd.tradeBalance === undefined) {
     cmd = { ...cmd, tradeBalance: 0 };
+  }
+  if (CREATION_INTENTS.has(cmd.intent) && !cmd.installmentsCount) {
+    const saleRemaining = cmd.intent === 'create_sale' && cmd.totalValue !== undefined && cmd.cashIn !== undefined
+      ? cmd.totalValue - cmd.cashIn : 0;
+    const tradeRemaining = cmd.intent === 'create_trade' && cmd.direction === 'inflow' && cmd.tradeBalance !== undefined
+      ? cmd.tradeBalance - (cmd.cashIn ?? 0) : 0;
+    if ((cmd.receivable ?? 0) > 0 || saleRemaining > 0 || tradeRemaining > 0) cmd = { ...cmd, installmentsCount: 1 };
+  }
+  let scheduleQuestion: string | undefined;
+  if (CREATION_INTENTS.has(cmd.intent) && cmd.installmentsCount) {
+    const today = todayISO(now);
+    const temporal = interpretScheduleRule(spokenText, cmd.installmentsCount, today);
+    scheduleQuestion = temporal.question;
+    const datesSpoken = spokenDueDates(spokenText, today);
+    const claimedDates = [...(cmd.explicitDueDates ?? []), ...(cmd.firstDueDate ? [cmd.firstDueDate] : [])];
+    const ungroundedDate = claimedDates.find((date) => !datesSpoken.includes(date) && !temporal.rule);
+    if (ungroundedDate) {
+      cmd = { ...cmd, ambiguities: [...cmd.ambiguities, {
+        field: 'firstDueDate', type: 'value', description: 'Data sem apoio na fala.',
+        possibleInterpretations: [], suggestedPrompt: 'Quando vencem as parcelas?'
+      }] };
+    }
+    // A regra aceita é reconstruída da fala; datas devolvidas pela LLM nunca entram sozinhas na execução.
+    cmd = { ...cmd, scheduleRule: temporal.rule, explicitDueDates: temporal.explicitDates,
+      firstDueDate: temporal.explicitDates[0], dueDay: temporal.rule?.type === 'monthly_day' ? temporal.rule.dayOfMonth : undefined };
   }
   const groundingIssues = meta.source === 'guardrail' ? [] : checkGrounding(cmd, spokenText, context);
   const ambiguities = [
@@ -258,9 +291,20 @@ function finalize(
   ];
   // Em criação, "quem é o cliente" / "qual mercadoria" nunca seguram o registro: viram avulsos
   const llmMissing = CREATION_INTENTS.has(cmd.intent)
-    ? cmd.missingInformation.filter((m) => m.type !== 'customer_reference' && m.type !== 'item_reference')
+    ? cmd.missingInformation.filter((m) => m.type !== 'customer_reference' && m.type !== 'item_reference' && !(m.type === 'installment_due_date' && cmd.scheduleRule))
     : cmd.missingInformation;
+  for (const item of llmMissing) {
+    if (item.type === 'installment_due_date' && scheduleQuestion) {
+      item.description = scheduleQuestion;
+      item.promptQuestion = scheduleQuestion;
+    }
+  }
   const missingInformation = [...llmMissing, ...completenessGaps({ ...cmd, missingInformation: llmMissing }, !!context?.lastCustomer)];
+  const dueGap = missingInformation.find((item) => item.type === 'installment_due_date');
+  if (dueGap && scheduleQuestion) {
+    dueGap.description = scheduleQuestion;
+    dueGap.promptQuestion = scheduleQuestion;
+  }
 
   if (groundingIssues.length > 0) {
     meta.validationErrors = [...(meta.validationErrors ?? []), ...groundingIssues.map((g) => `ungrounded:${g.field}=${g.value}`)];

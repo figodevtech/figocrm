@@ -18,6 +18,10 @@ import { matchCandidateAnswer, pickCandidates } from '../../src/lib/domain/entit
 import { pickInstallment, OpenInstallment } from '../../src/lib/domain/financial-target-resolver';
 import { extractSpokenNumbers } from '../../src/lib/voice/numbers';
 import { mentionsOtherName } from '../../src/lib/ai/grounding';
+import { checkGrounding } from '../../src/lib/ai/grounding';
+import { buildInstallmentSchedule, addCalendarMonthsClamped, addExactDays } from '../../src/lib/finance/installment-schedule';
+import { interpretScheduleRule } from '../../src/lib/ai/schedule-interpretation';
+import { planLoan } from '../../src/lib/domain/loan-plan';
 import type { InterpretedVoiceCommand } from '../../src/lib/ai/interpreter';
 
 const tests: Array<[string, () => void | Promise<void>]> = [];
@@ -30,6 +34,7 @@ function llmOutput(partial: Partial<LLMInterpretation>): LLMInterpretation {
     totalValue: null, itemInValue: null, cashIn: null, cashOut: null, paymentMethod: null,
     tradeBalance: null, direction: null, receivable: null, payable: null,
     installmentsCount: null, installmentAmount: null, dueDay: null, dueMonthOffset: null, firstDueDate: null,
+    scheduleType: null, explicitDueDates: [], recurrenceDay: null, intervalDays: null,
     amount: null, paymentScope: null, installmentRef: null, installmentNumber: null, debtHint: null,
     adjustmentType: null, operationKind: null, renegotiationScope: null, installmentNumbers: [],
     queryType: null, interestType: null, interestRate: null, interestAmount: null, missingInformation: [], ambiguities: [],
@@ -155,6 +160,7 @@ test('builder: troca canônica fecha 26000 = 15000 + 3000 + 8000', () => {
   const built = buildDealCommand(interpreted({
     intent: 'create_trade', counterparty: { name: 'Carlos' }, itemOut: 'XRE', itemIn: 'Bros', totalValue: 26000, itemInValue: 15000,
     direction: 'inflow', tradeBalance: 11000, cashIn: 3000, paymentMethod: 'pix', receivable: 8000, installmentsCount: 4, installmentAmount: 2000, dueDay: 15,
+    scheduleRule: { type: 'monthly_day', firstDueDate: '2026-10-15', dayOfMonth: 15 },
   }));
   assert.strictEqual(built.status, 'ok');
   if (built.status !== 'ok') return;
@@ -290,6 +296,128 @@ test('escrita sem cliente (nem na fala nem no contexto) pede o cliente', async (
   const r = await interpretVoiceCommandWithLLM(text, emptyContext('u'), { llm: fakeLLM(JSON.stringify(noCustomer)) });
   assert.strictEqual(r.requiresConfirmation, true);
   assert.ok(r.missingInformation.some((m) => m.type === 'customer_reference'));
+});
+
+test('venda 3000, entrada 1000, 10 parcelas: deriva 2000 e pergunta vencimento', async () => {
+  const speech = 'Vendi uma moto por 3000, entrada de 1000 e o restante em 10 vezes de 200.';
+  const llm = llmOutput({ intent: 'create_sale', item: 'moto', totalValue: 3000, cashIn: 1000,
+    receivable: 2000, installmentsCount: 10, installmentAmount: 200 });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(llm)), now: new Date('2026-09-27T12:00:00Z') });
+  assert.deepStrictEqual(checkGrounding(result, speech), []);
+  assert.strictEqual(result.requiresConfirmation, true);
+  assert.ok(result.missingInformation.some((item) => item.type === 'installment_due_date'));
+  const built = buildDealCommand(result);
+  assert.strictEqual(built.status, 'needs_input');
+  if (built.status === 'needs_input') assert.strictEqual(built.field, 'installment_schedule');
+  assert.ok(checkGrounding({ ...result, cashIn: 1200 }, speech).some((item) => item.field === 'cashIn'));
+});
+
+test('data inventada pela LLM não entra no cronograma', async () => {
+  const speech = 'Vendi uma moto por 3000, entrada 1000 e 10 parcelas de 200.';
+  const llm = llmOutput({ intent: 'create_sale', item: 'moto', totalValue: 3000, cashIn: 1000,
+    receivable: 2000, installmentsCount: 10, installmentAmount: 200,
+    firstDueDate: '2026-10-31', scheduleType: 'monthly_day', recurrenceDay: 31,
+    explicitDueDates: ['2026-10-31'] });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(llm)), now: new Date('2026-09-27T12:00:00Z') });
+  assert.strictEqual(result.scheduleRule, undefined);
+  assert.strictEqual(result.firstDueDate, undefined);
+  assert.strictEqual(result.requiresConfirmation, true);
+});
+
+test('recebível sem contagem usa uma parcela e respeita vencimento dito', async () => {
+  const speech = 'Vendi uma moto por 3000, entrou 1000 e o restante vence amanhã.';
+  const llm = llmOutput({ intent: 'create_sale', item: 'moto', totalValue: 3000, cashIn: 1000, receivable: 2000 });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(llm)), now: new Date('2026-09-27T12:00:00Z') });
+  assert.strictEqual(result.installmentsCount, 1);
+  assert.strictEqual(result.requiresConfirmation, false);
+  const built = buildDealCommand(result);
+  assert.strictEqual(built.status, 'ok');
+  if (built.status === 'ok') assert.deepStrictEqual(built.command.receivables[0].installments?.manualInstallments?.map((i) => i.dueDate), ['2026-09-28']);
+  const missingDate = interpreted({ item: 'moto', totalValue: 3000, cashIn: 1000, receivable: 2000,
+    missingInformation: [{ type: 'installment_due_date', description: 'Quando vence?', promptQuestion: 'Quando vence?' }] });
+  const resumed = resumePending('Amanhã', { kind: 'missing_info', originalTranscript: speech, promptAsked: 'Quando vence?',
+    draft: missingDate as unknown as Record<string, unknown>, field: 'installment_schedule', timestamp: 0 }, new Date('2026-09-27T12:00:00Z'));
+  assert.strictEqual(resumed?.requiresConfirmation, false);
+  assert.deepStrictEqual(resumed?.explicitDueDates, ['2026-09-28']);
+});
+
+test('data da venda não vira vencimento e dia por extenso vira recorrência', async () => {
+  const speech = 'Vendi em 20/09/2026 por 3000 em 3 vezes todo dia dez.';
+  const llm = llmOutput({ intent: 'create_sale', totalValue: 3000, receivable: 3000, installmentsCount: 3, installmentAmount: 1000,
+    dueDay: 10, firstDueDate: '2026-09-20', explicitDueDates: ['2026-09-20'], scheduleType: 'monthly_day', recurrenceDay: 10 });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(llm)), now: new Date('2026-09-27T12:00:00Z') });
+  assert.strictEqual(result.scheduleRule?.type, 'monthly_day');
+  assert.deepStrictEqual(result.explicitDueDates, ['2026-10-10']);
+  const built = buildDealCommand(result);
+  assert.strictEqual(built.status, 'ok');
+  if (built.status === 'ok') assert.deepStrictEqual(built.command.receivables[0].installments?.manualInstallments?.map((i) => i.dueDate),
+    ['2026-10-10', '2026-11-10', '2026-12-10']);
+});
+
+test('troca deriva volta e saldo parcelado apenas dos valores financeiros relacionados', () => {
+  const speech = 'Troquei minha moto de 5000 na de 3000 do Pedro, ele deu 500 de entrada e o resto em 5 vezes.';
+  const cmd = interpreted({ intent: 'create_trade', counterparty: { name: 'Pedro' }, itemOut: 'moto', itemIn: 'moto',
+    totalValue: 5000, itemInValue: 3000, tradeBalance: 2000, direction: 'inflow', cashIn: 500,
+    receivable: 1500, installmentsCount: 5, installmentAmount: 300 });
+  assert.deepStrictEqual(checkGrounding(cmd, speech), []);
+  assert.ok(checkGrounding({ ...cmd, receivable: 1700 }, speech).some((item) => item.field === 'receivable'));
+});
+
+test('resposta curta com primeira data preserva negócio e pede recorrência', () => {
+  const draft = interpreted({ item: 'moto', totalValue: 3000, cashIn: 1000, installmentsCount: 10,
+    missingInformation: [{ type: 'installment_due_date', description: 'Quando vencem?', promptQuestion: 'Quando vencem?' }] });
+  const pending = { kind: 'missing_info' as const, originalTranscript: 'Vendi uma moto por 3000, entrada 1000, 10 vezes',
+    promptAsked: 'Quando vencem?', draft: draft as unknown as Record<string, unknown>, field: 'installment_schedule', timestamp: 0 };
+  const now = new Date('2026-09-27T12:00:00Z');
+  const first = resumePending('A primeira dia 28/09.', pending, now);
+  assert.deepStrictEqual(first?.explicitDueDates, ['2026-09-28']);
+  assert.strictEqual(first?.requiresConfirmation, true);
+  assert.match(first?.confirmationPrompt ?? '', /todo dia 28/);
+  const second = resumePending('Sim', { ...pending, draft: first as unknown as Record<string, unknown> }, now);
+  assert.strictEqual(second?.scheduleRule?.type, 'monthly_day');
+  assert.strictEqual(second?.requiresConfirmation, false);
+  const built = buildDealCommand(second!);
+  assert.strictEqual(built.status, 'ok');
+  if (built.status === 'ok') {
+    assert.strictEqual(built.command.receivables[0].totalAmount, 2000);
+    assert.deepStrictEqual(built.command.receivables[0].installments?.manualInstallments?.slice(0, 2).map((i) => [i.dueDate, i.amount]),
+      [['2026-09-28', 200], ['2026-10-28', 200]]);
+  }
+});
+
+test('regra temporal: mensal, dias exatos, datas livres e híbrida', () => {
+  assert.strictEqual(addCalendarMonthsClamped('2027-01-31', 1, 31), '2027-02-28');
+  assert.strictEqual(addCalendarMonthsClamped('2027-01-31', 2, 31), '2027-03-31');
+  assert.strictEqual(addExactDays('2027-01-31', 30), '2027-03-02');
+  const monthly = interpretScheduleRule('Primeira 28/09 e depois todo dia 28.', 3, '2026-09-27');
+  assert.deepStrictEqual(buildInstallmentSchedule({ total: 100, count: 3, rule: monthly.rule! }).map((i) => i.dueDate),
+    ['2026-09-28', '2026-10-28', '2026-11-28']);
+  const exact = interpretScheduleRule('Primeira 31/01/2027, depois a cada 30 dias.', 3, '2026-09-27');
+  assert.deepStrictEqual(buildInstallmentSchedule({ total: 100, count: 3, rule: exact.rule! }).map((i) => i.dueDate),
+    ['2027-01-31', '2027-03-02', '2027-04-01']);
+  const spokenInterval = interpretScheduleRule('Primeira 31/01/2027, depois a cada trinta dias.', 2, '2026-09-27');
+  assert.deepStrictEqual(buildInstallmentSchedule({ total: 10, count: 2, rule: spokenInterval.rule! }).map((i) => i.dueDate),
+    ['2027-01-31', '2027-03-02']);
+  const custom = interpretScheduleRule('28/09, 10/10 e 20/11.', 3, '2026-09-27');
+  assert.deepStrictEqual(buildInstallmentSchedule({ total: 100, count: 3, rule: custom.rule! }).map((i) => i.dueDate),
+    ['2026-09-28', '2026-10-10', '2026-11-20']);
+  assert.strictEqual(buildInstallmentSchedule({ total: 1, count: 3, rule: custom.rule! }).reduce((sum, i) => sum + Math.round(i.amount * 100), 0), 100);
+  const hybrid = interpretScheduleRule('Primeira 28/09, segunda 15/10 e depois todo dia 15.', 4, '2026-09-27');
+  assert.deepStrictEqual(buildInstallmentSchedule({ total: 100, count: 4, rule: hybrid.rule! }).map((i) => i.dueDate),
+    ['2026-09-28', '2026-10-15', '2026-11-15', '2026-12-15']);
+  assert.deepStrictEqual(interpretScheduleRule('dia 10 do mês que vem', 2, '2026-09-27').explicitDates, ['2026-10-10']);
+  assert.deepStrictEqual(interpretScheduleRule('primeira 20/09', 2, '2026-09-27').explicitDates, ['2027-09-20']);
+  const outOfOrder = interpretScheduleRule('primeira 28/09, segunda 10/09', 2, '2026-09-27');
+  assert.throws(() => buildInstallmentSchedule({ total: 10, count: 2, rule: outOfOrder.rule! }));
+  assert.throws(() => buildInstallmentSchedule({ total: 10, count: 2, rule: { type: 'custom_dates', dates: ['2026-10-10', '2026-10-01'] } }));
+});
+
+test('empréstimo por voz aceita cronograma explícito no plano financeiro', () => {
+  const rule = interpretScheduleRule('Primeira 31/01/2027 e as outras todo dia 31.', 3, '2026-09-27').rule!;
+  const plan = planLoan({ principal: 100, interestType: 'fixed_amount', interestAmount: 0, installmentsCount: 3,
+    scheduleRule: rule, startDate: '2026-09-27' });
+  assert.strictEqual(plan.ok, true);
+  if (plan.ok) assert.deepStrictEqual(plan.schedule.map((i) => i.dueDate), ['2027-01-31', '2027-02-28', '2027-03-31']);
 });
 
 (async () => {

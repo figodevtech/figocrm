@@ -8,7 +8,8 @@ import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import type { DealCommand, MissingInformationItem } from '@/types/deal-command';
 import { DealCommandSchema } from '@/lib/ai/schemas/deal-command.schema';
 import { formatZodIssues } from '@/lib/ai/schemas/llm-interpretation.schema';
-import { toCents } from '@/lib/finance/money';
+import { toCents, toReais } from '@/lib/finance/money';
+import { buildInstallmentSchedule } from '@/lib/finance/installment-schedule';
 
 export type BuildResult =
   | { status: 'ok'; command: DealCommand }
@@ -55,7 +56,9 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
         : { description: UNNAMED_ITEM, newItem: true, negotiatedValue: cmd.totalValue, direction: 'OUT' }
     );
     if (receivable === undefined && cmd.installmentsCount && cmd.installmentAmount) {
-      receivable = cmd.installmentsCount * cmd.installmentAmount;
+      receivable = toReais(toCents(cmd.installmentsCount * cmd.installmentAmount));
+    } else if (receivable === undefined && cmd.installmentsCount && cmd.cashIn !== undefined) {
+      receivable = toReais(toCents(cmd.totalValue) - toCents(cmd.cashIn));
     }
   } else if (cmd.intent === 'create_purchase') {
     if (!cmd.totalValue) return ask('totalValue', 'acquisition_cost', `Quanto você pagou em ${cmd.item ?? 'na mercadoria'}?`);
@@ -87,9 +90,10 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
     draft.itemsIn.push({ description: itemInName, negotiatedValue: inValue, direction: 'IN' });
 
     // Volta sem parcelamento e sem dinheiro explícito: foi paga no ato ("ele me voltou 1000")
-    if (dir === 'inflow' && cashIn === undefined && receivable === undefined && balance > 0) {
-      receivable = cmd.installmentsCount && cmd.installmentAmount ? cmd.installmentsCount * cmd.installmentAmount : undefined;
-      if (receivable === undefined) cashIn = balance;
+    if (dir === 'inflow' && receivable === undefined && balance > 0) {
+      if (cmd.installmentsCount && cmd.installmentAmount) receivable = toReais(cmd.installmentsCount * toCents(cmd.installmentAmount));
+      else if (cmd.installmentsCount && cashIn !== undefined) receivable = toReais(toCents(balance) - toCents(cashIn));
+      else if (cashIn === undefined) cashIn = balance;
     }
     if (dir === 'outflow' && cashOut === undefined && cmd.payable === undefined && balance > 0) {
       cashOut = balance;
@@ -101,9 +105,20 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
   if (cashIn) draft.cashIn.push({ amount: cashIn, method, direction: 'IN' });
   if (cashOut) draft.cashOut.push({ amount: cashOut, method, direction: 'OUT' });
 
+  if (cmd.installmentsCount && (!receivable || receivable <= 0) && cmd.intent !== 'create_purchase') {
+    return ask('receivable', 'payment_breakdown', 'Qual valor ficou parcelado?');
+  }
+
   if (receivable) {
     const count = cmd.installmentsCount || 1;
-    const installmentAmount = cmd.installmentAmount ?? receivable / count;
+    if (!cmd.scheduleRule) return ask('installment_schedule', 'installment_due_date', `Qual o vencimento das ${count} parcelas?`);
+    let schedule;
+    try {
+      schedule = buildInstallmentSchedule({ total: receivable, count, rule: cmd.scheduleRule });
+    } catch {
+      return ask('installment_schedule', 'installment_due_date', 'As datas das parcelas não fecharam. Quais são os vencimentos?');
+    }
+    const installmentAmount = cmd.installmentAmount ?? schedule[0].amount;
     if (cmd.installmentsCount && cmd.installmentAmount && toCents(count * cmd.installmentAmount) !== toCents(receivable)) {
       return ask(
         'installments',
@@ -118,7 +133,7 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
         installmentAmount,
         dueDayOfMonth: cmd.dueDay,
         firstDueDate: cmd.firstDueDate,
-        intervalDays: 30,
+        manualInstallments: schedule,
         isPromissory: false,
       },
     });

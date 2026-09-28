@@ -309,16 +309,17 @@ test('voz de empréstimo (parser determinístico): valor, parcelas, juros % e fi
 
 test('empréstimo por voz sem juros definido pergunta; com parcelas ditas não pergunta; LLM mapeia create_loan', () => {
   const base = { intent: 'create_loan' as const, counterparty: { name: 'Carlos' }, amount: 2000, installmentsCount: 5, requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '' };
-  assert.deepStrictEqual(completenessGaps(base).map((g) => g.type), ['loan_interest']);
-  assert.deepStrictEqual(completenessGaps({ ...base, installmentAmount: 500 }), []);
-  assert.deepStrictEqual(completenessGaps({ ...base, interestType: 'percent_total', interestRate: 25 }), []);
+  assert.deepStrictEqual(completenessGaps(base).map((g) => g.type), ['installment_due_date', 'loan_interest']);
+  assert.deepStrictEqual(completenessGaps({ ...base, installmentAmount: 500 }).map((g) => g.type), ['installment_due_date']);
+  assert.deepStrictEqual(completenessGaps({ ...base, interestType: 'percent_total', interestRate: 25 }).map((g) => g.type), ['installment_due_date']);
   assert.deepStrictEqual(completenessGaps({ ...base, amount: undefined, installmentsCount: undefined, interestType: 'none' }).map((g) => g.type), ['deal_total', 'installments_count']);
   assert.strictEqual(describeForReadback({ ...base, installmentAmount: 500 }), 'Entendi: empréstimo de R$ 2.000 para Carlos, volta em 5x de R$ 500. Confirma?');
 
   const llm = LLMInterpretationSchema.parse({
     intent: 'create_loan', customerName: 'Carlos', item: null, itemOut: null, itemIn: null, totalValue: null, itemInValue: null, cashIn: null, cashOut: null,
     paymentMethod: 'pix', tradeBalance: null, direction: null, receivable: null, payable: null, installmentsCount: 4, installmentAmount: null, dueDay: 10,
-    dueMonthOffset: null, firstDueDate: null, amount: 2000, paymentScope: null, installmentRef: null, installmentNumber: null, debtHint: null,
+    dueMonthOffset: null, firstDueDate: null, scheduleType: null, explicitDueDates: [], recurrenceDay: null, intervalDays: null,
+    amount: 2000, paymentScope: null, installmentRef: null, installmentNumber: null, debtHint: null,
     adjustmentType: null, operationKind: null, renegotiationScope: null, installmentNumbers: [], queryType: null,
     interestType: 'percent_monthly', interestRate: 10, interestAmount: null, missingInformation: [], ambiguities: [],
   });

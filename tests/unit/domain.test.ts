@@ -214,7 +214,8 @@ test('formulário manual gera o mesmo DealCommand financeiro que a voz (troca pa
   const voice = buildDealCommand({
     intent: 'create_trade', counterparty: { name: 'Carlos' }, itemOut: 'XRE', itemIn: 'Bros', totalValue: 26000, itemInValue: 15000,
     direction: 'inflow', tradeBalance: 11000, cashIn: 3000, paymentMethod: 'pix', receivable: 8000, installmentsCount: 4, installmentAmount: 2000,
-    dueDay: 15, requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '',
+    dueDay: 15, scheduleRule: { type: 'monthly_day', firstDueDate: '2026-10-15', dayOfMonth: 15 },
+    requiresConfirmation: false, missingInformation: [], ambiguities: [], rawText: '', normalizedText: '',
   });
   assert.strictEqual(voice.status, 'ok');
   if (!manual.ok || voice.status !== 'ok') return;

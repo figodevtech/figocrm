@@ -11,6 +11,7 @@ import { evaluateIntentConfidenceAndAmbiguity } from '@/lib/ai/disambiguation';
 import { ConversationContext, resolvePronounsAndAnaphora } from '@/lib/ai/context_manager';
 import { AmbiguityItem, MissingInformationItem, PaymentMethodType } from '@/types/deal-command';
 import type { InstallmentReference } from '@/lib/domain/financial-target-resolver';
+import type { InstallmentScheduleRule } from '@/lib/finance/installment-schedule';
 
 export type InterpretedIntent =
   | 'create_sale'
@@ -69,6 +70,11 @@ export interface InterpretedVoiceCommand {
   /** 0 = próxima ocorrência do dia, 1 = mês que vem... (mudança de vencimento) */
   dueMonthOffset?: number;
   firstDueDate?: string;
+  scheduleType?: InstallmentScheduleRule['type'];
+  explicitDueDates?: string[];
+  recurrenceDay?: number;
+  intervalDays?: number;
+  scheduleRule?: InstallmentScheduleRule;
   amount?: number;
   adjustmentAmount?: number;
   adjustmentType?: 'discount' | 'item_offset' | 'debt_offset' | 'service_offset';

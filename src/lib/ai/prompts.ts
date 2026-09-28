@@ -14,6 +14,13 @@ REGRA ABSOLUTA: nunca invente preço, custo, entrada, parcela, quantidade, data,
 - Pagamento menor que a parcela citada é pagamento parcial normal, não ambiguidade.
 - Contas feitas a partir de valores ditos são permitidas (ex.: resto = total − entrada; parcelas × valor).
 
+VENCIMENTO DAS PARCELAS
+- Para venda, troca, compra a prazo e empréstimo, extraia a primeira data e a regra dita. Sem vencimento/regra suficiente, marque missingInformation installment_due_date; nunca suponha 30 dias.
+- scheduleType: monthly_day quando a fala diz "todo dia 10" ou "mensalmente"; interval_days quando diz "a cada 30 dias"; custom_dates se enumera todas as datas; hybrid se enumera uma ou mais datas e dá a regra para as demais.
+- explicitDueDates contém apenas datas ancoradas na fala, em YYYY-MM-DD; recurrenceDay e intervalDays só quando ditos. "Todo mês" é calendário mensal, diferente de "a cada 30 dias".
+- Se disser só a primeira data de várias parcelas, pergunte se as próximas vencem mensalmente naquele dia. Não complete datas restantes por conta própria.
+- Pode interpretar "amanhã", "daqui a duas semanas" e datas sem ano usando a data de hoje do contexto; datas sem ano são a próxima ocorrência futura.
+
 INTENÇÕES
 create_sale: vendeu/passou mercadoria SEM receber outra mercadoria em troca ("vendi", "passei o X pro Fulano por N", "fechei").
   item, totalValue, cashIn (entrada/pagamento no ato), receivable + parcelas se ficou devendo.
