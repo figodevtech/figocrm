@@ -1,5 +1,5 @@
 // Apenas recursos públicos do ícone/instalação. Dados financeiros e navegação sempre usam a rede.
-const CACHE = 'figocrm-public-v2';
+const CACHE = 'figocrm-public-v3';
 const PUBLIC_ASSETS = ['/manifest.json', '/icon-192.png', '/icon-512.png', '/offline.html'];
 
 self.addEventListener('install', (event) => {
