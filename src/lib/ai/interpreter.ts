@@ -8,6 +8,7 @@
 import { normalizeSpokenText } from '@/lib/voice/normalizer';
 import { extractSpokenNumbers } from '@/lib/voice/numbers';
 import { evaluateIntentConfidenceAndAmbiguity } from '@/lib/ai/disambiguation';
+import { inferTradeBalanceDirection } from '@/lib/ai/trade-direction';
 import { ConversationContext, resolvePronounsAndAnaphora } from '@/lib/ai/context_manager';
 import { AmbiguityItem, MissingInformationItem, PaymentMethodType } from '@/types/deal-command';
 import type { InstallmentReference } from '@/lib/domain/financial-target-resolver';
@@ -325,11 +326,12 @@ export function interpretVoiceCommand(
     const itemOut = items[0] || contextualItem;
     const itemIn = items[1];
 
-    let direction: 'inflow' | 'outflow' | 'even' = 'even';
+    let direction: 'inflow' | 'outflow' | 'even' | undefined;
 
     const isEven = normalizedTextWithNumbers.includes('pau a pau') || normalizedTextWithNumbers.includes('sem volta') || normalizedTextWithNumbers.includes('troca seca');
-    const isVoltou = normalizedTextWithNumbers.includes('ele me voltou') || normalizedTextWithNumbers.includes('me voltou') || normalizedTextWithNumbers.includes('recebi') || normalizedTextWithNumbers.includes('mandou');
-    const isVoltei = normalizedTextWithNumbers.includes('completei') || normalizedTextWithNumbers.includes('paguei') || normalizedTextWithNumbers.includes('voltei');
+    const isVoltou = /\b(?:ele|ela)\s+(?:me\s+)?(?:voltou|deu|completou|mandou|inteirou)\b|\bme voltou\b|\brecebi\b/.test(normalizedTextWithNumbers);
+    const isVoltei = /\b(?:eu\s+)?(?:completei|voltei|paguei|inteirei)\b|\beu dei\s+\d+\b/.test(normalizedTextWithNumbers);
+    const explicitDebt = inferTradeBalanceDirection(spokenText);
 
     // "por N" em ordem: 1º = valor do item que sai, 2º = valor do item que entra
     const porValues = [...normalizedTextWithNumbers.matchAll(/por\s+(\d+)\s*(mil)?/gi)].map((m) => scaleShorthand(parseInt(m[1], 10), m[2]));
@@ -340,26 +342,33 @@ export function interpretVoiceCommand(
       ? { installmentsCount: values.installmentsCount, installmentAmount: values.installmentAmount }
       : undefined;
 
-    let tradeBalance = 0;
+    let tradeBalance: number | undefined;
     if (isEven) {
       direction = 'even';
-    } else if (isVoltou || isVoltei) {
+      tradeBalance = 0;
+    } else if (explicitDebt.confidence === 'explicit') {
+      direction = explicitDebt.direction;
+      tradeBalance = explicitDebt.amount ?? (totalValue !== undefined && itemInValue !== undefined
+        ? Math.abs(totalValue - itemInValue) : undefined);
+    } else if (isVoltou !== isVoltei) {
       direction = isVoltou ? 'inflow' : 'outflow';
       tradeBalance = totalValue !== undefined && itemInValue !== undefined
         ? Math.abs(totalValue - itemInValue)
         : values.cashIn || extractTradeBalanceValue(normalizedTextWithNumbers);
     } else {
-      const anyVal = extractFirstNumber(normalizedTextWithNumbers);
-      if (anyVal) {
-        direction = 'inflow';
-        tradeBalance = anyVal;
-      }
+      tradeBalance = totalValue !== undefined && itemInValue !== undefined
+        ? Math.abs(totalValue - itemInValue) : extractTradeBalanceValue(normalizedTextWithNumbers) || undefined;
     }
 
-    // Dinheiro no ato: explícito na fala; sem parcelas, a volta inteira foi paga no ato
-    const explicitCash = values.cashIn;
-    const cashNow = explicitCash ?? (schedule ? undefined : tradeBalance || undefined);
-    const receivable = direction === 'inflow' && schedule ? schedule.installmentsCount * schedule.installmentAmount : undefined;
+    // Uma dívida explícita não é pagamento no ato, mesmo sem parcelas mencionadas.
+    const immediate = explicitDebt.confidence !== 'explicit' && isVoltou !== isVoltei;
+    const cashNow = immediate ? values.cashIn ?? tradeBalance : undefined;
+    const receivable = direction === 'inflow' && explicitDebt.confidence === 'explicit'
+      ? tradeBalance : direction === 'inflow' && schedule ? schedule.installmentsCount * schedule.installmentAmount : undefined;
+    const payable = direction === 'outflow' && explicitDebt.confidence === 'explicit'
+      ? tradeBalance : undefined;
+    const debtDueMissing = !!(receivable || payable) && !values.dueDay;
+    const debtDueQuestion = `Quando vence essa parcela de R$ ${new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(receivable ?? payable ?? 0)}?`;
 
     return {
       intent: 'create_trade',
@@ -374,11 +383,23 @@ export function interpretVoiceCommand(
       cashOut: direction === 'outflow' ? cashNow : undefined,
       paymentMethod: extractPaymentMethod(normalizedTextWithNumbers),
       receivable,
-      installmentsCount: schedule?.installmentsCount,
+      payable,
+      installmentsCount: schedule?.installmentsCount ?? (receivable || payable ? 1 : undefined),
       installmentAmount: schedule?.installmentAmount,
       dueDay: values.dueDay,
-      requiresConfirmation: false,
-      missingInformation: [],
+      requiresConfirmation: !direction || (direction !== 'even' && !tradeBalance) || debtDueMissing,
+      missingInformation: !direction ? [{
+        type: tradeBalance ? 'trade_balance_direction' : 'payment_breakdown',
+        description: tradeBalance ? 'Essa diferença ficou para você receber ou pagar?'
+          : 'Houve diferença nessa troca? Se sim, quanto ficou para receber ou pagar?',
+        promptQuestion: tradeBalance ? 'Essa diferença ficou para você receber ou pagar?'
+          : 'Houve diferença nessa troca? Se sim, quanto ficou para receber ou pagar?',
+      }] : direction !== 'even' && !tradeBalance ? [{
+        type: 'payment_breakdown', description: 'Qual foi o valor da diferença nessa troca?',
+        promptQuestion: 'Qual foi o valor da diferença nessa troca?',
+      }] : debtDueMissing ? [{
+        type: 'installment_due_date', description: debtDueQuestion, promptQuestion: debtDueQuestion,
+      }] : [],
       ambiguities: [],
       rawText: spokenText,
       normalizedText: text,
@@ -766,12 +787,13 @@ function extractAllItems(text: string, customer?: string): string[] {
 }
 
 function extractTradeBalanceValue(text: string): number {
-  const match = text.match(/(voltou|completei|paguei|recebi|mandou)\s+(\d+)\s*(mil)?/i);
+  const match = text.match(/\bdiferença de\s+(\d+)\s*(mil)?/i)
+    ?? text.match(/\b(?:voltou|voltei|completei|completou|paguei|recebi|mandou|me deu|eu dei|faltaram|sobraram|ficaram|sobrou|deu)\s+(?:mais\s+)?(\d+)\s*(mil)?/i);
   if (match) {
-    const val = parseInt(match[2], 10);
-    return match[3]?.toLowerCase() === 'mil' ? val * 1000 : (val < 100 ? val * 1000 : val);
+    const val = parseInt(match[1], 10);
+    return match[2]?.toLowerCase() === 'mil' ? val * 1000 : (val < 100 ? val * 1000 : val);
   }
-  return extractFirstNumber(text) || 0;
+  return 0;
 }
 
 function extractPaymentAmount(text: string): number | null {

@@ -10,6 +10,7 @@ import { DealCommandSchema } from '@/lib/ai/schemas/deal-command.schema';
 import { formatZodIssues } from '@/lib/ai/schemas/llm-interpretation.schema';
 import { toCents, toReais } from '@/lib/finance/money';
 import { buildInstallmentSchedule } from '@/lib/finance/installment-schedule';
+import { inferTradeBalanceDirection } from '@/lib/ai/trade-direction';
 
 export type BuildResult =
   | { status: 'ok'; command: DealCommand }
@@ -44,8 +45,8 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
     ambiguities: [],
   };
 
-  let cashIn = cmd.cashIn;
-  let cashOut = cmd.cashOut;
+  const cashIn = cmd.cashIn;
+  const cashOut = cmd.cashOut;
   let receivable = cmd.receivable;
 
   if (cmd.intent === 'create_sale') {
@@ -68,8 +69,8 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
     const itemInName = cmd.itemIn ?? 'Mercadoria recebida (avulsa)';
 
     const balance = cmd.tradeBalance ?? 0;
-    const dir = cmd.direction ?? (balance === 0 ? 'even' : undefined);
-    if (!dir) return ask('direction', 'trade_balance_direction', 'Essa volta foi você que recebeu ou você que pagou?');
+    const dir = cmd.direction ?? (cmd.tradeBalance === 0 ? 'even' : undefined);
+    if (!dir) return ask('direction', 'trade_balance_direction', 'Essa diferença ficou para você receber ou pagar?');
 
     // valor(sai) + pago pelo usuário = valor(entra) + recebido pelo usuário
     const signed = dir === 'inflow' ? balance : dir === 'outflow' ? -balance : 0;
@@ -89,14 +90,21 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
     );
     draft.itemsIn.push({ description: itemInName, negotiatedValue: inValue, direction: 'IN' });
 
-    // Volta sem parcelamento e sem dinheiro explícito: foi paga no ato ("ele me voltou 1000")
+    const debt = inferTradeBalanceDirection(cmd.rawText);
+    if (debt.confidence === 'explicit' && debt.direction !== dir) {
+      return { status: 'invalid', errors: ['Direção da troca contradiz a dívida explícita.'] };
+    }
+    // O saldo pode estar pendente; a direção sozinha nunca comprova pagamento no ato.
     if (dir === 'inflow' && receivable === undefined && balance > 0) {
       if (cmd.installmentsCount && cmd.installmentAmount) receivable = toReais(cmd.installmentsCount * toCents(cmd.installmentAmount));
       else if (cmd.installmentsCount && cashIn !== undefined) receivable = toReais(toCents(balance) - toCents(cashIn));
-      else if (cashIn === undefined) cashIn = balance;
+      else if (debt.confidence === 'explicit') receivable = balance;
     }
     if (dir === 'outflow' && cashOut === undefined && cmd.payable === undefined && balance > 0) {
-      cashOut = balance;
+      if (debt.confidence === 'explicit') cmd = { ...cmd, payable: balance };
+    }
+    if (balance > 0 && !cashIn && !cashOut && !receivable && !cmd.payable) {
+      return ask('tradeBalance', 'payment_breakdown', 'Essa diferença foi paga no ato ou ficou pendente?');
     }
   } else {
     return { status: 'invalid', errors: [`Intenção ${cmd.intent} não gera negociação.`] };
@@ -105,7 +113,7 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
   if (cashIn) draft.cashIn.push({ amount: cashIn, method, direction: 'IN' });
   if (cashOut) draft.cashOut.push({ amount: cashOut, method, direction: 'OUT' });
 
-  if (cmd.installmentsCount && (!receivable || receivable <= 0) && cmd.intent !== 'create_purchase') {
+  if (cmd.installmentsCount && (!receivable || receivable <= 0) && !cmd.payable && cmd.intent !== 'create_purchase') {
     return ask('receivable', 'payment_breakdown', 'Qual valor ficou parcelado?');
   }
 
@@ -140,7 +148,19 @@ export function buildDealCommand(cmd: InterpretedVoiceCommand): BuildResult {
   }
 
   if (cmd.payable) {
-    draft.payables.push({ totalAmount: cmd.payable, installments: undefined });
+    if (!cmd.scheduleRule) return ask('installment_schedule', 'installment_due_date',
+      cmd.installmentsCount === 1 ? 'Quando vence essa parcela?' : `Qual o vencimento das ${cmd.installmentsCount ?? 1} parcelas?`);
+    const count = cmd.installmentsCount ?? 1;
+    let schedule;
+    try {
+      schedule = buildInstallmentSchedule({ total: cmd.payable, count, rule: cmd.scheduleRule });
+    } catch {
+      return ask('installment_schedule', 'installment_due_date', 'As datas das parcelas não fecharam. Quais são os vencimentos?');
+    }
+    draft.payables.push({ totalAmount: cmd.payable, installments: {
+      count, installmentAmount: cmd.installmentAmount ?? schedule[0].amount,
+      dueDayOfMonth: cmd.dueDay, firstDueDate: cmd.firstDueDate, manualInstallments: schedule,
+    } });
   }
 
   const parsed = DealCommandSchema.safeParse(draft);
