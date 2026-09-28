@@ -13,7 +13,7 @@
     "typecheck": "tsc --noEmit",
     "test": "node scripts/test_finance_v2.mjs && npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/unit/app-modules.test.ts && npx tsx tests/unit/pwa.test.ts && npx tsx tests/unit/asaas.test.ts && npx tsx tests/voice-benchmark/runner.ts && npx tsx scripts/test_multiturn_dialogue.ts",
     "test:finance": "node scripts/test_finance_v2.mjs",
-    "test:unit": "npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/unit/app-modules.test.ts && npx tsx tests/unit/pwa.test.ts && npx tsx tests/unit/asaas.test.ts && npx tsx tests/unit/launch-hardening.test.ts && npx tsx tests/unit/pwned-password.test.ts",
+    "test:unit": "npx tsx tests/unit/ai-pipeline.test.ts && npx tsx tests/unit/domain.test.ts && npx tsx tests/unit/app-modules.test.ts && npx tsx tests/unit/pwa.test.ts && npx tsx tests/unit/asaas.test.ts && npx tsx tests/unit/launch-hardening.test.ts && npx tsx tests/unit/pwned-password.test.ts && npx tsx tests/unit/landing-copy.test.ts",
     "test:benchmark": "npx tsx tests/voice-benchmark/runner.ts",
     "test:benchmark:rules": "npx tsx tests/voice-benchmark/runner.ts",
     "test:benchmark:llm": "npx tsx tests/voice-benchmark/runner-llm.ts",
