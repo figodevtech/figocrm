@@ -24,6 +24,7 @@ import {
   LLMInterpretationSchema,
 } from '@/lib/ai/schemas/llm-interpretation.schema';
 import { checkGrounding, completenessGaps, consistencyAmbiguities, correctionAmbiguities, CREATION_INTENTS, groundingAmbiguities, WRITE_INTENTS } from '@/lib/ai/grounding';
+import { hasUnattributedTradeDifference, inferTradeBalanceDirection } from '@/lib/ai/trade-direction';
 import { describeForReadback } from '@/lib/ai/readback';
 import { interpretScheduleRule, spokenDueDates } from '@/lib/ai/schedule-interpretation';
 import { todayISO } from '@/lib/domain/loan-plan';
@@ -253,6 +254,31 @@ function finalize(
   context?: ConversationContext,
   now?: Date
 ): InterpretedVoiceCommand {
+  const debt = cmd.intent === 'create_trade' ? inferTradeBalanceDirection(spokenText) : undefined;
+  if (cmd.intent === 'create_trade' && debt) {
+    if (debt.confidence === 'explicit') {
+      // "20" sem unidade segue a convenção de milhares; só corrige exatamente 20 ↔ 20.000.
+      const scaled = (value: number | undefined) => value !== undefined && debt.amount !== undefined
+        && Math.round(value * 1000) === Math.round(debt.amount) ? debt.amount : value;
+      const balance = scaled(cmd.tradeBalance) ?? debt.amount;
+      cmd = {
+        ...cmd,
+        direction: cmd.direction ?? debt.direction,
+        tradeBalance: balance,
+        receivable: debt.direction === 'inflow' && cmd.receivable === undefined && cmd.cashIn === undefined
+          ? debt.amount ?? balance : scaled(cmd.receivable),
+        payable: debt.direction === 'outflow' && cmd.payable === undefined && cmd.cashOut === undefined
+          ? debt.amount ?? balance : scaled(cmd.payable),
+      };
+    }
+  }
+  if (cmd.intent === 'create_trade' && (cmd.tradeBalance ?? 0) > 0 && hasUnattributedTradeDifference(spokenText)) {
+    const difference = cmd.totalValue !== undefined && cmd.itemInValue !== undefined
+      ? cmd.totalValue - cmd.itemInValue : undefined;
+    const sideGroundedByItems = difference !== undefined && Math.round(Math.abs(difference) * 100) === Math.round(cmd.tradeBalance! * 100)
+      && cmd.direction === (difference > 0 ? 'inflow' : 'outflow');
+    if (!sideGroundedByItems) cmd = { ...cmd, direction: undefined };
+  }
   // "pau a pau" = volta zero (normalização, não invenção)
   if (cmd.intent === 'create_trade' && cmd.direction === 'even' && cmd.tradeBalance === undefined) {
     cmd = { ...cmd, tradeBalance: 0 };
@@ -262,13 +288,15 @@ function finalize(
       ? cmd.totalValue - cmd.cashIn : 0;
     const tradeRemaining = cmd.intent === 'create_trade' && cmd.direction === 'inflow' && cmd.tradeBalance !== undefined
       ? cmd.tradeBalance - (cmd.cashIn ?? 0) : 0;
-    if ((cmd.receivable ?? 0) > 0 || saleRemaining > 0 || tradeRemaining > 0) cmd = { ...cmd, installmentsCount: 1 };
+    if ((cmd.receivable ?? 0) > 0 || (cmd.payable ?? 0) > 0 || saleRemaining > 0 || tradeRemaining > 0) cmd = { ...cmd, installmentsCount: 1 };
   }
   let scheduleQuestion: string | undefined;
   if (CREATION_INTENTS.has(cmd.intent) && cmd.installmentsCount) {
     const today = todayISO(now);
     const temporal = interpretScheduleRule(spokenText, cmd.installmentsCount, today);
-    scheduleQuestion = temporal.question;
+    scheduleQuestion = cmd.intent === 'create_trade' && cmd.installmentsCount === 1
+      && ((cmd.receivable ?? 0) > 0 || (cmd.payable ?? 0) > 0) && !temporal.rule
+      ? undefined : temporal.question;
     const datesSpoken = spokenDueDates(spokenText, today);
     const claimedDates = [...(cmd.explicitDueDates ?? []), ...(cmd.firstDueDate ? [cmd.firstDueDate] : [])];
     const ungroundedDate = claimedDates.find((date) => !datesSpoken.includes(date) && !temporal.rule);
@@ -284,14 +312,16 @@ function finalize(
   }
   const groundingIssues = meta.source === 'guardrail' ? [] : checkGrounding(cmd, spokenText, context);
   const ambiguities = [
-    ...cmd.ambiguities,
+    ...cmd.ambiguities.filter((a) => !(debt?.confidence === 'explicit' && cmd.direction === debt.direction && a.field === 'direction')),
     ...groundingAmbiguities(groundingIssues),
     ...consistencyAmbiguities(cmd, spokenText),
     ...(meta.source === 'guardrail' ? [] : correctionAmbiguities(cmd, spokenText)),
   ];
   // Em criação, "quem é o cliente" / "qual mercadoria" nunca seguram o registro: viram avulsos
   const llmMissing = CREATION_INTENTS.has(cmd.intent)
-    ? cmd.missingInformation.filter((m) => m.type !== 'customer_reference' && m.type !== 'item_reference' && !(m.type === 'installment_due_date' && cmd.scheduleRule))
+    ? cmd.missingInformation.filter((m) => m.type !== 'customer_reference' && m.type !== 'item_reference'
+      && !(m.type === 'installment_due_date' && cmd.scheduleRule)
+      && !(m.type === 'trade_balance_direction' && debt?.confidence === 'explicit' && cmd.direction === debt.direction))
     : cmd.missingInformation;
   for (const item of llmMissing) {
     if (item.type === 'installment_due_date' && scheduleQuestion) {

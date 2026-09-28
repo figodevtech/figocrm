@@ -7,6 +7,7 @@ import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import type { ConversationContext } from '@/lib/ai/context_manager';
 import type { AmbiguityItem, MissingInformationItem } from '@/types/deal-command';
 import { extractSpokenNumbers, extractSpokenNumbersDetailed } from '@/lib/voice/numbers';
+import { inferTradeBalanceDirection } from '@/lib/ai/trade-direction';
 import { nameTokens, referenceMatchesName } from '@/lib/domain/entity-resolver';
 import { toCents } from '@/lib/finance/money';
 
@@ -232,8 +233,26 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
   if (cmd.intent !== 'create_trade') return [];
   if (spokenText) {
     const t = spokenText.toLowerCase();
-    const otherPaid = /\b(ele|ela) (completou|voltou|me voltou|inteirou)\b|\bpeguei [^.]{0,30}na volta\b/.test(t);
-    const userPaid = /\b(completei|voltei|inteirei|tive que completar|eu completei|eu voltei)\b/.test(t);
+    const otherPaid = /\b(ele|ela) (?:me )?(?:completou|voltou|deu|mandou|inteirou)\b|\bpeguei [^.]{0,30}na volta\b/.test(t);
+    const userPaid = /\b(completei|voltei|inteirei|paguei|eu dei|tive que completar)\b/.test(t);
+    const debt = inferTradeBalanceDirection(spokenText);
+    if (debt.confidence === 'explicit') {
+      const wrongSide = cmd.direction !== debt.direction
+        || (debt.direction === 'inflow' && ((cmd.payable ?? 0) > 0 || (cmd.cashOut ?? 0) > 0))
+        || (debt.direction === 'outflow' && ((cmd.receivable ?? 0) > 0 || (cmd.cashIn ?? 0) > 0));
+      const unpaid = debt.direction === 'inflow' ? cmd.receivable : cmd.payable;
+      const cash = debt.direction === 'inflow' ? cmd.cashIn : cmd.cashOut;
+      const paidNow = debt.direction === 'inflow' ? otherPaid : userPaid;
+      const wrongAmount = debt.amount !== undefined && (unpaid !== undefined && toCents(unpaid) !== toCents(debt.amount)
+        || cmd.tradeBalance !== undefined && toCents(cmd.tradeBalance) !== toCents(debt.amount + (cash ?? 0)));
+      if (wrongSide || wrongAmount || (cash ?? 0) > 0 && !paidNow) {
+        return [{ field: 'direction', type: 'direction',
+          description: 'Saldo, dívida ou pagamento contradiz a relação explícita na fala.',
+          possibleInterpretations: ['Diferença a receber', 'Diferença a pagar'],
+          suggestedPrompt: 'Confirme quem ficou devendo, o valor pendente e se houve pagamento no ato.',
+        }];
+      }
+    }
     if ((otherPaid && !userPaid && cmd.direction === 'outflow') || (userPaid && !otherPaid && cmd.direction === 'inflow')) {
       return [
         {
@@ -241,7 +260,7 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
           type: 'direction',
           description: 'Direção da volta contradiz quem completou na fala.',
           possibleInterpretations: ['Você recebeu a volta', 'Você pagou a volta'],
-          suggestedPrompt: 'Essa volta foi você que recebeu ou você que pagou?',
+          suggestedPrompt: 'Essa diferença ficou para você receber ou pagar?',
         },
       ];
     }
@@ -260,7 +279,7 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
   const conflict =
     (cmd.direction === 'outflow' && (cmd.cashIn ?? 0) > 0) ||
     (cmd.direction === 'inflow' && (cmd.cashOut ?? 0) > 0) ||
-    (cmd.direction === 'even' && ((cmd.cashIn ?? 0) > 0 || (cmd.cashOut ?? 0) > 0));
+    (cmd.direction === 'even' && ((cmd.cashIn ?? 0) > 0 || (cmd.cashOut ?? 0) > 0 || (cmd.tradeBalance ?? 0) > 0));
   if (!conflict) return [];
   return [
     {
@@ -268,7 +287,7 @@ export function consistencyAmbiguities(cmd: InterpretedVoiceCommand, spokenText?
       type: 'direction',
       description: 'Direção da volta contradiz o dinheiro informado.',
       possibleInterpretations: ['Você recebeu a volta', 'Você pagou a volta'],
-      suggestedPrompt: 'Essa volta foi você que recebeu ou você que pagou?',
+      suggestedPrompt: 'Essa diferença ficou para você receber ou pagar?',
     },
   ];
 }
@@ -306,10 +325,22 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
       if (cmd.totalValue === undefined) add('acquisition_cost', `Quanto você pagou em ${cmd.item || 'na mercadoria'}?`);
       break;
     case 'create_trade':
-      if (cmd.tradeBalance && cmd.tradeBalance > 0 && !cmd.direction) {
-        add('trade_balance_direction', 'Essa volta foi você que recebeu ou você que pagou?');
+      if (cmd.direction !== 'even' && (!cmd.tradeBalance || cmd.tradeBalance <= 0)) {
+        add('payment_breakdown', cmd.direction
+          ? 'Qual foi o valor da diferença nessa troca?'
+          : 'Houve diferença nessa troca? Se sim, quanto ficou para receber ou pagar?');
       }
-      if (cmd.installmentsCount && !cmd.scheduleRule) add('installment_due_date', `Qual o vencimento das ${cmd.installmentsCount} parcelas?`);
+      if (cmd.tradeBalance && cmd.tradeBalance > 0 && !cmd.direction
+        && inferTradeBalanceDirection(cmd.rawText).confidence === 'unknown') {
+        add('trade_balance_direction', 'Essa diferença ficou para você receber ou pagar?');
+      }
+      if (cmd.installmentsCount && !cmd.scheduleRule) {
+        const pending = cmd.receivable ?? cmd.payable;
+        const amount = pending && cmd.installmentsCount === 1
+          ? ` de ${new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumFractionDigits: 0 }).format(pending).replace(/\u00a0/g, ' ')}` : '';
+        add('installment_due_date', cmd.installmentsCount === 1
+          ? `Quando vence essa parcela${amount}?` : `Qual o vencimento das ${cmd.installmentsCount} parcelas?`);
+      }
       break;
     case 'register_payment':
     case 'register_partial_payment':

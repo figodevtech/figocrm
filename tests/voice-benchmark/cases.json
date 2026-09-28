@@ -4693,5 +4693,65 @@
       "intent": "query_information",
       "requiresConfirmation": false
     }
+  },
+  {
+    "id": "TR_DEBT_001",
+    "category": "troca_divida_explicita",
+    "input": "Troquei um Jetta no Hilux e o Pedro ficou me devendo 20 mil.",
+    "expected": { "intent": "create_trade", "direction": "inflow", "tradeBalance": 20000, "receivable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_002",
+    "category": "troca_divida_explicita",
+    "input": "Troquei meu Jetta na Hilux e fiquei devendo 20 mil pro Pedro.",
+    "expected": { "intent": "create_trade", "direction": "outflow", "tradeBalance": 20000, "payable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_003",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e ele me deve vinte mil.",
+    "expected": { "intent": "create_trade", "direction": "inflow", "tradeBalance": 20000, "receivable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_004",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e ficaram 20 pra ele me pagar.",
+    "expected": { "intent": "create_trade", "direction": "inflow", "tradeBalance": 20000, "receivable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_005",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e ele ficou de me pagar vinte.",
+    "expected": { "intent": "create_trade", "direction": "inflow", "tradeBalance": 20000, "receivable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_006",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e eu ainda devo 20 pra ele.",
+    "expected": { "intent": "create_trade", "direction": "outflow", "tradeBalance": 20000, "payable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_007",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e fiquei de pagar vinte mil pro Pedro.",
+    "expected": { "intent": "create_trade", "direction": "outflow", "tradeBalance": 20000, "payable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_008",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e ficaram 20 pra eu pagar.",
+    "expected": { "intent": "create_trade", "direction": "outflow", "tradeBalance": 20000, "payable": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_009",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e sobrou uma diferença de 20 mil.",
+    "expected": { "intent": "create_trade", "tradeBalance": 20000, "requiresConfirmation": true }
+  },
+  {
+    "id": "TR_DEBT_010",
+    "category": "troca_divida_explicita",
+    "input": "Troquei o Jetta na Hilux e faltaram 20 mil.",
+    "expected": { "intent": "create_trade", "tradeBalance": 20000, "requiresConfirmation": true }
   }
 ]

@@ -23,6 +23,8 @@ import { buildInstallmentSchedule, addCalendarMonthsClamped, addExactDays } from
 import { interpretScheduleRule } from '../../src/lib/ai/schedule-interpretation';
 import { planLoan } from '../../src/lib/domain/loan-plan';
 import type { InterpretedVoiceCommand } from '../../src/lib/ai/interpreter';
+import { interpretVoiceCommand } from '../../src/lib/ai/interpreter';
+import { inferTradeBalanceDirection } from '../../src/lib/ai/trade-direction';
 
 const tests: Array<[string, () => void | Promise<void>]> = [];
 const test = (name: string, fn: () => void | Promise<void>) => tests.push([name, fn]);
@@ -418,6 +420,137 @@ test('empréstimo por voz aceita cronograma explícito no plano financeiro', () 
     scheduleRule: rule, startDate: '2026-09-27' });
   assert.strictEqual(plan.ok, true);
   if (plan.ok) assert.deepStrictEqual(plan.schedule.map((i) => i.dueDate), ['2027-01-31', '2027-02-28', '2027-03-31']);
+});
+
+test('direção de dívida explícita reconhece credor e devedor, sem adivinhar frases vagas', () => {
+  const inflow = ['Ele ficou me devendo 20 mil.', 'Pedro me deve 20 da troca.',
+    'Ficaram 20 pra ele me pagar.', 'Ele ficou de me pagar vinte mil.',
+    'Ele ficou devendo 20 pra mim.', 'Ele me ficou devendo vinte.'];
+  const outflow = ['Eu ainda devo 20 pra ele.', 'Fiquei de pagar 20 pro Pedro.',
+    'Ficaram 20 pra eu pagar.', 'Faltaram vinte que eu vou pagar.', 'Eu fiquei com 20 pra pagar.'];
+  for (const phrase of inflow) assert.deepStrictEqual(inferTradeBalanceDirection(phrase),
+    { direction: 'inflow', confidence: 'explicit', amount: 20000 }, phrase);
+  for (const phrase of outflow) assert.deepStrictEqual(inferTradeBalanceDirection(phrase),
+    { direction: 'outflow', confidence: 'explicit', amount: 20000 }, phrase);
+  for (const phrase of ['ficaram 20', 'sobrou 20', 'teve uma diferença de 20', 'deu 20 de volta', 'faltaram 20']) {
+    assert.strictEqual(inferTradeBalanceDirection(phrase).confidence, 'unknown', phrase);
+  }
+  assert.deepStrictEqual(inferTradeBalanceDirection('Pedro ficou me devendo. Vence dia 10.'),
+    { direction: 'inflow', confidence: 'explicit', amount: undefined });
+});
+
+test('Jetta/Hilux: LLM sem direção é corrigida; dívida não vira caixa e só pergunta vencimento', async () => {
+  const speech = 'Troquei um Jetta no Hilux e o Pedro ficou me devendo 20 mil.';
+  const incomplete = llmOutput({ intent: 'create_trade', customerName: 'Pedro', itemOut: 'Jetta', itemIn: 'Hilux',
+    tradeBalance: 20000, receivable: 20000, direction: null });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(incomplete)) });
+  assert.strictEqual(result.intent, 'create_trade');
+  assert.strictEqual(result.counterparty?.name, 'Pedro');
+  assert.strictEqual(result.itemOut, 'Jetta');
+  assert.strictEqual(result.itemIn, 'Hilux');
+  assert.strictEqual(result.tradeBalance, 20000);
+  assert.strictEqual(result.direction, 'inflow');
+  assert.strictEqual(result.receivable, 20000);
+  assert.strictEqual(result.cashIn, undefined);
+  assert.strictEqual(result.installmentsCount, 1);
+  assert.ok(result.missingInformation.some((m) => m.type === 'installment_due_date' && /Quando vence essa parcela/.test(m.promptQuestion)));
+  assert.ok(!result.missingInformation.some((m) => m.type === 'trade_balance_direction'));
+  assert.ok(!result.ambiguities.some((a) => a.field === 'direction'));
+  const fallback = interpretVoiceCommand(speech, emptyContext('u'));
+  assert.strictEqual(fallback.direction, 'inflow');
+  assert.strictEqual(fallback.receivable, 20000);
+  assert.strictEqual(fallback.cashIn, undefined);
+});
+
+test('Jetta/Hilux: resposta do vencimento preserva recebível e segue para avaliação dos itens', async () => {
+  const speech = 'Troquei um Jetta no Hilux e o Pedro ficou me devendo 20 mil.';
+  const parsed = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { now: new Date('2026-09-28T12:00:00Z'),
+    llm: fakeLLM(JSON.stringify(llmOutput({ intent: 'create_trade', customerName: 'Pedro', itemOut: 'Jetta',
+      itemIn: 'Hilux', tradeBalance: 20000, receivable: 20000 }))) });
+  const due = parsed.missingInformation.find((m) => m.type === 'installment_due_date');
+  assert.match(due?.promptQuestion ?? '', /Quando vence essa parcela de R\$ 20\.000/);
+  const resumed = resumePending('Dia 10 de outubro.', { kind: 'missing_info', originalTranscript: speech,
+    promptAsked: due!.promptQuestion, draft: parsed as unknown as Record<string, unknown>,
+    field: 'installment_schedule', timestamp: 0 }, new Date('2026-09-28T12:00:00Z'));
+  assert.strictEqual(resumed?.direction, 'inflow');
+  assert.strictEqual(resumed?.receivable, 20000);
+  assert.strictEqual(resumed?.cashIn, undefined);
+  assert.deepStrictEqual(resumed?.explicitDueDates, ['2026-10-10']);
+  const built = buildDealCommand(resumed!);
+  assert.strictEqual(built.status, 'needs_input');
+  if (built.status === 'needs_input') assert.strictEqual(built.field, 'itemInValue');
+  const valued = buildDealCommand({ ...resumed!, itemInValue: 100000, totalValue: 120000 });
+  assert.strictEqual(valued.status, 'ok');
+  if (valued.status === 'ok') {
+    assert.strictEqual(valued.command.cashIn.length, 0);
+    assert.strictEqual(valued.command.receivables[0].totalAmount, 20000);
+    assert.deepStrictEqual(valued.command.receivables[0].installments?.manualInstallments?.map((i) => i.dueDate), ['2026-10-10']);
+  }
+});
+
+test('troca inversa gera payable sem cashOut; direção contraditória ou caixa inventado bloqueia', async () => {
+  const speech = 'Troquei meu Jetta na Hilux e fiquei devendo 20 mil pro Pedro.';
+  const incomplete = llmOutput({ intent: 'create_trade', customerName: 'Pedro', itemOut: 'Jetta', itemIn: 'Hilux',
+    tradeBalance: 20000, payable: 20000, direction: null });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(incomplete)) });
+  assert.strictEqual(result.direction, 'outflow');
+  assert.strictEqual(result.payable, 20000);
+  assert.strictEqual(result.cashOut, undefined);
+  assert.ok(!result.missingInformation.some((m) => m.type === 'trade_balance_direction'));
+  const fallback = interpretVoiceCommand(speech, emptyContext('u'));
+  assert.strictEqual(fallback.direction, 'outflow');
+  assert.strictEqual(fallback.payable, 20000);
+  assert.strictEqual(fallback.cashOut, undefined);
+  const scheduled = buildDealCommand({ ...result, totalValue: 100000, itemInValue: 120000,
+    scheduleRule: { type: 'custom_dates', dates: ['2026-10-10'] }, explicitDueDates: ['2026-10-10'],
+    firstDueDate: '2026-10-10' });
+  assert.strictEqual(scheduled.status, 'ok');
+  if (scheduled.status === 'ok') {
+    assert.strictEqual(scheduled.command.cashOut.length, 0);
+    assert.strictEqual(scheduled.command.payables[0].totalAmount, 20000);
+    assert.deepStrictEqual(scheduled.command.payables[0].installments?.manualInstallments?.map((i) => i.dueDate), ['2026-10-10']);
+  }
+  const wrong = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify({ ...incomplete, direction: 'inflow', cashIn: 20000 })) });
+  assert.strictEqual(wrong.requiresConfirmation, true);
+  assert.ok(wrong.ambiguities.some((a) => a.field === 'direction'));
+  const short = await interpretVoiceCommandWithLLM('Troquei o Jetta na Hilux e eu ainda devo 20 pra ele.', emptyContext('u'), {
+    llm: fakeLLM(JSON.stringify({ ...incomplete, customerName: null, tradeBalance: 20, payable: 20 })),
+  });
+  assert.strictEqual(short.tradeBalance, 20000);
+  assert.strictEqual(short.payable, 20000);
+  assert.ok(!short.ambiguities.some((a) => a.field === 'direction'));
+});
+
+test('pagamentos imediatos continuam caixa; diferença sem sujeito continua ambígua', () => {
+  for (const [speech, direction, cash] of [
+    ['Troquei o Jetta na Hilux e ele me voltou 5 mil.', 'inflow', 'cashIn'],
+    ['Troquei o Jetta na Hilux e ele me deu 5 mil.', 'inflow', 'cashIn'],
+    ['Troquei o Jetta na Hilux e eu completei 5 mil.', 'outflow', 'cashOut'],
+  ] as const) {
+    const result = interpretVoiceCommand(speech, emptyContext('u'));
+    assert.strictEqual(result.direction, direction, speech);
+    assert.strictEqual(result[cash], 5000, speech);
+  }
+  const even = interpretVoiceCommand('Troquei o Jetta na Hilux pau a pau.', emptyContext('u'));
+  assert.strictEqual(even.direction, 'even');
+  const vague = interpretVoiceCommand('Troquei o Jetta na Hilux e teve uma diferença de 5 mil.', emptyContext('u'));
+  assert.strictEqual(vague.direction, undefined);
+  assert.ok(vague.missingInformation.some((m) => m.type === 'trade_balance_direction'));
+  const goods = interpretVoiceCommand('Troquei minha Fan 160 na Hilux e dei a moto para o Pedro.', emptyContext('u'));
+  assert.strictEqual(goods.cashOut, undefined);
+  assert.strictEqual(goods.tradeBalance, undefined);
+  assert.strictEqual(goods.requiresConfirmation, true);
+});
+
+test('backend não aceita direção inventada pela LLM para diferença sem sujeito', async () => {
+  const speech = 'Troquei o Jetta na Hilux e teve uma diferença de 5 mil.';
+  const guessed = llmOutput({ intent: 'create_trade', itemOut: 'Jetta', itemIn: 'Hilux',
+    direction: 'inflow', tradeBalance: 5000, receivable: 5000 });
+  const result = await interpretVoiceCommandWithLLM(speech, emptyContext('u'), { llm: fakeLLM(JSON.stringify(guessed)) });
+  assert.strictEqual(result.direction, undefined);
+  assert.strictEqual(result.requiresConfirmation, true);
+  assert.ok(result.missingInformation.some((m) => m.type === 'trade_balance_direction'));
+  assert.match(result.confirmationPrompt ?? '', /receber ou pagar/);
 });
 
 (async () => {

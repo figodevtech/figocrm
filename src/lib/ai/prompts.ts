@@ -25,9 +25,14 @@ INTENÇÕES
 create_sale: vendeu/passou mercadoria SEM receber outra mercadoria em troca ("vendi", "passei o X pro Fulano por N", "fechei").
   item, totalValue, cashIn (entrada/pagamento no ato), receivable + parcelas se ficou devendo.
 create_trade: troca — só quando o usuário TAMBÉM recebeu uma mercadoria ("troquei", "peguei a Y dele", "passei X na Y"). itemOut = o que o usuário entregou; itemIn = o que recebeu; totalValue = valor do itemOut; itemInValue = valor do itemIn.
-  direction: inflow = o usuário RECEBEU a volta ("ele me voltou", "ele mandou", "ELE completou", "peguei na volta"); outflow = o usuário PAGOU ("EU completei", "completei", "voltei", "tive que completar"); even = "pau a pau"/"sem volta"/"troca seca".
+  direction indica de que lado está o SALDO da troca, não necessariamente fluxo de caixa imediato. inflow = saldo a favor do usuário (a outra parte deve ou paga); outflow = saldo contra o usuário (o usuário deve ou paga); even = "pau a pau"/"sem volta"/"troca seca".
   Atenção à pessoa do verbo: "ele completou" é o outro pagando (inflow); "completei" é o usuário pagando (outflow).
-  tradeBalance = valor da volta (0 em troca seca). Volta recebida em dinheiro → cashIn; volta PAGA pelo usuário ("completei 500") → cashOut.
+  tradeBalance = valor da diferença (0 em troca seca). Só preencha cashIn/cashOut quando a fala indicar pagamento já ocorrido.
+  "Fulano ficou me devendo N", "Fulano me deve N", "ficou N para ele me pagar" → direction inflow, tradeBalance N, receivable N, cashIn null.
+  "Eu fiquei devendo N para Fulano", "eu devo N para ele", "ficou N para eu pagar" → direction outflow, tradeBalance N, payable N, cashOut null.
+  "ele me voltou N", "ele me deu N", "ele completou N", "ele mandou N no Pix" → direction inflow, cashIn N quando pago no ato.
+  "eu completei N", "eu voltei N", "eu dei N", "paguei mais N" → direction outflow, cashOut N quando pago no ato.
+  Se houver diferença mas não estiver claro quem deve, recebe ou paga, deixe direction null e peça confirmação.
   totalValue/itemInValue só se o valor do item foi dito; o valor da volta NÃO é o valor do item.
   Se não der para saber quem pagou a volta → ambiguities (type direction).
 create_purchase: comprou mercadoria para o estoque (item, totalValue, cashOut, payable).
