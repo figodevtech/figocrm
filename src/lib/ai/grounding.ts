@@ -6,8 +6,9 @@
 import type { InterpretedVoiceCommand } from '@/lib/ai/interpreter';
 import type { ConversationContext } from '@/lib/ai/context_manager';
 import type { AmbiguityItem, MissingInformationItem } from '@/types/deal-command';
-import { extractSpokenNumbers, extractSpokenNumbersDetailed, groundedMonetaryValues } from '@/lib/voice/numbers';
+import { extractSpokenNumbers, extractSpokenNumbersDetailed } from '@/lib/voice/numbers';
 import { nameTokens, referenceMatchesName } from '@/lib/domain/entity-resolver';
+import { toCents } from '@/lib/finance/money';
 
 export interface GroundingIssue {
   field: string;
@@ -57,10 +58,48 @@ export function checkGrounding(
   // Numa resposta a pergunta pendente, a fala original também é fonte válida
   const sourceText = [spokenText, context?.pendingConfirmation?.originalTranscript || ''].join(' \n ');
 
-  const grounded = groundedMonetaryValues(sourceText);
+  const spokenCents = new Set<number>();
+  for (const { value, literal } of extractSpokenNumbersDetailed(sourceText)) {
+    if (value <= 0) continue;
+    spokenCents.add(toCents(value));
+    if (value < 1000 && !literal) spokenCents.add(toCents(value * 1000));
+  }
+  const countSpoken = cmd.installmentsCount !== undefined && extractSpokenNumbers(sourceText).includes(cmd.installmentsCount);
+  // Apenas relações financeiras fechadas podem encadear derivações. Uma entrada inventada
+  // não autoriza um resto inventado; a divisão só usa resto já ancorado/derivado e contagem dita.
+  const saleRemainder = cmd.intent === 'create_sale' && cmd.totalValue !== undefined && cmd.cashIn !== undefined
+    && spokenCents.has(toCents(cmd.totalValue)) && spokenCents.has(toCents(cmd.cashIn))
+    ? toCents(cmd.totalValue) - toCents(cmd.cashIn) : undefined;
+  const receivableCents = cmd.receivable === undefined ? undefined : toCents(cmd.receivable);
+  const multipliedReceivable = countSpoken && cmd.installmentAmount !== undefined && spokenCents.has(toCents(cmd.installmentAmount))
+    ? cmd.installmentsCount! * toCents(cmd.installmentAmount) : undefined;
+  const tradeOut = cmd.intent === 'create_trade' && cmd.itemInValue !== undefined && cmd.tradeBalance !== undefined
+    && spokenCents.has(toCents(cmd.itemInValue)) && spokenCents.has(toCents(cmd.tradeBalance))
+    ? toCents(cmd.itemInValue) + (cmd.direction === 'inflow' ? toCents(cmd.tradeBalance) : -toCents(cmd.tradeBalance)) : undefined;
+  const tradeIn = cmd.intent === 'create_trade' && cmd.totalValue !== undefined && cmd.tradeBalance !== undefined
+    && spokenCents.has(toCents(cmd.totalValue)) && spokenCents.has(toCents(cmd.tradeBalance))
+    ? toCents(cmd.totalValue) - (cmd.direction === 'inflow' ? toCents(cmd.tradeBalance) : -toCents(cmd.tradeBalance)) : undefined;
+  const tradeBalanceDerived = cmd.intent === 'create_trade' && cmd.totalValue !== undefined && cmd.itemInValue !== undefined
+    && spokenCents.has(toCents(cmd.totalValue)) && spokenCents.has(toCents(cmd.itemInValue))
+    ? Math.abs(toCents(cmd.totalValue) - toCents(cmd.itemInValue)) : undefined;
+  const tradeReceivable = cmd.intent === 'create_trade' && cmd.direction === 'inflow' && cmd.tradeBalance !== undefined && cmd.cashIn !== undefined
+    && (spokenCents.has(toCents(cmd.tradeBalance)) || toCents(cmd.tradeBalance) === tradeBalanceDerived)
+    && spokenCents.has(toCents(cmd.cashIn))
+    ? toCents(cmd.tradeBalance) - toCents(cmd.cashIn) : undefined;
+  const receivableGrounded = receivableCents !== undefined
+    && (spokenCents.has(receivableCents) || receivableCents === saleRemainder || receivableCents === tradeReceivable);
+  const derivedInstallment = countSpoken && receivableGrounded && receivableCents! % cmd.installmentsCount! === 0
+    ? receivableCents! / cmd.installmentsCount! : undefined;
   for (const field of MONETARY_FIELDS) {
     const value = cmd[field];
-    if (typeof value === 'number' && value > 0 && !grounded.has(Math.round(value * 100) / 100)) {
+    if (typeof value !== 'number' || value <= 0) continue;
+    const cents = toCents(value);
+    const derived = field === 'receivable' && (cents === saleRemainder || cents === multipliedReceivable || cents === tradeReceivable)
+      || field === 'installmentAmount' && cents === derivedInstallment
+      || field === 'totalValue' && cents === tradeOut
+      || field === 'itemInValue' && cents === tradeIn;
+    const backedByTrade = field === 'tradeBalance' && cents === tradeBalanceDerived;
+    if (!spokenCents.has(cents) && !derived && !backedByTrade) {
       issues.push({ field, value });
     }
   }
@@ -69,7 +108,8 @@ export function checkGrounding(
   if (cmd.installmentsCount !== undefined && cmd.installmentsCount > 1 && !rawNumbers.has(cmd.installmentsCount)) {
     issues.push({ field: 'installmentsCount', value: cmd.installmentsCount });
   }
-  if (cmd.dueDay !== undefined && !rawNumbers.has(cmd.dueDay)) {
+  if (cmd.dueDay !== undefined && !rawNumbers.has(cmd.dueDay)
+    && !(cmd.scheduleRule?.type === 'monthly_day' && cmd.scheduleRule.dayOfMonth === cmd.dueDay)) {
     issues.push({ field: 'dueDay', value: cmd.dueDay });
   }
   // Percentual de juros precisa ter sido dito ("10%", "dez por cento")
@@ -260,6 +300,7 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
       if (cmd.totalValue !== undefined && !cmd.cashIn && !cmd.receivable && !cmd.installmentsCount) {
         add('payment_breakdown', 'Como ele pagou: à vista ou ficou devendo?');
       }
+      if (cmd.installmentsCount && !cmd.scheduleRule) add('installment_due_date', `Qual o vencimento das ${cmd.installmentsCount} parcelas?`);
       break;
     case 'create_purchase':
       if (cmd.totalValue === undefined) add('acquisition_cost', `Quanto você pagou em ${cmd.item || 'na mercadoria'}?`);
@@ -268,6 +309,7 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
       if (cmd.tradeBalance && cmd.tradeBalance > 0 && !cmd.direction) {
         add('trade_balance_direction', 'Essa volta foi você que recebeu ou você que pagou?');
       }
+      if (cmd.installmentsCount && !cmd.scheduleRule) add('installment_due_date', `Qual o vencimento das ${cmd.installmentsCount} parcelas?`);
       break;
     case 'register_payment':
     case 'register_partial_payment':
@@ -284,6 +326,7 @@ export function completenessGaps(cmd: InterpretedVoiceCommand, contextCustomerAv
     case 'create_loan': {
       if (!cmd.amount) add('deal_total', 'Quanto você emprestou?');
       if (!cmd.installmentsCount) add('installments_count', 'Em quantas parcelas ele vai te pagar?');
+      if (cmd.installmentsCount && !cmd.scheduleRule) add('installment_due_date', `Qual o vencimento das ${cmd.installmentsCount} parcelas?`);
       const interestKnown =
         cmd.installmentAmount !== undefined ||
         cmd.interestType === 'none' ||

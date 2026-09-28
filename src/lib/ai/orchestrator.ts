@@ -48,6 +48,8 @@ import { resolveCustomerReference } from '@/lib/domain/entity-resolver';
 import { createCustomer } from '@/lib/domain/customers';
 import { createLoanContract, CreateLoanInput, planLoan } from '@/lib/domain/loans';
 import { uniformInstallment } from '@/lib/finance/loans';
+import { interpretScheduleRule } from '@/lib/ai/schedule-interpretation';
+import { todayISO } from '@/lib/domain/loan-plan';
 import { resolveItemCost } from '@/lib/domain/items';
 
 export interface VoicePipelineMetrics {
@@ -130,7 +132,7 @@ export async function runVoicePipeline(spokenText: string, deps: VoicePipelineDe
   context = await applyScreenContext(supabase, userId, context, deps.screen);
 
   // 1. Resposta a uma pergunta pendente (escolha de candidato ou valor que faltava)
-  let interpreted = resumePending(spokenText, context.pendingConfirmation);
+  let interpreted = resumePending(spokenText, context.pendingConfirmation, deps.now);
   if (!interpreted) interpreted = await interpret(spokenText, context);
 
   const tExec = Date.now();
@@ -320,7 +322,8 @@ async function executeQuery(cmd: InterpretedVoiceCommand, spokenText: string, co
 async function executeDeal(cmd: InterpretedVoiceCommand, spokenText: string, context: ConversationContext, deps: VoicePipelineDeps): Promise<Outcome> {
   const built = buildDealCommand(cmd);
   if (built.status === 'needs_input') {
-    return askUser(built.question, pending('missing_info', spokenText, built.question, cmd, built.field), built.missing.map((m) => m.type));
+    const draft = built.field === 'installment_schedule' ? { ...cmd, scheduleRule: undefined, explicitDueDates: [], firstDueDate: undefined } : cmd;
+    return askUser(built.question, pending('missing_info', spokenText, built.question, draft, built.field), built.missing.map((m) => m.type));
   }
   if (built.status === 'invalid') {
     console.warn('[voice] DealCommand inválido, execução bloqueada:', built.errors);
@@ -472,12 +475,17 @@ async function executeLoan(cmd: InterpretedVoiceCommand, spokenText: string, con
   const count = cmd.installmentsCount;
   if (!principal) return askUser('Quanto você emprestou?', pending('missing_info', spokenText, 'Quanto você emprestou?', cmd, 'amount'));
   if (!count) return askUser('Em quantas parcelas ele vai te pagar?', pending('missing_info', spokenText, 'Em quantas parcelas ele vai te pagar?', cmd, 'installmentsCount'));
+  if (!cmd.scheduleRule) {
+    const q = `Qual o vencimento das ${count} parcelas?`;
+    return askUser(q, pending('missing_info', spokenText, q, cmd, 'installment_schedule'), ['installment_due_date']);
+  }
 
   const base = {
     principal,
     installmentsCount: count,
     dueDay: cmd.dueDay,
     firstDueDate: cmd.firstDueDate,
+    scheduleRule: cmd.scheduleRule,
     paymentMethod: cmd.paymentMethod ? LOAN_METHODS[cmd.paymentMethod] : undefined,
     notes: spokenText.slice(0, 500),
   };
@@ -494,6 +502,10 @@ async function executeLoan(cmd: InterpretedVoiceCommand, spokenText: string, con
 
   const plan = planLoan(terms, deps.now);
   if (!plan.ok) {
+    if (/data|vencimento|cronograma|regra|intervalo/i.test(plan.error)) {
+      const q = `${plan.error} Quais são os vencimentos?`;
+      return askUser(q, pending('missing_info', spokenText, q, { ...cmd, scheduleRule: undefined, explicitDueDates: [], firstDueDate: undefined }, 'installment_schedule'), ['installment_due_date']);
+    }
     const q = `${plan.error} Como fica o empréstimo?`;
     return askUser(q, pending('missing_info', spokenText, q, cmd));
   }
@@ -887,6 +899,7 @@ const FIELD_MISSING_TYPES: Record<string, string[]> = {
   totalValue: ['deal_total', 'acquisition_cost'],
   itemInValue: ['acquisition_cost'],
   dueDay: ['installment_due_date'],
+  installment_schedule: ['installment_due_date'],
   installmentsCount: ['installments_count'],
   customer: ['customer_reference'],
 };
@@ -897,7 +910,7 @@ function fieldForMissing(cmd: InterpretedVoiceCommand): string | undefined {
   const financial = ['register_payment', 'register_partial_payment', 'register_adjustment', 'create_loan'].includes(cmd.intent);
   if ((type === 'deal_total' || type === 'payment_breakdown') && financial) return 'amount';
   if (type === 'deal_total' || type === 'acquisition_cost') return 'totalValue';
-  if (type === 'installment_due_date') return 'dueDay';
+  if (type === 'installment_due_date') return ['create_sale', 'create_trade', 'create_purchase', 'create_loan'].includes(cmd.intent) ? 'installment_schedule' : 'dueDay';
   if (type === 'installments_count') return 'installmentsCount';
   if (type === 'customer_reference') return 'customer';
   return undefined;
@@ -908,7 +921,7 @@ function fieldForMissing(cmd: InterpretedVoiceCommand): string | undefined {
  * escolha entre candidatos (IDs reais) ou valor numérico/nome que faltava.
  * Qualquer outra fala é tratada como comando novo.
  */
-export function resumePending(spokenText: string, p?: PendingConfirmation): InterpretedVoiceCommand | null {
+export function resumePending(spokenText: string, p?: PendingConfirmation, now?: Date): InterpretedVoiceCommand | null {
   if (!p?.draft) return null;
   const draft = p.draft as unknown as InterpretedVoiceCommand;
   if (draft.intent === 'set_item_cost') return resumeItemCost(spokenText, draft);
@@ -943,6 +956,25 @@ export function resumePending(spokenText: string, p?: PendingConfirmation): Inte
   }
 
   if (p.kind !== 'missing_info' || !p.field) return null;
+  if (p.field === 'installment_schedule' && draft.installmentsCount) {
+    if (spokenText.trim().split(/\s+/).length > 25 || nameTokens(spokenText).some((token) => BUSINESS_VERBS.test(token))) return null;
+    const temporal = interpretScheduleRule(spokenText, draft.installmentsCount, todayISO(now), draft.explicitDueDates ?? []);
+    const missingInformation = draft.missingInformation.filter((item) => item.type !== 'installment_due_date');
+    const updated: InterpretedVoiceCommand = {
+      ...draft, scheduleRule: temporal.rule, explicitDueDates: temporal.explicitDates,
+      firstDueDate: temporal.explicitDates[0],
+      missingInformation, interpretation: { source: 'resume' },
+    };
+    if (!temporal.rule) {
+      const question = temporal.question ?? `Qual o vencimento das ${draft.installmentsCount} parcelas?`;
+      return { ...updated, requiresConfirmation: true, confirmationPrompt: question,
+        missingInformation: [{ type: 'installment_due_date', description: question, promptQuestion: question }, ...missingInformation] };
+    }
+    const gaps = completenessGaps(updated, true);
+    const allMissing = [...missingInformation, ...gaps];
+    return { ...updated, requiresConfirmation: allMissing.length > 0 || draft.ambiguities.length > 0,
+      missingInformation: allMissing, confirmationPrompt: allMissing[0]?.promptQuestion ?? draft.ambiguities[0]?.suggestedPrompt };
+  }
   const words = spokenText.trim().split(/\s+/);
   if (words.length > 8) return null;
 
