@@ -4,11 +4,14 @@ import path from 'node:path';
 
 const publicDir = path.resolve('public');
 const manifest = JSON.parse(fs.readFileSync(path.join(publicDir, 'manifest.json'), 'utf8'));
+assert.equal(manifest.name, 'CRM Voz');
+assert.equal(manifest.short_name, 'CRM Voz');
 assert.equal(manifest.display, 'standalone');
 assert.equal(manifest.id, '/');
 assert.equal(manifest.start_url, '/login');
 assert.equal(manifest.scope, '/');
 assert.match(manifest.theme_color, /^#[0-9a-f]{6}$/i);
+assert.match(fs.readFileSync(path.resolve('src/app/layout.tsx'), 'utf8'), /viewportFit:\s*["']cover["']/);
 
 for (const size of [192, 512]) {
   const icon = manifest.icons.find((entry: { sizes: string }) => entry.sizes === `${size}x${size}`);
@@ -20,7 +23,7 @@ for (const size of [192, 512]) {
 }
 
 const worker = fs.readFileSync(path.join(publicDir, 'sw.js'), 'utf8');
-assert.match(worker, /figocrm-public-v3/);
+assert.match(worker, /figocrm-public-v4/);
 assert.match(worker, /PUBLIC_ASSETS/);
 assert.doesNotMatch(worker, /cache\.put\(.*\/api\//);
 assert.match(fs.readFileSync(path.join(publicDir, 'offline.html'), 'utf8'), /Nenhuma venda ou pagamento foi salvo/);

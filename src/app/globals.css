@@ -11,6 +11,13 @@
   --card-bg: rgba(15, 23, 42, 0.75);
   --card-border: rgba(255, 255, 255, 0.08);
   --accent-emerald-glow: rgba(16, 185, 129, 0.25);
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+  --mobile-nav-height: 4.5rem;
+  --mobile-nav-overhang: 0.625rem;
+  --mobile-nav-gap: 1.5rem;
   color-scheme: dark;
 }
 
@@ -50,12 +57,28 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Espaço para a barra inferior fixa + área segura do iPhone */
-.pb-safe-nav {
-  padding-bottom: calc(6.5rem + env(safe-area-inset-bottom));
+/* Fundo das barras ocupa a área segura; conteúdo interativo permanece fora dela. */
+.safe-top {
+  padding-top: var(--safe-top);
 }
 .safe-bottom {
-  padding-bottom: env(safe-area-inset-bottom);
+  padding-bottom: var(--safe-bottom);
+}
+.safe-x {
+  padding-left: max(1rem, var(--safe-left));
+  padding-right: max(1rem, var(--safe-right));
+}
+.auth-safe-layout {
+  padding-top: calc(var(--safe-top) + 2.5rem);
+  padding-bottom: calc(var(--safe-bottom) + 2.5rem);
+}
+.skip-link:focus-visible {
+  top: calc(var(--safe-top) + 0.75rem);
+}
+
+/* Altura real da navegação, parte elevada do botão Falar e margem para o último conteúdo. */
+.pb-safe-nav {
+  padding-bottom: calc(var(--mobile-nav-height) + var(--mobile-nav-overhang) + var(--mobile-nav-gap) + var(--safe-bottom));
 }
 
 /* Glassmorphism usado pela landing */

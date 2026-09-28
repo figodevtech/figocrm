@@ -83,7 +83,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
         {(checkout === 'retorno' || paidCheckout) && access.effectiveStatus !== 'active' ? <BillingStatusRefresh /> : null}
         {checkoutLookupFailed ? <p className="mb-3 rounded-xl bg-amber-400/10 p-3 text-sm text-amber-100">Não consegui verificar sua assinatura agora. Atualize a página em instantes.</p> : null}
         <div className="flex items-center justify-between gap-3">
-          <p className="text-lg font-semibold text-white">FigoCRM {access.effectivePlan === 'pro_plus' ? 'Pro Mais' : access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
+          <p className="text-lg font-semibold text-white">CRM Voz {access.effectivePlan === 'pro_plus' ? 'Pro Mais' : access.effectivePlan === 'pro' ? 'Pro' : 'Free'}</p>
           <Badge tone={plan.tone}>{plan.label}</Badge>
         </div>
         {access.effectiveStatus === 'trialing' ? (
@@ -147,7 +147,7 @@ export default async function AccountPage({ searchParams }: { searchParams: Prom
 
       <SectionTitle>Suporte</SectionTitle>
       <div id="feedback"><Card><Link href="/suporte" className="inline-flex min-h-11 items-center rounded-lg px-3 text-emerald-300 underline">Preciso de ajuda</Link><p className="mt-3 text-sm">E-mail: <a href={`mailto:${SUPPORT_EMAIL}`} className="text-emerald-300 underline">{SUPPORT_EMAIL}</a></p><p className="mt-2 text-sm">WhatsApp: <a href={`https://wa.me/${SUPPORT_WHATSAPP}`} className="text-emerald-300 underline">{SUPPORT_WHATSAPP_DISPLAY}</a></p><h3 className="mt-6 mb-3 font-semibold text-white">Encontrou um problema?</h3><FeedbackForm /></Card></div>
-      <p className="mt-5 text-center text-xs text-slate-500">FigoCRM · v1.0.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || 'local'}</p>
+      <p className="mt-5 text-center text-xs text-slate-500">CRM Voz · v1.0.0 · {process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 8) || 'local'}</p>
 
       <div className="mt-8">
         <LogoutButton />

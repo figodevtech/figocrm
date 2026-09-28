@@ -1,6 +1,7 @@
 'use client';
 // Telas de entrada: extremamente simples, um campo por linha, texto 16px, erros legíveis.
 import Link from 'next/link';
+import { Mic } from 'lucide-react';
 import { useActionState, type ReactNode } from 'react';
 import {
   requestPasswordResetAction,
@@ -15,11 +16,11 @@ import { TextField } from '@/components/ui/form';
 
 export function AuthShell({ title, children, footer }: { title: string; children: ReactNode; footer?: ReactNode }) {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center px-4 py-10">
+    <main className="auth-safe-layout safe-x flex min-h-screen min-h-dvh flex-col items-center justify-center">
       <div className="w-full max-w-sm">
-        <Link href="/" className="mb-8 flex items-center justify-center gap-2 text-3xl font-black tracking-tight text-white" aria-label="FIGO — página inicial">
-          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-lg text-emerald-950">F</span>
-          FIGO
+        <Link href="/" className="mb-8 flex min-h-11 items-center justify-center gap-2 text-2xl font-black tracking-tight text-white" aria-label="CRM Voz — página inicial">
+          <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-emerald-950"><Mic className="h-6 w-6" aria-hidden /></span>
+          CRM Voz
         </Link>
         <h1 className="mb-6 text-center text-2xl font-bold text-white">{title}</h1>
         {children}

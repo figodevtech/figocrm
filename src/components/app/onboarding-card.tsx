@@ -19,7 +19,7 @@ export function OnboardingCard({ hasItem, hasCustomer, hasSale }: { hasItem: boo
   const steps = [
     { done: hasItem, label: 'Cadastre sua primeira mercadoria', href: '/app/estoque/novo' },
     { done: hasCustomer, label: 'Cadastre um cliente', href: '/app/clientes/novo' },
-    { done: hasSale, label: 'Faça sua primeira venda ou fale com o FIGO', href: '/app/vendas/nova' },
+    { done: hasSale, label: 'Faça sua primeira venda ou fale com o CRM Voz', href: '/app/vendas/nova' },
   ];
   return <section aria-label="Primeiros passos" className="mt-5 rounded-2xl border border-sky-400/25 bg-sky-500/10 p-4">
     <div className="flex items-start justify-between gap-3"><div><h2 className="text-lg font-semibold text-white">Primeiros passos</h2><p className="text-sm text-slate-300">Três ações para começar. Você pode fazer na ordem que quiser.</p></div><button type="button" className="min-h-11 px-2 text-sm text-slate-300 underline" onClick={() => { try { localStorage.setItem(DISMISSED_KEY, '1'); window.dispatchEvent(new Event(CHANGE_EVENT)); } catch {} }}>Pular</button></div>
