@@ -257,6 +257,13 @@ function finalize(
   if (cmd.intent === 'create_trade' && cmd.direction === 'even' && cmd.tradeBalance === undefined) {
     cmd = { ...cmd, tradeBalance: 0 };
   }
+  if (CREATION_INTENTS.has(cmd.intent) && !cmd.installmentsCount) {
+    const saleRemaining = cmd.intent === 'create_sale' && cmd.totalValue !== undefined && cmd.cashIn !== undefined
+      ? cmd.totalValue - cmd.cashIn : 0;
+    const tradeRemaining = cmd.intent === 'create_trade' && cmd.direction === 'inflow' && cmd.tradeBalance !== undefined
+      ? cmd.tradeBalance - (cmd.cashIn ?? 0) : 0;
+    if ((cmd.receivable ?? 0) > 0 || saleRemaining > 0 || tradeRemaining > 0) cmd = { ...cmd, installmentsCount: 1 };
+  }
   let scheduleQuestion: string | undefined;
   if (CREATION_INTENTS.has(cmd.intent) && cmd.installmentsCount) {
     const today = todayISO(now);

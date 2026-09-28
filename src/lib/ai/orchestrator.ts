@@ -956,12 +956,13 @@ export function resumePending(spokenText: string, p?: PendingConfirmation, now?:
   }
 
   if (p.kind !== 'missing_info' || !p.field) return null;
-  if (p.field === 'installment_schedule' && draft.installmentsCount) {
+  if (p.field === 'installment_schedule' && (draft.installmentsCount || draft.receivable)) {
     if (spokenText.trim().split(/\s+/).length > 25 || nameTokens(spokenText).some((token) => BUSINESS_VERBS.test(token))) return null;
-    const temporal = interpretScheduleRule(spokenText, draft.installmentsCount, todayISO(now), draft.explicitDueDates ?? []);
+    const count = draft.installmentsCount ?? 1;
+    const temporal = interpretScheduleRule(spokenText, count, todayISO(now), draft.explicitDueDates ?? []);
     const missingInformation = draft.missingInformation.filter((item) => item.type !== 'installment_due_date');
     const updated: InterpretedVoiceCommand = {
-      ...draft, scheduleRule: temporal.rule, explicitDueDates: temporal.explicitDates,
+      ...draft, installmentsCount: count, scheduleRule: temporal.rule, explicitDueDates: temporal.explicitDates,
       firstDueDate: temporal.explicitDates[0],
       missingInformation, interpretation: { source: 'resume' },
     };
