@@ -6,7 +6,7 @@ import { addDaysISO, formatBRL, formatDate, parseMoneyInput } from '@/lib/format
 import { checkInstallmentPlan } from '@/lib/domain/manual-plan';
 import { toCents } from '@/lib/finance/money';
 import { Button, ButtonLink } from '@/components/ui/button';
-import { MoneyField, TextField } from '@/components/ui/form';
+import { DateField, MoneyField, TextField } from '@/components/ui/form';
 
 export function WizardStep({
   step,
@@ -114,9 +114,8 @@ export function InstallmentPlanner({
         <TextField label="Quantidade" inputMode="numeric" value={draft.count} onChange={(e) => setCount(e.target.value)} autoComplete="off" />
         <MoneyField label="Valor de cada" value={draft.value} onChange={(v) => onChange({ ...draft, value: v })} />
       </div>
-      <TextField
+      <DateField
         label="Primeiro vencimento"
-        type="date"
         min={today}
         value={draft.firstDueDate}
         onChange={(e) => onChange({ ...draft, firstDueDate: e.target.value })}

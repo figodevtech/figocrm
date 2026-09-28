@@ -3,8 +3,9 @@
 import { useId, type ComponentProps, type ReactNode } from 'react';
 
 const inputBase =
-  'w-full min-h-12 rounded-xl border border-white/10 bg-slate-900/80 px-4 text-base text-white placeholder-slate-500 ' +
+  'w-full min-w-0 rounded-xl border border-white/10 bg-slate-900/80 px-4 text-base text-white placeholder-slate-500 ' +
   'transition-colors focus:border-emerald-400 aria-[invalid=true]:border-rose-400';
+const singleLineHeight = 'h-12 min-h-12';
 
 export function Field({
   label,
@@ -45,7 +46,25 @@ export function TextField({ label, hint, error, required, className = '', ...pro
         required={required}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
-        className={`${inputBase} ${className}`}
+        className={`${inputBase} ${singleLineHeight} ${className}`}
+        {...props}
+      />
+    </Field>
+  );
+}
+
+/** Use DateField para datas; mantém o picker nativo e normaliza a altura no Safari/iOS. */
+export function DateField({ label, hint, error, required, className = '', ...props }: Omit<TextProps, 'type'>) {
+  const id = useId();
+  return (
+    <Field label={label} hint={hint} error={error} required={required} id={id}>
+      <input
+        id={id}
+        type="date"
+        required={required}
+        aria-invalid={error ? true : undefined}
+        aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
+        className={`${inputBase} ${singleLineHeight} crm-date-input ${className}`}
         {...props}
       />
     </Field>
@@ -93,7 +112,7 @@ export function MoneyField({
           onChange={(e) => onChange(e.target.value.replace(/[^\d.,]/g, ''))}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : hint ? `${id}-hint` : undefined}
-          className={`${inputBase} tabular pl-12 text-lg font-semibold`}
+          className={`${inputBase} ${singleLineHeight} tabular pl-12 text-lg font-semibold`}
         />
       </div>
     </Field>
@@ -126,7 +145,7 @@ export function SelectField({
   const id = useId();
   return (
     <Field label={label} hint={hint} error={error} id={id}>
-      <select id={id} className={`${inputBase} appearance-none ${className}`} {...props}>
+      <select id={id} className={`${inputBase} ${singleLineHeight} appearance-none ${className}`} {...props}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

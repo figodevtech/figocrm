@@ -13,7 +13,7 @@ import type { PaymentMethod } from '@/types/domain';
 import { CustomerPicker } from '@/components/app/pickers';
 import { Alert, Card, Row, SectionTitle } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
-import { Choice, MoneyField, TextAreaField, TextField } from '@/components/ui/form';
+import { Choice, DateField, MoneyField, TextAreaField, TextField } from '@/components/ui/form';
 
 export function LoanForm({ customers, today, initialCustomerId }: { customers: CustomerOption[]; today: string; initialCustomerId?: string }) {
   const router = useRouter();
@@ -96,7 +96,7 @@ export function LoanForm({ customers, today, initialCustomerId }: { customers: C
 
       <div className="grid gap-4 sm:grid-cols-2">
         <MoneyField label="Valor emprestado" required value={principal} onChange={setPrincipal} />
-        <TextField label="Data" type="date" required value={startDate} max={today} onChange={(e) => setStartDate(e.target.value)} />
+        <DateField label="Data" required value={startDate} max={today} onChange={(e) => setStartDate(e.target.value)} />
       </div>
 
       <Choice
@@ -123,9 +123,8 @@ export function LoanForm({ customers, today, initialCustomerId }: { customers: C
         )}
         <TextField label="Quantidade de parcelas" required inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value.replace(/\D/g, '').slice(0, 3))} autoComplete="off" />
       </div>
-      <TextField
+      <DateField
         label="Primeiro vencimento"
-        type="date"
         required
         min={startDate}
         value={firstDueDate}

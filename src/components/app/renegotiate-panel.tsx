@@ -8,7 +8,7 @@ import { addDaysISO, formatBRL } from '@/lib/format';
 import { toCents } from '@/lib/finance/money';
 import { Alert, Card, Row } from '@/components/ui/layout';
 import { Button } from '@/components/ui/button';
-import { Choice, TextField } from '@/components/ui/form';
+import { Choice, DateField, TextField } from '@/components/ui/form';
 
 interface OpenInst {
   id: string;
@@ -76,7 +76,7 @@ export function RenegotiatePanel({ receivableId, open, today }: { receivableId: 
       </Card>
       <div className="grid grid-cols-2 gap-3">
         <TextField label="Em quantas parcelas" inputMode="numeric" value={count} onChange={(e) => setCount(e.target.value.replace(/\D/g, '').slice(0, 3))} autoComplete="off" />
-        <TextField label="Primeiro vencimento" type="date" min={today} value={firstDueDate} onChange={(e) => setFirstDueDate(e.target.value)} />
+        <DateField label="Primeiro vencimento" min={today} value={firstDueDate} onChange={(e) => setFirstDueDate(e.target.value)} />
       </div>
       {error ? <Alert>{error}</Alert> : null}
       <div className="grid grid-cols-2 gap-2">
