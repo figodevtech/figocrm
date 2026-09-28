@@ -201,6 +201,61 @@ for (const device of DEVICES) {
 }
 
 for (const device of DEVICES) {
+  test(`campos de data ${device.name} ${device.width}x${device.height}: altura e valor nativo`, async () => {
+    const ctx = await authedContext(device.width, device.height);
+    const page = await ctx.newPage();
+    await open(page, '/app/emprestimos/novo');
+    const control = (label: string) => page.getByLabel(label);
+    const fields = ['Valor emprestado', 'Data', 'Taxa sobre o valor (%)', 'Quantidade de parcelas', 'Primeiro vencimento'];
+    const layout = await page.evaluate((labels) => {
+      const controls = labels.map((label) => {
+        const input = [...document.querySelectorAll('input')].find((element) => element.labels?.[0]?.textContent?.trim().startsWith(label));
+        if (!input) return { label, height: 0, fontSize: 0, clipped: true, type: '' };
+        const rect = input.getBoundingClientRect();
+        return {
+          label,
+          height: rect.height,
+          fontSize: Number.parseFloat(getComputedStyle(input).fontSize),
+          clipped: input.scrollWidth > input.clientWidth + 2 || rect.right > innerWidth + 1,
+          type: input.type,
+        };
+      });
+      return { controls, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+    }, fields);
+    assert.ok(layout.overflow <= 1, `${device.name}: overflow horizontal ${layout.overflow}px`);
+    for (const field of layout.controls) {
+      assert.ok(Math.abs(field.height - 48) <= 1, `${device.name} ${field.label}: ${field.height}px`);
+      assert.ok(field.fontSize >= 16, `${device.name} ${field.label}: fonte ${field.fontSize}px`);
+      assert.ok(!field.clipped, `${device.name} ${field.label}: campo cortado`);
+    }
+    assert.equal(layout.controls[1].type, 'date');
+    assert.equal(layout.controls[4].type, 'date');
+    const startDate = control('Data');
+    const firstDueDate = control('Primeiro vencimento');
+    const today = await startDate.inputValue();
+    const previous = new Date(`${today}T12:00:00Z`);
+    previous.setUTCDate(previous.getUTCDate() - 1);
+    const changedStartDate = previous.toISOString().slice(0, 10);
+    await startDate.fill(changedStartDate);
+    assert.equal(await startDate.inputValue(), changedStartDate);
+    assert.equal(await startDate.getAttribute('max'), today);
+    const due = await firstDueDate.inputValue();
+    const next = new Date(`${due}T12:00:00Z`);
+    next.setUTCDate(next.getUTCDate() + 1);
+    const changedDueDate = next.toISOString().slice(0, 10);
+    await firstDueDate.fill(changedDueDate);
+    assert.equal(await firstDueDate.inputValue(), changedDueDate);
+    assert.match(await firstDueDate.inputValue(), /^\d{4}-\d{2}-\d{2}$/);
+    assert.equal(await firstDueDate.getAttribute('min'), changedStartDate);
+    assert.ok(await firstDueDate.evaluate((input) => typeof (input as HTMLInputElement).showPicker === 'function'), 'picker nativo ausente');
+    await open(page, '/app/estoque/novo');
+    const selectHeight = await control('Categoria').evaluate((element) => element.getBoundingClientRect().height);
+    assert.ok(Math.abs(selectHeight - 48) <= 1, `${device.name} Categoria: ${selectHeight}px`);
+    await ctx.close();
+  });
+}
+
+for (const device of DEVICES) {
   test(`${device.name} ${device.width}x${device.height}: safe areas, navegação e overflow`, async () => {
     const ctx = await authedContext(device.width, device.height);
     const page = await ctx.newPage();

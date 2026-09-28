@@ -57,6 +57,26 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Mantém o seletor nativo de data com a mesma altura dos demais campos. */
+.crm-date-input {
+  box-sizing: border-box;
+  height: 3rem;
+  min-height: 3rem;
+  max-height: 3rem;
+  min-width: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  font-size: 1rem;
+  line-height: 1.25rem;
+}
+.crm-date-input::-webkit-date-and-time-value {
+  text-align: left;
+}
+.crm-date-input::-webkit-datetime-edit {
+  padding: 0;
+  line-height: 1.25rem;
+}
+
 /* Fundo das barras ocupa a área segura; conteúdo interativo permanece fora dela. */
 .safe-top {
   padding-top: var(--safe-top);
