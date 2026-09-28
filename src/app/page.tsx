@@ -35,7 +35,7 @@ export default function LandingPage() {
             </div>
             <div>
               <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
-                Figo CRM
+                CRM Voz
               </span>
               <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Voz Primeiro
@@ -381,7 +381,7 @@ export default function LandingPage() {
       <footer className="mt-auto border-t border-white/10 py-8 px-6 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
-            <span className="font-bold text-slate-400">Figo CRM</span> — O CRM Voice-First para quem vive de negócios
+            <span className="font-bold text-slate-400">CRM Voz</span> — O CRM Voice-First para quem vive de negócios
           </div>
           <div>© {new Date().getFullYear()} Todos os direitos reservados. Free permanente · Pro R$ 39,90/mês · Pro Mais R$ 89,90/mês.</div>
           <div className="flex gap-4"><Link href="/termos">Termos</Link><Link href="/privacidade">Privacidade</Link><Link href="/suporte">Suporte</Link></div>

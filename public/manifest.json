@@ -1,7 +1,7 @@
 {
-  "name": "Figo CRM — Voice-First",
-  "short_name": "Figo CRM",
-  "description": "Você fala. Ele organiza. CRM de voz para vendas, parcelas e trocas.",
+  "name": "CRM Voz",
+  "short_name": "CRM Voz",
+  "description": "CRM de voz para vendas, parcelas, trocas e recebimentos.",
   "id": "/",
   "start_url": "/login",
   "scope": "/",

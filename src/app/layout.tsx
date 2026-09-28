@@ -21,13 +21,13 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: { default: "Figo CRM — Você fala. Ele organiza.", template: "%s · Figo" },
+  title: { default: "CRM Voz — Você fala. Ele organiza.", template: "%s · CRM Voz" },
   description: "O CRM de voz para revendedores autônomos. Controle de compras, vendas, trocas com volta e valores a receber sem complicação.",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "black-translucent",
-    title: "Figo CRM",
+    title: "CRM Voz",
   },
 };
 

@@ -1,7 +1,7 @@
 // tests/e2e/ui-responsive.e2e.ts
 // Validação das telas no navegador real (Chrome instalado, via playwright-core) contra `next start`:
-//  - todas as telas do app em 360, 390, 430, 768, 1024 e 1440 px: sem rolagem horizontal,
-//    sem sidebar / menu hambúrguer, alvos de toque ≥ 40 px no celular
+//  - matriz de aparelhos com alturas reais e safe areas simuladas: sem overflow,
+//    sem controles sob notch/status bar/home indicator e com alvos de toque adequados
 //  - proteção de rotas (sem sessão → /login?next; logado em /login → /app)
 //  - fluxos clicando: nova venda com parcelamento, receber pagamento + desfazer, voz contextual (texto)
 //
@@ -22,9 +22,20 @@ import { createLoanContract } from '../../src/lib/domain/loans';
 
 const BASE = (process.env.UI_BASE_URL || 'http://localhost:3100').replace(/\/$/, '');
 const SHOTS = process.env.UI_SCREENSHOT_DIR;
-const WIDTHS = process.env.UI_WIDTHS
-  ? process.env.UI_WIDTHS.split(',').map(Number).filter((width) => Number.isInteger(width) && width > 0)
-  : [360, 390, 430, 768, 1024, 1440];
+type DeviceProfile = { name: string; width: number; height: number; safeTop: number; safeBottom: number };
+const DEVICE_MATRIX: DeviceProfile[] = [
+  { name: 'Android compacto', width: 360, height: 800, safeTop: 24, safeBottom: 0 },
+  { name: 'iPhone SE', width: 375, height: 667, safeTop: 20, safeBottom: 0 },
+  { name: 'iPhone 13/14', width: 390, height: 844, safeTop: 47, safeBottom: 34 },
+  { name: 'iPhone Pro', width: 393, height: 852, safeTop: 59, safeBottom: 34 },
+  { name: 'Android Pixel/Samsung', width: 412, height: 915, safeTop: 24, safeBottom: 0 },
+  { name: 'iPhone Pro Max', width: 430, height: 932, safeTop: 59, safeBottom: 34 },
+  { name: 'Tablet', width: 768, height: 1024, safeTop: 0, safeBottom: 0 },
+  { name: 'Desktop', width: 1440, height: 900, safeTop: 0, safeBottom: 0 },
+  { name: 'Mobile sem inset', width: 390, height: 844, safeTop: 0, safeBottom: 0 },
+];
+const selectedWidths = process.env.UI_WIDTHS?.split(',').map(Number).filter((width) => Number.isInteger(width) && width > 0);
+const DEVICES = selectedWidths ? DEVICE_MATRIX.filter((device) => selectedWidths.includes(device.width)) : DEVICE_MATRIX;
 const CHROME = process.env.CHROME_PATH || ['C:/Program Files/Google/Chrome/Application/chrome.exe', '/usr/bin/google-chrome', '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'].find((p) => fs.existsSync(p));
 
 let user: TestUser;
@@ -32,8 +43,8 @@ let browser: Browser;
 let cookies: Array<{ name: string; value: string; url: string }> = [];
 const ids: Record<string, string> = {};
 
-async function authedContext(width: number): Promise<BrowserContext> {
-  const ctx = await browser.newContext({ viewport: { width, height: width < 768 ? 844 : 900 }, locale: 'pt-BR', hasTouch: width < 1024 });
+async function authedContext(width: number, height = DEVICE_MATRIX.find((device) => device.width === width)?.height ?? 900): Promise<BrowserContext> {
+  const ctx = await browser.newContext({ viewport: { width, height }, locale: 'pt-BR', hasTouch: width < 1024 });
   await ctx.addCookies(cookies);
   await ctx.grantPermissions(['microphone'], { origin: BASE });
   return ctx;
@@ -43,6 +54,17 @@ async function open(page: Page, route: string) {
   const res = await page.goto(`${BASE}${route}`, { waitUntil: 'load', timeout: 60_000 });
   assert.ok(res && res.status() < 400, `${route}: HTTP ${res?.status()}`);
   await page.locator('main h1').first().waitFor({ timeout: 15_000 });
+}
+
+async function applySafeArea(page: Page, device: DeviceProfile) {
+  await page.addStyleTag({ content: `:root { --safe-top: ${device.safeTop}px !important; --safe-bottom: ${device.safeBottom}px !important; }` });
+}
+
+async function screenshot(page: Page, device: DeviceProfile, route: string) {
+  if (!SHOTS || ![375, 390, 393, 412, 430, 1440].includes(device.width) || device.name === 'Mobile sem inset') return;
+  fs.mkdirSync(SHOTS, { recursive: true });
+  const routeName = route.replace(/^\//, '').replaceAll('/', '_') || 'home';
+  await page.screenshot({ path: path.join(SHOTS, `${device.width}x${device.height}-${routeName}.png`) });
 }
 
 test('setup: usuário com cliente, estoque, venda parcelada e empréstimo', async () => {
@@ -114,17 +136,27 @@ const ROUTES = () => [
   '/app/estoque?filtro=revisar',
 ];
 
-for (const width of WIDTHS) {
-  test(`${width}px: todas as telas sem rolagem horizontal, sem sidebar/hambúrguer e com alvos de toque adequados`, async () => {
-    const ctx = await authedContext(width);
+for (const device of DEVICES) {
+  test(`${device.name} ${device.width}x${device.height}: safe areas, navegação e overflow`, async () => {
+    const ctx = await authedContext(device.width, device.height);
     const page = await ctx.newPage();
     const problems: string[] = [];
     for (const route of ROUTES()) {
       await open(page, route);
-      const check = await page.evaluate((mobile) => {
+      await applySafeArea(page, device);
+      await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const check = await page.evaluate(({ mobile, safeTop, safeBottom }) => {
         const overflow = document.documentElement.scrollWidth - document.documentElement.clientWidth;
         const sidebar = document.querySelectorAll('aside, [class*="sidebar" i], [aria-label*="menu" i]').length;
         const small: string[] = [];
+        const header = document.querySelector('header');
+        const headerControls = [...(header?.querySelectorAll('a, button') || [])].map((element) => element.getBoundingClientRect()).filter((rect) => rect.width && rect.height);
+        const bottomNav = document.querySelector('nav[aria-label="Navegação inferior"]');
+        const bottomControls = [...(bottomNav?.querySelectorAll('a, button') || [])].map((element) => element.getBoundingClientRect()).filter((rect) => rect.width && rect.height);
+        const brand = header?.querySelector('a[aria-label="CRM Voz — Início"]')?.getBoundingClientRect();
+        const badge = [...(header?.querySelectorAll('a[href="/app/conta"]') || [])]
+          .map((element) => element.getBoundingClientRect()).find((rect) => rect.width && rect.height);
+        const lastContent = document.querySelector('main')?.lastElementChild?.getBoundingClientRect();
         if (mobile) {
           for (const el of Array.from(document.querySelectorAll('main button, main a, nav a, nav button, [role="radio"], [role="tab"]'))) {
             const r = (el as HTMLElement).getBoundingClientRect();
@@ -133,22 +165,65 @@ for (const width of WIDTHS) {
             if (r.height < 40) small.push(`${el.tagName}:${(el.textContent || el.getAttribute('aria-label') || '').trim().slice(0, 24)}(${Math.round(r.height)}px)`);
           }
         }
-        return { overflow, sidebar, small, h1: document.querySelector('h1')?.textContent ?? '' };
-      }, width < 1024);
+        return {
+          overflow, sidebar, small, h1: document.querySelector('h1')?.textContent ?? '',
+          headerSafe: !mobile || headerControls.every((rect) => rect.top >= safeTop - 1),
+          headerTargets: !mobile || headerControls.every((rect) => rect.width >= 44 && rect.height >= 44),
+          brandFits: !mobile || !brand || !badge || brand.right <= badge.left + 1,
+          bottomSafe: !mobile || bottomControls.every((rect) => rect.bottom <= innerHeight - safeBottom + 1),
+          bottomTargets: !mobile || bottomControls.every((rect) => rect.width >= 44 && rect.height >= 44),
+          lastContentClear: !mobile || !lastContent || !bottomNav || lastContent.bottom <= bottomNav.getBoundingClientRect().top - 1,
+        };
+      }, { mobile: device.width < 1024, safeTop: device.safeTop, safeBottom: device.safeBottom });
       if (check.overflow > 1) problems.push(`${route}: rolagem horizontal de ${check.overflow}px`);
       if (check.sidebar > 0) problems.push(`${route}: sidebar/menu encontrado`);
       if (check.small.length > 0) problems.push(`${route}: alvos pequenos ${check.small.slice(0, 4).join(', ')}`);
       if (!check.h1) problems.push(`${route}: sem título (h1)`);
-      if (SHOTS && (width === 390 || width === 1440)) {
-        fs.mkdirSync(SHOTS, { recursive: true });
-        const name = route.replace(/[^a-z0-9]+/gi, '_').replace(/_[0-9a-f]{8}_[0-9a-f_]{27}/gi, '_id').slice(0, 60);
-        await page.screenshot({ path: path.join(SHOTS, `${width}${name}.png`), fullPage: true });
+      if (!check.headerSafe) problems.push(`${route}: controle do header sob a status bar`);
+      if (!check.headerTargets) problems.push(`${route}: controle do header menor que 44px`);
+      if (!check.brandFits) problems.push(`${route}: nome e badge sobrepostos`);
+      if (!check.bottomSafe) problems.push(`${route}: controle sobre o home indicator`);
+      if (!check.bottomTargets) problems.push(`${route}: controle inferior menor que 44px`);
+      if (!check.lastContentClear) problems.push(`${route}: último conteúdo encoberto pela barra`);
+      if (['/app', '/app/clientes', '/app/estoque', '/app/conta'].includes(route)) {
+        await page.evaluate(() => window.scrollTo(0, 0));
+        await screenshot(page, device, route);
       }
     }
     await ctx.close();
+    const anon = await browser.newContext({ viewport: { width: device.width, height: device.height } });
+    const login = await anon.newPage();
+    for (const route of ['/login', '/cadastro', '/esqueci-senha']) {
+      await open(login, route);
+      await applySafeArea(login, device);
+      const logoTop = await login.getByRole('link', { name: 'CRM Voz — página inicial' }).evaluate((element) => element.getBoundingClientRect().top);
+      if (logoTop < device.safeTop - 1) problems.push(`${route}: logo sob a status bar`);
+      await login.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+      const contentBottom = await login.locator('main > div').evaluate((element) => element.getBoundingClientRect().bottom);
+      if (contentBottom > device.height - device.safeBottom + 1) problems.push(`${route}: último conteúdo encoberto pela safe area inferior`);
+      if (route === '/login') {
+        await login.evaluate(() => window.scrollTo(0, 0));
+        await screenshot(login, device, route);
+      }
+    }
+    await anon.close();
     assert.deepStrictEqual(problems, []);
   });
 }
+
+test('skip link focado aparece abaixo da safe area superior', async () => {
+  const device = DEVICE_MATRIX.find((entry) => entry.name === 'iPhone Pro')!;
+  const ctx = await authedContext(device.width, device.height);
+  const page = await ctx.newPage();
+  await open(page, '/app');
+  await applySafeArea(page, device);
+  await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: 'Pular para o conteúdo' });
+  assert.ok(await skip.isVisible());
+  const top = await skip.evaluate((element) => element.getBoundingClientRect().top);
+  assert.ok(top >= device.safeTop, `skip link começou em ${top}px, antes da safe area de ${device.safeTop}px`);
+  await ctx.close();
+});
 
 test('celular: barra inferior com Falar no centro; desktop: navegação no topo (sem barra inferior)', async () => {
   const mobile = await authedContext(390);

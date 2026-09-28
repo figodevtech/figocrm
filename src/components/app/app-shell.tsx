@@ -54,16 +54,16 @@ function ShellFrame({ children, access }: { children: ReactNode; access: ShellAc
   }, []);
 
   return (
-    <div className="flex min-h-screen flex-col">
-      <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-xl focus:bg-emerald-500 focus:px-4 focus:py-2 focus:text-emerald-950">
+    <div className="flex min-h-screen min-h-dvh flex-col">
+      <a href="#conteudo" className="skip-link sr-only focus:not-sr-only focus:fixed focus:left-3 focus:z-[60] focus:rounded-xl focus:bg-emerald-500 focus:px-4 focus:py-2 focus:text-emerald-950">
         Pular para o conteúdo
       </a>
 
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-[#090d16]/90 backdrop-blur">
-        <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-4 px-4">
-          <Link href="/app" className="flex items-center gap-2 font-black tracking-tight text-white" aria-label="FIGO — Início">
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500 text-sm text-emerald-950">F</span>
-            <span className="text-lg">FIGO</span>
+      <header className="safe-top sticky top-0 z-40 border-b border-white/5 bg-[#090d16]/90 backdrop-blur">
+        <div className="safe-x mx-auto flex h-14 w-full max-w-5xl items-center gap-2 sm:gap-4">
+          <Link href="/app" className="flex min-h-11 min-w-0 items-center gap-2 font-black tracking-tight text-white" aria-label="CRM Voz — Início">
+            <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-emerald-950"><Mic className="h-5 w-5" aria-hidden /></span>
+            <span className="truncate text-base sm:text-lg">CRM Voz</span>
           </Link>
 
           <nav aria-label="Principal" className="hidden flex-1 items-center gap-1 lg:flex">
@@ -81,16 +81,17 @@ function ShellFrame({ children, access }: { children: ReactNode; access: ShellAc
             ))}
           </nav>
 
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {access.trialing && access.canWrite ? (
-              <Link href="/app/conta" className="rounded-full border border-emerald-500/25 bg-emerald-500/10 px-3 py-1 text-sm font-medium text-emerald-300">
-                Teste: {access.trialDaysRemaining} {access.trialDaysRemaining === 1 ? 'dia' : 'dias'}
+              <Link href="/app/conta" className="inline-flex min-h-11 items-center whitespace-nowrap rounded-full border border-emerald-500/25 bg-emerald-500/10 px-2.5 text-xs font-medium text-emerald-300 sm:px-3 sm:text-sm">
+                <span className="sm:hidden">Teste · {access.trialDaysRemaining}d</span>
+                <span className="hidden sm:inline">Teste: {access.trialDaysRemaining} {access.trialDaysRemaining === 1 ? 'dia' : 'dias'}</span>
               </Link>
             ) : null}
             <button
               type="button"
               onClick={() => open({ autoStart: true })}
-              className="hidden min-h-10 items-center gap-2 rounded-2xl bg-emerald-500 px-4 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 lg:inline-flex"
+              className="hidden min-h-11 items-center gap-2 rounded-2xl bg-emerald-500 px-4 text-sm font-semibold text-emerald-950 hover:bg-emerald-400 lg:inline-flex"
             >
               <Mic className="h-4 w-4" aria-hidden /> Falar
             </button>
@@ -111,12 +112,12 @@ function ShellFrame({ children, access }: { children: ReactNode; access: ShellAc
         </div>
       ) : null}
 
-      <main id="conteudo" className="pb-safe-nav mx-auto w-full max-w-5xl flex-1 px-4 pt-5 lg:pb-12">
+      <main id="conteudo" className="pb-safe-nav safe-x mx-auto w-full max-w-5xl flex-1 pt-5 lg:pb-12">
         {children}
       </main>
 
       <nav aria-label="Navegação inferior" className="safe-bottom fixed inset-x-0 bottom-0 z-40 border-t border-white/10 bg-[#0b111d]/95 backdrop-blur lg:hidden">
-        <div className="mx-auto grid h-[4.5rem] max-w-lg grid-cols-5 items-center">
+        <div className="safe-x mx-auto grid h-[var(--mobile-nav-height)] max-w-lg grid-cols-5 items-center">
           <NavItem href="/app" label="Início" active={isActive(pathname, '/app')} icon={<Home className="h-6 w-6" aria-hidden />} />
           <NavItem href="/app/clientes" label="Clientes" active={isActive(pathname, '/app/clientes')} icon={<Users className="h-6 w-6" aria-hidden />} />
           <div className="flex justify-center">
