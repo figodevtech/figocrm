@@ -137,6 +137,70 @@ const ROUTES = () => [
 ];
 
 for (const device of DEVICES) {
+  test(`landing ${device.name} ${device.width}x${device.height}: safe area, CTAs e planos`, async () => {
+    const ctx = await browser.newContext({ viewport: { width: device.width, height: device.height }, locale: 'pt-BR' });
+    const page = await ctx.newPage();
+    const response = await page.goto(`${BASE}/`, { waitUntil: 'load', timeout: 60_000 });
+    assert.equal(response?.status(), 200);
+    await applySafeArea(page, device);
+    const safeSide = device.name === 'iPhone Pro' ? 24 : 0;
+    if (safeSide) await page.addStyleTag({ content: `:root { --safe-left: ${safeSide}px !important; --safe-right: ${safeSide}px !important; }` });
+
+    const layout = await page.evaluate(({ safeTop, safeSide }) => {
+      const header = document.querySelector('header');
+      const brand = [...(header?.querySelectorAll('span') ?? [])].find((element) => element.textContent?.trim() === 'CRM Voz');
+      const links = [...(header?.querySelectorAll('a') ?? [])];
+      const controls = [...(brand ? [brand.getBoundingClientRect()] : []), ...links.map((link) => link.getBoundingClientRect())];
+      const cards = [...document.querySelectorAll('#planos article')];
+      return {
+        overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        headerSafe: controls.length === 3 && controls.every((rect) => rect.top >= safeTop - 1),
+        headerSideSafe: controls.every((rect) => rect.left >= safeSide - 1 && rect.right <= innerWidth - safeSide + 1),
+        headerCompact: (header?.getBoundingClientRect().height ?? 0) <= safeTop + 72,
+        ctas: links.map((link) => ({ href: link.getAttribute('href'), text: link.textContent?.trim(), rect: link.getBoundingClientRect() })),
+        brandRight: brand?.getBoundingClientRect().right ?? 0,
+        cards: cards.map((card) => ({ width: card.clientWidth, scrollWidth: card.scrollWidth, right: card.getBoundingClientRect().right })),
+      };
+    }, { safeTop: device.safeTop, safeSide });
+    assert.ok(layout.overflow <= 1, `landing ${device.name}: overflow ${layout.overflow}px`);
+    assert.ok(layout.headerSafe, `landing ${device.name}: header sob status bar`);
+    assert.ok(layout.headerSideSafe, `landing ${device.name}: header fora da safe area lateral`);
+    assert.ok(layout.headerCompact, `landing ${device.name}: header alto demais`);
+    assert.deepStrictEqual(layout.ctas.map((cta) => cta.href), ['/login', '/cadastro']);
+    assert.ok(layout.brandRight <= layout.ctas[0].rect.left + 1, `landing ${device.name}: marca e Entrar sobrepostos`);
+    assert.ok(layout.ctas[0].rect.right <= layout.ctas[1].rect.left + 1, `landing ${device.name}: CTAs sobrepostos`);
+    assert.ok(layout.ctas.every((cta) => cta.rect.width >= 44 && cta.rect.height >= 44), `landing ${device.name}: CTA pequeno`);
+    assert.equal(layout.cards.length, 3);
+    assert.ok(layout.cards.every((card) => card.scrollWidth <= card.width + 1 && card.right <= device.width + 1), `landing ${device.name}: card cortado`);
+
+    await page.getByRole('heading', { name: 'Escolha como começar' }).waitFor();
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await screenshot(page, device, '/');
+    for (const cta of await page.locator('#planos article a').all()) {
+      assert.equal(await cta.getAttribute('href'), '/cadastro');
+      await cta.scrollIntoViewIfNeeded();
+      await cta.evaluate((element) => {
+        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+        if (element.getBoundingClientRect().top < headerHeight) {
+          window.scrollBy(0, element.getBoundingClientRect().top - headerHeight - 12);
+        }
+      });
+      const rect = await cta.boundingBox();
+      const headerHeight = await page.locator('header').evaluate((element) => element.getBoundingClientRect().height);
+      assert.ok(rect && rect.y >= headerHeight - 1 && rect.y + rect.height <= device.height - device.safeBottom + 1, `landing ${device.name}: CTA do plano fora da área visível`);
+    }
+    if (SHOTS && [375, 390, 393, 412, 430, 1440].includes(device.width) && device.name !== 'Mobile sem inset') {
+      await page.locator('#planos').evaluate((element) => {
+        const headerHeight = document.querySelector('header')?.getBoundingClientRect().height ?? 0;
+        window.scrollTo(0, window.scrollY + element.getBoundingClientRect().top - headerHeight - 12);
+      });
+      await page.screenshot({ path: path.join(SHOTS, `${device.width}x${device.height}-planos.png`) });
+    }
+    await ctx.close();
+  });
+}
+
+for (const device of DEVICES) {
   test(`${device.name} ${device.width}x${device.height}: safe areas, navegação e overflow`, async () => {
     const ctx = await authedContext(device.width, device.height);
     const page = await ctx.newPage();

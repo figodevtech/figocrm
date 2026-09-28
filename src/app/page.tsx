@@ -25,43 +25,44 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#090d16] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-black">
+    <div className="min-h-screen min-h-dvh bg-[#090d16] text-slate-100 flex flex-col selection:bg-emerald-500 selection:text-black">
       {/* 1. Header / Navbar */}
-      <header className="sticky top-0 z-50 glass-panel border-b border-white/10 px-6 py-4">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+      <header className="safe-top sticky top-0 z-50 border-b border-white/10 bg-[#090d16]">
+        <div className="safe-x max-w-6xl mx-auto flex min-h-14 items-center justify-between gap-2 py-2">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
               <Mic className="w-5 h-5 text-black" />
             </div>
-            <div>
-              <span className="text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
+            <div className="min-w-0">
+              <span className="whitespace-nowrap text-base sm:text-xl font-bold tracking-tight bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent">
                 CRM Voz
               </span>
-              <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+              <span className="ml-2 hidden sm:inline text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
                 Voz Primeiro
               </span>
             </div>
           </div>
 
-          <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-1 sm:gap-2">
             <Link
               href="/login"
-              className="text-sm font-medium text-slate-300 hover:text-white transition-colors px-3 py-1.5"
+              className="inline-flex min-h-11 items-center px-2 text-sm font-medium text-slate-300 hover:text-white transition-colors sm:px-3"
             >
               Entrar
             </Link>
             <Link
               href="/cadastro"
-              className="text-sm font-semibold px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black transition-all shadow-md shadow-emerald-500/25 hover:shadow-emerald-500/40 hover:-translate-y-0.5"
+              className="inline-flex min-h-11 items-center whitespace-nowrap rounded-xl bg-emerald-500 px-2.5 text-sm font-semibold text-black transition-all shadow-md shadow-emerald-500/25 hover:bg-emerald-400 hover:shadow-emerald-500/40 hover:-translate-y-0.5 sm:px-4"
             >
-              Testar 7 Dias Grátis
+              <span className="sm:hidden">Testar grátis</span>
+              <span className="hidden sm:inline">Testar 7 Dias Grátis</span>
             </Link>
           </div>
         </div>
       </header>
 
       {/* 2. Hero Section */}
-      <section className="relative pt-20 pb-16 px-6 overflow-hidden">
+      <section className="safe-x relative pt-20 pb-16 overflow-hidden">
         {/* Glow ambient background effects */}
         <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[550px] h-[550px] bg-emerald-500/15 rounded-full blur-[140px] pointer-events-none" />
         <div className="absolute top-1/3 left-1/4 w-[350px] h-[350px] bg-teal-500/10 rounded-full blur-[120px] pointer-events-none" />
@@ -118,7 +119,7 @@ export default function LandingPage() {
       </section>
 
       {/* 3. Demonstração Interativa da Voz */}
-      <section id="demonstracao" className="py-16 px-6 relative">
+      <section id="demonstracao" className="safe-x py-16 relative">
         <div className="max-w-4xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
@@ -190,7 +191,7 @@ export default function LandingPage() {
       </section>
 
       {/* 4. Os 4 Pilares da Clareza Financeira */}
-      <section className="py-16 px-6 bg-slate-950/40">
+      <section className="safe-x py-16 bg-slate-950/40">
         <div className="max-w-5xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
@@ -257,67 +258,56 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* 5. Preço Claro e Transparente */}
-      <section className="py-20 px-6 relative">
-        <div className="max-w-md mx-auto text-center">
-          <div className="inline-block px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 text-xs font-semibold uppercase tracking-wider mb-4 border border-emerald-500/20">
-            Plano Único e Sem Pegadinhas
+      {/* 5. Planos atuais */}
+      <section id="planos" aria-labelledby="planos-titulo" className="safe-x py-20 relative">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-10 text-center">
+            <div className="mb-4 inline-block rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wider text-emerald-400">
+              Planos para cada fase do negócio
+            </div>
+            <h2 id="planos-titulo" className="mb-4 text-3xl font-extrabold text-white">Escolha como começar</h2>
+            <p className="text-sm text-slate-400">Comece no Free ou teste os recursos dos planos pagos por 7 dias.</p>
           </div>
-          <h2 className="text-3xl font-extrabold text-white mb-4">
-            Simples de entender. Sem múltiplos planos.
-          </h2>
-          <p className="text-slate-400 text-sm mb-8">
-            Um valor fixo que cabe no bolso de qualquer vendedor autônomo.
-          </p>
 
-          <div className="glass-panel rounded-3xl p-8 border border-emerald-500/30 glass-glow relative">
-            <div className="text-sm font-semibold text-emerald-400 mb-1">
-              7 Dias Totalmente Grátis
-            </div>
-            <div className="text-5xl font-black text-white my-4">
-              R$ 24<span className="text-2xl text-slate-300 font-normal">,90</span>
-              <span className="text-xs text-slate-400 font-normal ml-1">/mês</span>
-            </div>
-            <p className="text-xs text-slate-400 mb-6">
-              Comece agora sem pagar nada. Se gostar, continue por apenas 83 centavos por dia.
-            </p>
+          <div className="grid gap-5 md:grid-cols-3">
+            <article className="glass-panel flex flex-col rounded-3xl border border-white/10 p-6 sm:p-8">
+              <h3 className="text-xl font-bold text-white">Free</h3>
+              <p className="mt-4 text-4xl font-black text-white">R$ 0</p>
+              <p className="mt-2 text-sm text-slate-400">Sem mensalidade</p>
+              <ul className="mb-8 mt-7 space-y-3 text-sm text-slate-300">
+                <li>Até 10 clientes</li>
+                <li>20 comandos de voz/mês</li>
+              </ul>
+              <Link href="/cadastro" className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-semibold text-white hover:bg-white/5">Começar grátis</Link>
+            </article>
 
-            <ul className="text-left space-y-3 text-xs sm:text-sm text-slate-300 mb-8">
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Comandos de voz ilimitados
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Vendas, compras, fiados e trocas com volta
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Controle de parcelas e alertas de atrasados
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Cálculo automático de lucro e CMV
-              </li>
-              <li className="flex items-center gap-2.5">
-                <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
-                Acesso no celular e no computador
-              </li>
-            </ul>
+            <article className="glass-panel glass-glow flex flex-col rounded-3xl border border-emerald-500/30 p-6 sm:p-8">
+              <h3 className="text-xl font-bold text-white">Pro</h3>
+              <p className="mt-4 text-4xl font-black text-white">R$ 39,90<span className="ml-1 text-sm font-normal text-slate-400">/mês</span></p>
+              <p className="mt-2 text-sm text-emerald-400">7 dias de teste</p>
+              <ul className="mb-8 mt-7 space-y-3 text-sm text-slate-300">
+                <li>Clientes ilimitados</li>
+                <li>300 comandos de voz/mês</li>
+              </ul>
+              <Link href="/cadastro" className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl bg-emerald-500 px-4 text-sm font-semibold text-black hover:bg-emerald-400">Testar 7 dias</Link>
+            </article>
 
-            <Link
-              href="/cadastro"
-              className="w-full inline-flex items-center justify-center gap-2 px-6 py-4 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-black font-bold text-base transition-all shadow-lg shadow-emerald-500/30"
-            >
-              Começar Teste de 7 Dias
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+            <article className="glass-panel flex flex-col rounded-3xl border border-white/10 p-6 sm:p-8">
+              <h3 className="text-xl font-bold text-white">Pro Mais</h3>
+              <p className="mt-4 text-4xl font-black text-white">R$ 89,90<span className="ml-1 text-sm font-normal text-slate-400">/mês</span></p>
+              <p className="mt-2 text-sm text-emerald-400">7 dias de teste</p>
+              <ul className="mb-8 mt-7 space-y-3 text-sm text-slate-300">
+                <li>Clientes ilimitados</li>
+                <li>1000 comandos de voz/mês</li>
+              </ul>
+              <Link href="/cadastro" className="mt-auto inline-flex min-h-11 items-center justify-center rounded-xl border border-white/20 px-4 text-sm font-semibold text-white hover:bg-white/5">Testar 7 dias</Link>
+            </article>
           </div>
         </div>
       </section>
 
       {/* 6. Perguntas Frequentes (FAQ) */}
-      <section className="py-16 px-6 bg-slate-950/50">
+      <section className="safe-x py-16 bg-slate-950/50">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-10">
             <h2 className="text-2xl font-bold text-white mb-2">
@@ -378,7 +368,7 @@ export default function LandingPage() {
       </section>
 
       {/* 7. Footer */}
-      <footer className="mt-auto border-t border-white/10 py-8 px-6 text-center text-xs text-slate-500">
+      <footer className="safe-x mt-auto border-t border-white/10 py-8 text-center text-xs text-slate-500">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-400">CRM Voz</span> — O CRM Voice-First para quem vive de negócios
