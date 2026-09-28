@@ -1,12 +1,13 @@
-// Home = central operacional: indicadores, FALAR e atalhos grandes. Sem sidebar.
+// Home = central operacional: indicadores, FALAR e ações rápidas. Sem sidebar.
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { ArrowLeftRight, Banknote, HandCoins, Landmark, Package, PackagePlus, Receipt, ShoppingBag, UserPlus, Users } from 'lucide-react';
+import { Landmark, Package, Receipt, Users } from 'lucide-react';
 import { requireSession } from '@/lib/auth/session';
 import { getDashboard, getProfile, getReviewCounts } from '@/lib/domain/app-data';
 import { firstName, formatBRL } from '@/lib/format';
 import { HomeVoiceButton } from '@/components/app/home-voice';
+import { QuickActionsGrid } from '@/components/app/quick-actions-grid';
 import { OnboardingCard } from '@/components/app/onboarding-card';
 import { Stat } from '@/components/ui/layout';
 
@@ -33,15 +34,10 @@ export default async function HomePage() {
         <HomeVoiceButton />
       </section>
 
-      <h2 className="mb-3 mt-7 text-lg font-semibold text-white">O que você quer fazer?</h2>
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <Shortcut href="/app/vendas/nova" icon={<ShoppingBag className="h-7 w-7" aria-hidden />} label="Nova venda" hint="À vista ou parcelada" tone="emerald" />
-        <Shortcut href="/app/receber" icon={<HandCoins className="h-7 w-7" aria-hidden />} label="Receber pagamento" hint="Parcela, parcial ou quitação" tone="amber" />
-        <Shortcut href="/app/clientes/novo" icon={<UserPlus className="h-7 w-7" aria-hidden />} label="Novo cliente" hint="Nome e telefone" tone="sky" />
-        <Shortcut href="/app/estoque/novo" icon={<PackagePlus className="h-7 w-7" aria-hidden />} label="Nova mercadoria" hint="Celular, moto, carro, peça…" tone="violet" />
-        <Shortcut href="/app/emprestimos/novo" icon={<Banknote className="h-7 w-7" aria-hidden />} label="Emprestar dinheiro" hint="Com juros e parcelas" tone="rose" />
-        <Shortcut href="/app/trocas/nova" icon={<ArrowLeftRight className="h-7 w-7" aria-hidden />} label="Nova troca" hint="Com ou sem volta" tone="cyan" />
-      </div>
+      <section aria-labelledby="quick-actions-title" className="mt-7">
+        <h2 id="quick-actions-title" className="mb-3 text-lg font-semibold text-white">O que você quer fazer?</h2>
+        <QuickActionsGrid />
+      </section>
 
       <section aria-label="Resumo" className="mt-7 grid grid-cols-2 gap-3 md:grid-cols-4">
         <Link href="/app/clientes" className="rounded-2xl border border-white/10 bg-slate-900/70 p-4 hover:border-white/20">
@@ -86,30 +82,6 @@ export default async function HomePage() {
         <SmallShortcut href="/app/emprestimos" icon={<Landmark className="h-6 w-6" aria-hidden />} label="Empréstimos" />
       </div>
     </div>
-  );
-}
-
-const toneClass = {
-  emerald: 'bg-emerald-500/15 text-emerald-300',
-  amber: 'bg-amber-500/15 text-amber-300',
-  sky: 'bg-sky-500/15 text-sky-300',
-  violet: 'bg-violet-500/15 text-violet-300',
-  rose: 'bg-rose-500/15 text-rose-300',
-  cyan: 'bg-cyan-500/15 text-cyan-300',
-};
-
-function Shortcut({ href, icon, label, hint, tone }: { href: string; icon: ReactNode; label: string; hint: string; tone: keyof typeof toneClass }) {
-  return (
-    <Link
-      href={href}
-      className="flex min-h-20 items-center gap-4 rounded-2xl border border-white/10 bg-slate-900/70 px-4 py-3 transition-colors hover:border-white/25 hover:bg-slate-900 active:bg-slate-800"
-    >
-      <span className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${toneClass[tone]}`}>{icon}</span>
-      <span className="min-w-0">
-        <span className="block text-lg font-semibold text-white">{label}</span>
-        <span className="block text-sm text-slate-400">{hint}</span>
-      </span>
-    </Link>
   );
 }
 
